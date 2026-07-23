@@ -1,0 +1,56 @@
+# Self-hosted GLKVM-Cloud on the consolidated services server (Unraid).
+# See docs/glkvm-cloud.md for the full design rationale and the WAN port-forward mapping
+# (config/unifi/network-config.yaml) needed to avoid colliding with the DERP server's
+# WAN 443/tcp + 3478/udp forwards.
+#
+# Upstream reference (confirm against the current version before deploying):
+# https://github.com/gl-inet/glkvm-cloud/blob/main/docker-compose/docker-compose.yml
+#
+# Every service here gets its own macvlan IP, same pattern as every other container on
+# this box — swap MACVLAN_PARENT/MACVLAN_SUBNET for this box's actual values. No
+# `ports:` mapping is used below: macvlan containers have a real L3 address on the
+# physical network already, so Docker's host-side port-publishing doesn't apply — each
+# service is reachable directly at its own IP on whatever ports it natively listens on.
+
+networks:
+  macvlan-mothership:
+    driver: macvlan
+    driver_opts:
+      parent: MACVLAN_PARENT   # e.g. eth0 / bond0
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+
+services:
+  rttys:
+    image: glzhitong/glkvm-cloud:latest
+    container_name: glkvm-cloud
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.20
+    environment:
+      # Set to the public hostname (kvm.example.net) so the app advertises the right
+      # address back to clients instead of auto-detecting its LAN IP — see
+      # docs/glkvm-cloud.md for the "not fully verified" caveat on the exact format.
+      GLKVM_ACCESS_IP: "REPLACE_WITH_kvm.example.net"
+      RTTYS_TOKEN: "REPLACE_ME"
+      RTTYS_PASS: "REPLACE_ME"
+      TURN_USER: "REPLACE_ME"
+      TURN_PASS: "REPLACE_ME"
+    volumes:
+      - /mnt/user/appdata/glkvm-cloud/certs:/app/certs
+      - /mnt/user/appdata/glkvm-cloud/data:/app/data
+
+  coturn:
+    image: coturn/coturn:edge-alpine
+    container_name: glkvm-coturn
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.22
+    command:
+      - "-n"
+      - "--realm=kvm.example.net"
+      - "--user=REPLACE_ME:REPLACE_ME"   # match TURN_USER/TURN_PASS above

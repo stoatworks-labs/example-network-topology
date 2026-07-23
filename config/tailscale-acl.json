@@ -1,0 +1,31 @@
+{
+  "tagOwners": {
+    "tag:mothership": ["autogroup:admin"],
+    "tag:theatre":     ["autogroup:admin"],
+    "tag:vmix":        ["autogroup:admin"]
+  },
+  "acls": [
+    { "action": "accept", "src": ["tag:mothership"], "dst": ["tag:theatre:*", "tag:vmix:*"] },
+    { "action": "accept", "src": ["tag:theatre"],     "dst": ["tag:mothership:*"] },
+    { "action": "accept", "src": ["tag:vmix"],        "dst": ["tag:mothership:*"] }
+  ],
+  "derpMap": {
+    "OmitDefaultRegions": false,
+    "Regions": {
+      "900": {
+        "RegionID": 900,
+        "RegionCode": "example",
+        "RegionName": "example (self-hosted, venue mothership)",
+        "Nodes": [
+          {
+            "Name": "900a",
+            "RegionID": 900,
+            "HostName": "derp.example.net",
+            "STUNPort": 3478,
+            "DERPPort": 443
+          }
+        ]
+      }
+    }
+  }
+}

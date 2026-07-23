@@ -1,0 +1,99 @@
+<svg viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1400" height="900" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">Live Editing — Project Structure &amp; Smart-Bin Workflow</text>
+  <text x="700" y="52" text-anchor="middle" font-size="11" fill="#666">How resolve-configurator's shell project turns into an editor just dragging clips onto a timeline</text>
+  <defs>
+    <marker id="arrowDark" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3a3a5a"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#7a5c00"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3d6528"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#6a4c93"/>
+    </marker>
+  </defs>
+  <rect x="40" y="90" width="280" height="110" rx="8" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
+  <text x="180" y="118" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Session CSV</text>
+  <line x1="60" y1="130" x2="300" y2="130" stroke="#cfd3e6"/>
+  <text x="180" y="152" text-anchor="middle" font-size="11" fill="#cfd3e6">same CSV nc-filedropbatch uses</text>
+  <text x="180" y="170" text-anchor="middle" font-size="11" fill="#cfd3e6">for presenter uploads</text>
+  <text x="180" y="188" text-anchor="middle" font-size="10" fill="#9aa0c0">theatre, date, start time, presenter</text>
+  <rect x="400" y="70" width="300" height="150" rx="8" fill="#7a5c00" stroke="#4d3900" stroke-width="2"/>
+  <text x="550" y="98" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">resolve-configurator</text>
+  <line x1="420" y1="110" x2="680" y2="110" stroke="#f3e2b0"/>
+  <text x="550" y="130" text-anchor="middle" font-size="11" fill="#f3e2b0">run once, ahead of the event</text>
+  <text x="550" y="150" text-anchor="middle" font-size="11" fill="#f3e2b0">(dry-run needs no Resolve install;</text>
+  <text x="550" y="166" text-anchor="middle" font-size="11" fill="#f3e2b0">applying to Resolve needs Studio)</text>
+  <text x="550" y="188" text-anchor="middle" font-size="10" fill="#f3e2b0" font-style="italic">github.com/allansargeant/resolve-configurator</text>
+  <text x="550" y="206" text-anchor="middle" font-size="10" fill="#f3e2b0" font-style="italic">Python, stdlib only, idempotent re-runs</text>
+  <rect x="770" y="60" width="300" height="200" rx="8" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
+  <text x="920" y="88" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Shell Resolve project</text>
+  <line x1="790" y1="100" x2="1050" y2="100" stroke="#cfd3e6"/>
+  <text x="920" y="122" text-anchor="middle" font-size="11" fill="#cfd3e6">bin per Theatre / Date</text>
+  <text x="920" y="142" text-anchor="middle" font-size="11" fill="#cfd3e6">empty timeline per session</text>
+  <text x="920" y="162" text-anchor="middle" font-size="11" fill="#cfd3e6">("Start Time - Presenter")</text>
+  <text x="920" y="182" text-anchor="middle" font-size="11" fill="#cfd3e6">backgrounds / title slides, pre-imported</text>
+  <text x="920" y="202" text-anchor="middle" font-size="11" fill="#cfd3e6">project format settings applied</text>
+  <text x="920" y="224" text-anchor="middle" font-size="10" fill="#9aa0c0">lives on the Mac mini's Project Server</text>
+  <text x="920" y="242" text-anchor="middle" font-size="10" fill="#9aa0c0">(Network project library)</text>
+  <rect x="1140" y="60" width="220" height="200" rx="8" fill="#7a5c00" stroke="#4d3900" stroke-width="2"/>
+  <text x="1250" y="88" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">Smart-bin recipe</text>
+  <line x1="1160" y1="100" x2="1340" y2="100" stroke="#f3e2b0"/>
+  <text x="1250" y="120" text-anchor="middle" font-size="10" fill="#f3e2b0">smart-bins.md / .json</text>
+  <text x="1250" y="140" text-anchor="middle" font-size="10" fill="#f3e2b0">per session: file path contains</text>
+  <text x="1250" y="156" text-anchor="middle" font-size="10" fill="#f3e2b0">record-drive name, date created,</text>
+  <text x="1250" y="172" text-anchor="middle" font-size="10" fill="#f3e2b0">start TC in session window</text>
+  <text x="1250" y="196" text-anchor="middle" font-size="9" fill="#f3e2b0" font-style="italic">Resolve's scripting API can't</text>
+  <text x="1250" y="212" text-anchor="middle" font-size="9" fill="#f3e2b0" font-style="italic">create real smart bins (v20/v21,</text>
+  <text x="1250" y="228" text-anchor="middle" font-size="9" fill="#f3e2b0" font-style="italic">confirmed) — applied once, by</text>
+  <text x="1250" y="244" text-anchor="middle" font-size="9" fill="#f3e2b0" font-style="italic">hand, before the event</text>
+  <path d="M320,145 L400,145" fill="none" stroke="#4d3900" stroke-width="2.5" marker-end="url(#arrowAmber)"/>
+  <path d="M700,145 L770,145" fill="none" stroke="#0d0d17" stroke-width="2.5" marker-end="url(#arrowDark)"/>
+  <text x="712" y="135" font-size="10" fill="#0d0d17" font-weight="bold">builds</text>
+  <path d="M550,220 L550,290 L1250,290 L1250,260" fill="none" stroke="#4d3900" stroke-width="2.5" stroke-dasharray="8,5" marker-end="url(#arrowAmber)"/>
+  <text x="750" y="282" text-anchor="middle" font-size="10" fill="#4d3900" font-weight="bold">also writes a recipe, not real smart bins</text>
+  <rect x="770" y="360" width="300" height="130" rx="8" fill="#6a4c93" stroke="#453163" stroke-width="2"/>
+  <text x="920" y="388" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Footage lands on the NAS</text>
+  <line x1="790" y1="400" x2="1050" y2="400" stroke="#e8ddf5"/>
+  <text x="920" y="422" text-anchor="middle" font-size="11" fill="#e8ddf5">rclone/rsync dual-write, same pull</text>
+  <text x="920" y="442" text-anchor="middle" font-size="11" fill="#e8ddf5">as Nextcloud — see data-flow diagram</text>
+  <text x="920" y="464" text-anchor="middle" font-size="10" fill="#d8c8ec">growing throughout the session</text>
+  <path d="M920,260 L920,360" fill="none" stroke="#0d0d17" stroke-width="2" stroke-dasharray="2,4" marker-end="url(#arrowDark)"/>
+  <text x="940" y="320" font-size="9" fill="#0d0d17" font-style="italic">bins/timelines already exist,</text>
+  <text x="940" y="333" font-size="9" fill="#0d0d17" font-style="italic">waiting for matching footage</text>
+  <rect x="400" y="360" width="300" height="130" rx="8" fill="#5a8f3c" stroke="#3d6528" stroke-width="2"/>
+  <text x="550" y="388" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Smart bin auto-fills</text>
+  <line x1="420" y1="400" x2="680" y2="400" stroke="#e2f0d9"/>
+  <text x="550" y="422" text-anchor="middle" font-size="11" fill="#e2f0d9">filtered by drive path + date +</text>
+  <text x="550" y="442" text-anchor="middle" font-size="11" fill="#e2f0d9">session timecode window</text>
+  <text x="550" y="464" text-anchor="middle" font-size="10" fill="#e2f0d9">no manual sorting, no scrubbing</text>
+  <path d="M770,425 L700,425" fill="none" stroke="#3d6528" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <rect x="80" y="360" width="270" height="200" rx="8" fill="#6a4c93" stroke="#453163" stroke-width="2"/>
+  <text x="215" y="388" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Editor's job</text>
+  <line x1="100" y1="400" x2="330" y2="400" stroke="#e8ddf5"/>
+  <text x="215" y="424" text-anchor="middle" font-size="12" fill="#e8ddf5">1. open session's timeline</text>
+  <text x="215" y="448" text-anchor="middle" font-size="12" fill="#e8ddf5">2. drag from its smart bin</text>
+  <text x="215" y="472" text-anchor="middle" font-size="12" fill="#e8ddf5">3. top-and-tail</text>
+  <text x="215" y="496" text-anchor="middle" font-size="12" fill="#e8ddf5">4. export (optionally via</text>
+  <text x="215" y="514" text-anchor="middle" font-size="12" fill="#e8ddf5">   Remote Render)</text>
+  <text x="215" y="538" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">all the organizing already</text>
+  <text x="215" y="554" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">happened — this is just cutting</text>
+  <path d="M400,425 L350,425" fill="none" stroke="#453163" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
+  <rect x="80" y="620" width="1240" height="130" rx="8" fill="#f7f7f9" stroke="#ccc" stroke-width="1"/>
+  <text x="105" y="646" font-size="12" font-weight="bold" fill="#333">Legend</text>
+  <line x1="105" y1="662" x2="140" y2="662" stroke="#3a3a5a" stroke-width="2.5" marker-end="url(#arrowDark)"/>
+  <text x="150" y="666" font-size="11" fill="#333">built once, ahead of the event</text>
+  <line x1="105" y1="686" x2="140" y2="686" stroke="#4d3900" stroke-width="2.5" stroke-dasharray="8,5" marker-end="url(#arrowAmber)"/>
+  <text x="150" y="690" font-size="11" fill="#333">recipe/manual one-time step (not automated by the API)</text>
+  <line x1="105" y1="710" x2="140" y2="710" stroke="#3d6528" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <text x="150" y="714" font-size="11" fill="#333">automatic, ongoing during the event (smart-bin filter rule)</text>
+  <line x1="600" y1="662" x2="635" y2="662" stroke="#453163" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
+  <text x="645" y="666" font-size="11" fill="#333">editor-facing / edit-suite hardware</text>
+  <line x1="600" y1="686" x2="635" y2="686" stroke="#0d0d17" stroke-width="2" stroke-dasharray="2,4" marker-end="url(#arrowDark)"/>
+  <text x="645" y="690" font-size="11" fill="#333">already exists, waiting for a later event</text>
+  <text x="105" y="736" font-size="10" fill="#666">See docs/live-editing.md ("Workflow: from ATEM pull to finished edit") for the full prose walkthrough, and diagrams/live-editing-dataflow.svg for the network path this depends on.</text>
+</svg>

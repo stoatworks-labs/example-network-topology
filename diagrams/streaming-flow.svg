@@ -1,0 +1,92 @@
+<svg viewBox="0 0 1400 720" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1400" height="720" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">SRT / NDI Streaming Flow</text>
+
+  <defs>
+    <marker id="arrowSolid" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2a6f97"/>
+    </marker>
+    <marker id="arrowDashed" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#c14953"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#b8860b"/>
+    </marker>
+  </defs>
+
+  <!-- Sources: VMix PCs at both nodes -->
+  <rect x="40" y="100" width="230" height="80" rx="6" fill="#c14953" stroke="#8f2f37"/>
+  <text x="155" y="130" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">VMix Node 1 PCs</text>
+  <text x="155" y="148" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.20.21</text>
+  <text x="155" y="164" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.20.22</text>
+
+  <rect x="40" y="220" width="230" height="80" rx="6" fill="#c14953" stroke="#8f2f37"/>
+  <text x="155" y="250" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">VMix Node 2 PCs</text>
+  <text x="155" y="268" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.21.21</text>
+  <text x="155" y="284" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.21.22</text>
+
+  <!-- Restreamer -->
+  <rect x="420" y="160" width="230" height="90" rx="6" fill="#1a1a2e" stroke="#0d0d17"/>
+  <text x="535" y="192" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">Restreamer</text>
+  <text x="535" y="210" text-anchor="middle" font-size="11" fill="#cfd3e6">mothership — 192.168.1.14</text>
+  <text x="535" y="228" text-anchor="middle" font-size="11" fill="#cfd3e6">SRT fan-out</text>
+
+  <!-- BirdDog Central -->
+  <rect x="420" y="380" width="230" height="90" rx="6" fill="#1a1a2e" stroke="#0d0d17"/>
+  <text x="535" y="412" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">BirdDog Central</text>
+  <text x="535" y="430" text-anchor="middle" font-size="11" fill="#cfd3e6">mothership — 192.168.1.12</text>
+  <text x="535" y="448" text-anchor="middle" font-size="11" fill="#cfd3e6">NDI source</text>
+
+  <!-- NDI Discovery Server -->
+  <rect x="420" y="510" width="230" height="90" rx="6" fill="#7a5c00" stroke="#4d3900"/>
+  <text x="535" y="540" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">NDI Discovery Server</text>
+  <text x="535" y="558" text-anchor="middle" font-size="11" fill="#f3e2b0">mothership — 192.168.1.15 : 5959</text>
+  <text x="535" y="576" text-anchor="middle" font-size="11" fill="#f3e2b0">unicast TCP — bypasses mDNS</text>
+
+  <!-- BirdDog Play x12 (one per theatre) -->
+  <rect x="880" y="120" width="260" height="360" rx="8" fill="#2a6f97" stroke="#1c4d69"/>
+  <text x="1010" y="150" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">BirdDog Play</text>
+  <text x="1010" y="170" text-anchor="middle" font-size="12" fill="#e0eefc">×12 — one per theatre</text>
+  <text x="1010" y="190" text-anchor="middle" font-size="10" fill="#e0eefc">.2.20 .3.20 .4.20 .5.20 .6.20 .7.20</text>
+  <text x="1010" y="203" text-anchor="middle" font-size="10" fill="#e0eefc">.8.20 .9.20 .10.20 .11.20 .12.20 .13.20</text>
+  <line x1="900" y1="218" x2="1120" y2="218" stroke="#e0eefc"/>
+  <text x="1010" y="243" text-anchor="middle" font-size="11" fill="#e0eefc">Primary: SRT from Restreamer</text>
+  <text x="1010" y="263" text-anchor="middle" font-size="11" fill="#e0eefc">(unicast by IP — no discovery</text>
+  <text x="1010" y="279" text-anchor="middle" font-size="11" fill="#e0eefc">dependency, routes cleanly)</text>
+  <text x="1010" y="313" text-anchor="middle" font-size="11" fill="#e0eefc">Backup: NDI from BirdDog Central,</text>
+  <text x="1010" y="331" text-anchor="middle" font-size="11" fill="#e0eefc">found via the Discovery Server</text>
+  <text x="1010" y="349" text-anchor="middle" font-size="11" fill="#e0eefc">below (no mDNS needed)</text>
+  <text x="1010" y="373" text-anchor="middle" font-size="11" fill="#5a8f3c" font-weight="bold">confirmed: BirdUI (Network panel)</text>
+  <text x="1010" y="391" text-anchor="middle" font-size="11" fill="#5a8f3c" font-weight="bold">has a Discovery Server field</text>
+  <text x="1010" y="423" text-anchor="middle" font-size="11" fill="#e0eefc">SRT is unicast-by-IP already,</text>
+  <text x="1010" y="441" text-anchor="middle" font-size="11" fill="#e0eefc">so the primary path has no</text>
+  <text x="1010" y="459" text-anchor="middle" font-size="11" fill="#e0eefc">equivalent discovery problem.</text>
+
+  <!-- Primary path: VMix -> Restreamer -> BirdDog Play (solid) -->
+  <path d="M270,140 L420,190" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowSolid)"/>
+  <path d="M270,260 L420,210" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowSolid)"/>
+  <path d="M650,200 L880,220" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowSolid)"/>
+  <text x="345" y="130" font-size="11" fill="#2a6f97" font-weight="bold">SRT</text>
+  <text x="750" y="195" font-size="11" fill="#2a6f97" font-weight="bold">SRT (fan-out)</text>
+
+  <!-- Backup path: BirdDog Central -> BirdDog Play (dashed, data) -->
+  <path d="M650,425 L880,320" fill="none" stroke="#c14953" stroke-width="2.5" stroke-dasharray="8,5" marker-end="url(#arrowDashed)"/>
+  <text x="700" y="400" font-size="11" fill="#c14953" font-weight="bold">NDI (backup, data)</text>
+
+  <!-- Discovery registration/query paths (amber, dotted) -->
+  <path d="M650,540 L880,400" fill="none" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrowAmber)"/>
+  <text x="740" y="490" font-size="10" fill="#b8860b" font-style="italic">query (12×)</text>
+  <path d="M535,510 L535,470" fill="none" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrowAmber)"/>
+  <text x="545" y="493" font-size="10" fill="#b8860b" font-style="italic">register</text>
+
+  <!-- Legend -->
+  <line x1="60" y1="560" x2="120" y2="560" stroke="#2a6f97" stroke-width="2.5"/>
+  <text x="130" y="565" font-size="12" fill="#1a1a2e">Primary path (SRT, solid)</text>
+  <line x1="60" y1="590" x2="120" y2="590" stroke="#c14953" stroke-width="2.5" stroke-dasharray="8,5"/>
+  <text x="130" y="595" font-size="12" fill="#1a1a2e">Backup path (NDI, dashed)</text>
+  <line x1="60" y1="620" x2="120" y2="620" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="2,4"/>
+  <text x="130" y="625" font-size="12" fill="#1a1a2e">Discovery registration/query (amber, dotted)</text>
+
+  <text x="700" y="670" text-anchor="middle" font-size="11" fill="#888">Tailscale doesn't forward mDNS/multicast, so BirdDog Central and BirdDog Play both register/query</text>
+  <text x="700" y="688" text-anchor="middle" font-size="11" fill="#888">against a unicast NDI Discovery Server on the mothership (port 5959) instead of relying on local mDNS.</text>
+</svg>

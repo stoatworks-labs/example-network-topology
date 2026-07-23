@@ -1,0 +1,61 @@
+<svg viewBox="0 0 1400 720" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1400" height="720" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">Live Editing — Data Flow</text>
+  <text x="700" y="52" text-anchor="middle" font-size="11" fill="#666">One pull off the ATEM/VMix source, two writes — not a chained re-sync</text>
+  <defs>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2a6f97"/>
+    </marker>
+    <marker id="arrowDark" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3a3a5a"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#6a4c93"/>
+    </marker>
+  </defs>
+  <rect x="40" y="90" width="260" height="150" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="170" y="118" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Theatre ATEM / VMix</text>
+  <line x1="60" y1="130" x2="280" y2="130" stroke="#e0eefc"/>
+  <text x="170" y="152" text-anchor="middle" font-size="12" fill="#e0eefc">ATEM Mini ISO (FTP)</text>
+  <text x="170" y="172" text-anchor="middle" font-size="12" fill="#e0eefc">VMix PC (SMB)</text>
+  <text x="170" y="198" text-anchor="middle" font-size="10" fill="#bcd8f0">×12 theatres + 4 VMix PCs</text>
+  <text x="170" y="216" text-anchor="middle" font-size="10" fill="#bcd8f0">via Tailscale subnet routing</text>
+  <rect x="440" y="90" width="260" height="150" rx="8" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
+  <text x="570" y="118" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Ingest containers</text>
+  <line x1="460" y1="130" x2="680" y2="130" stroke="#cfd3e6"/>
+  <text x="570" y="152" text-anchor="middle" font-size="12" fill="#cfd3e6">ATEM ISO Ingest — .1.17</text>
+  <text x="570" y="172" text-anchor="middle" font-size="12" fill="#cfd3e6">VMix Record Ingest — .1.18</text>
+  <text x="570" y="198" text-anchor="middle" font-size="10" fill="#9aa0c0">rsync --append, incremental</text>
+  <text x="570" y="216" text-anchor="middle" font-size="10" fill="#9aa0c0">not yet dual-write — see open-questions #15</text>
+  <rect x="880" y="30" width="260" height="120" rx="8" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
+  <text x="1010" y="60" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Nextcloud</text>
+  <text x="1010" y="82" text-anchor="middle" font-size="12" fill="#cfd3e6">mothership — 192.168.1.13</text>
+  <text x="1010" y="106" text-anchor="middle" font-size="11" fill="#9aa0c0">near-real-time review copy</text>
+  <text x="1010" y="126" text-anchor="middle" font-size="11" fill="#9aa0c0">(existing ingest path)</text>
+  <rect x="880" y="180" width="260" height="120" rx="8" fill="#6a4c93" stroke="#453163" stroke-width="2"/>
+  <text x="1010" y="210" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Edit Suite NAS</text>
+  <text x="1010" y="232" text-anchor="middle" font-size="12" fill="#e8ddf5">192.168.22.2</text>
+  <text x="1010" y="256" text-anchor="middle" font-size="11" fill="#d8c8ec">10GbE, own subnet</text>
+  <text x="1010" y="276" text-anchor="middle" font-size="11" fill="#d8c8ec">second write, same pull</text>
+  <rect x="820" y="380" width="440" height="260" rx="8" fill="#6a4c93" stroke="#453163" stroke-width="2"/>
+  <text x="1040" y="410" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Edit Suite — 192.168.22.x (10GbE)</text>
+  <line x1="840" y1="422" x2="1240" y2="422" stroke="#e8ddf5"/>
+  <text x="1040" y="448" text-anchor="middle" font-size="12" fill="#e8ddf5">MacBook Pro — Editor 1 (.22.11)</text>
+  <text x="1040" y="472" text-anchor="middle" font-size="12" fill="#e8ddf5">MacBook Pro — Editor 2 (.22.12)</text>
+  <text x="1040" y="500" text-anchor="middle" font-size="12" fill="#e8ddf5">Mac mini — Project Server +</text>
+  <text x="1040" y="518" text-anchor="middle" font-size="12" fill="#e8ddf5">Remote Render (.22.20)</text>
+  <text x="1040" y="548" text-anchor="middle" font-size="10" fill="#d8c8ec">Thunderbolt-to-10GbE adapters</text>
+  <text x="1040" y="566" text-anchor="middle" font-size="10" fill="#d8c8ec">no Tailscale — same room as mothership</text>
+  <text x="1040" y="596" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">pre-built project structure from</text>
+  <text x="1040" y="614" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">resolve-configurator — see the</text>
+  <text x="1040" y="632" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">project-structure diagram</text>
+  <path d="M300,165 L440,165" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowBlue)"/>
+  <text x="330" y="155" font-size="11" fill="#2a6f97" font-weight="bold">FTP / SMB pull</text>
+  <path d="M700,140 L880,90" fill="none" stroke="#0d0d17" stroke-width="2.5" marker-end="url(#arrowDark)"/>
+  <text x="740" y="105" font-size="11" fill="#0d0d17" font-weight="bold">write 1: Nextcloud</text>
+  <path d="M700,190 L880,240" fill="none" stroke="#453163" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
+  <text x="740" y="245" font-size="11" fill="#453163" font-weight="bold">write 2: Edit Suite NAS</text>
+  <path d="M1010,300 L1010,380" fill="none" stroke="#453163" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
+  <text x="700" y="680" text-anchor="middle" font-size="11" fill="#888">The edit suite never waits on Nextcloud's own occ files:scan indexing — its copy arrives independently, same pull cycle.</text>
+  <text x="700" y="698" text-anchor="middle" font-size="11" fill="#888">See docs/live-editing.md for the storage/project-server decisions and docs/atem-iso-ingest.md / docs/vmix-record-ingest.md for the ingest containers themselves.</text>
+</svg>

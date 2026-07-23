@@ -1,0 +1,69 @@
+# GL-iNet A-1300 — VMix Node __NODE__ — 192.168.__X__.0/24 (off Theatre __THEATRE__)
+#
+# Generated from vmix-node-network.uci.template — do not hand-edit, edit the template
+# and re-run generate-configs.sh instead.
+#
+# Covers /etc/config/network and /etc/config/dhcp only. See README.md for what's
+# NOT covered (Wi-Fi, Tailscale, VPN policy) and how to apply this.
+
+# ---- /etc/config/network ----------------------------------------------
+
+config interface 'lan'
+	option type 'bridge'
+	option ifname 'lan1 lan2'
+	option proto 'static'
+	option ipaddr '192.168.__X__.1'
+	option netmask '255.255.255.0'
+	# Both LAN ports bridged together — unlike the theatre routers, there's no
+	# single traffic-sensitive device here that needs its own dedicated port.
+
+config interface 'wan'
+	option ifname 'wan'
+	option proto 'dhcp'
+	# This node is its own independent Tailscale node (see docs/ip-address-map.md)
+	# but shares physical uplink cabling with Theatre __THEATRE__'s VLAN group.
+	# WAN address doesn't need to be static/predictable — Tailscale rides over
+	# whatever it gets.
+
+# ---- /etc/config/dhcp ---------------------------------------------------
+
+config dhcp 'lan'
+	option interface 'lan'
+	option start '100'
+	option limit '50'
+	option leasetime '12h'
+	# Dynamic range (192.168.__X__.100-149) for anything not listed as a static
+	# lease below.
+
+# Static leases — fixed IPs per docs/ip-address-map.md. Replace every
+# REPLACE_WITH_MAC_nn with that device's real MAC address before applying.
+
+config host
+	option name 'birddog-p400-cam-1'
+	option mac 'REPLACE_WITH_MAC_01'
+	option ip '192.168.__X__.11'
+
+config host
+	option name 'birddog-p400-cam-2'
+	option mac 'REPLACE_WITH_MAC_02'
+	option ip '192.168.__X__.12'
+
+config host
+	option name 'birddog-p400-cam-3'
+	option mac 'REPLACE_WITH_MAC_03'
+	option ip '192.168.__X__.13'
+
+config host
+	option name 'birddog-p400-cam-4'
+	option mac 'REPLACE_WITH_MAC_04'
+	option ip '192.168.__X__.14'
+
+config host
+	option name 'vmix-pc-1'
+	option mac 'REPLACE_WITH_MAC_05'
+	option ip '192.168.__X__.21'
+
+config host
+	option name 'vmix-pc-2'
+	option mac 'REPLACE_WITH_MAC_06'
+	option ip '192.168.__X__.22'

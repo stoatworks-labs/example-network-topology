@@ -1,0 +1,157 @@
+# UniFi Cloud Gateway — structured config reference (not a file UniFi ingests directly —
+# see README.md for how to apply this via the Network app or API).
+#
+# All addressing/VLAN tags here are newly proposed for this build - confirm or
+# change freely.
+
+networks:
+  - name: Uplink-VLAN-1
+    purpose: corporate            # routed network with its own DHCP scope
+    vlan_id: 101
+    subnet: 10.10.1.0/24
+    gateway_ip: 10.10.1.1
+    dhcp:
+      enabled: true
+      range: 10.10.1.10 - 10.10.1.250
+    serves: Theatre 1-3 GL-iNet WAN ports
+    uplink_port_profile: uplink-vlan-1-ports
+
+  - name: Uplink-VLAN-2
+    purpose: corporate
+    vlan_id: 102
+    subnet: 10.10.2.0/24
+    gateway_ip: 10.10.2.1
+    dhcp:
+      enabled: true
+      range: 10.10.2.10 - 10.10.2.250
+    serves: Theatre 4-6 GL-iNet WAN ports
+    uplink_port_profile: uplink-vlan-2-ports
+
+  - name: Uplink-VLAN-3
+    purpose: corporate
+    vlan_id: 103
+    subnet: 10.10.3.0/24
+    gateway_ip: 10.10.3.1
+    dhcp:
+      enabled: true
+      range: 10.10.3.10 - 10.10.3.250
+    serves: Theatre 7-9 GL-iNet WAN ports
+    uplink_port_profile: uplink-vlan-3-ports
+
+  - name: Uplink-VLAN-4
+    purpose: corporate
+    vlan_id: 104
+    subnet: 10.10.4.0/24
+    gateway_ip: 10.10.4.1
+    dhcp:
+      enabled: true
+      range: 10.10.4.10 - 10.10.4.250
+    serves: Theatre 10-12 GL-iNet WAN ports
+    uplink_port_profile: uplink-vlan-4-ports
+
+  - name: Mothership-LAN
+    purpose: corporate
+    vlan_id: null                 # untagged/native — assumed to already exist
+    subnet: 192.168.1.0/24
+    gateway_ip: 192.168.1.1
+    dhcp:
+      enabled: false              # every mothership device has a fixed IP — see docs/ip-address-map.md
+    note: >
+      Assumed to already exist as the Cloud Gateway's default network.
+      Not created by this file — listed here only so the firewall rules below
+      can reference it.
+
+port_profiles:
+  - name: uplink-vlan-1-ports
+    native_network: Uplink-VLAN-1
+    tagged_networks: []
+    note: Apply to the switch port(s) carrying the Theatre 1-3 uplink cable run
+  - name: uplink-vlan-2-ports
+    native_network: Uplink-VLAN-2
+    tagged_networks: []
+    note: Apply to the switch port(s) carrying the Theatre 4-6 uplink cable run
+  - name: uplink-vlan-3-ports
+    native_network: Uplink-VLAN-3
+    tagged_networks: []
+    note: Apply to the switch port(s) carrying the Theatre 7-9 uplink cable run
+  - name: uplink-vlan-4-ports
+    native_network: Uplink-VLAN-4
+    tagged_networks: []
+    note: Apply to the switch port(s) carrying the Theatre 10-12 uplink cable run
+  - name: unraid-server-lag
+    native_network: Mothership-LAN
+    tagged_networks: []
+    link_aggregation:
+      enabled: true
+      mode: 802.3ad (LACP)
+      lacp_rate: fast     # Ubiquiti hardcodes fast — Unraid's bonding default is slow, must match
+      hash_policy: layer3+4
+    note: >
+      Assuming this Cloud Gateway supports port aggregation (only UDM Pro/SE/Pro Max,
+      UXG Enterprise, and EFG do). If it turns out not to: drop an intermediate
+      LACP-capable switch in between, bond through that instead, and land that
+      switch's uplink here as a normal (non-LAG) port. See docs/open-questions.md.
+
+port_forwards:
+  - name: DERP server HTTPS
+    proto: tcp
+    wan_port: 443
+    dest: 192.168.1.16:443
+    note: Requires a real hostname pointed at this Cloud Gateway's public IP — see docs/tailscale.md
+  - name: DERP server STUN
+    proto: udp
+    wan_port: 3478
+    dest: 192.168.1.16:3478
+  - name: GLKVM-Cloud web UI
+    proto: tcp
+    wan_port: 8443
+    dest: 192.168.1.20:443
+    note: >
+      Remapped off 443 — DERP already owns WAN 443/tcp. Requires a real hostname
+      (kvm.example.net) pointed at this Cloud Gateway's public IP — see docs/glkvm-cloud.md.
+  - name: GLKVM-Cloud WebSocket proxy
+    proto: tcp
+    wan_port: 10443
+    dest: 192.168.1.20:10443
+  - name: GLKVM-Cloud TURN (TCP)
+    proto: tcp
+    wan_port: 3479
+    dest: 192.168.1.22:3478
+    note: Remapped off 3478 — DERP's STUN already owns WAN 3478/udp; kept TCP alongside it for one consistent mapping.
+  - name: GLKVM-Cloud TURN (UDP)
+    proto: udp
+    wan_port: 3479
+    dest: 192.168.1.22:3478
+
+firewall_rules:
+  # Evaluated top to bottom, like UniFi's own rule list. Defense-in-depth only —
+  # Tailscale ACLs (config/tailscale-acl.json) are what actually enforce
+  # cross-theatre isolation at the overlay-network layer.
+  - name: Allow uplink VLANs to internet (WAN)
+    action: accept
+    source: [Uplink-VLAN-1, Uplink-VLAN-2, Uplink-VLAN-3, Uplink-VLAN-4]
+    destination: WAN
+    reason: Needed for each GL-iNet's Tailscale connection to reach the internet/DERP
+
+  - name: Block uplink VLANs from Mothership-LAN
+    action: drop
+    source: [Uplink-VLAN-1, Uplink-VLAN-2, Uplink-VLAN-3, Uplink-VLAN-4]
+    destination: Mothership-LAN
+    reason: >
+      Uplink VLANs are transit-only for GL-iNet WAN ports; they have no legitimate
+      reason to reach the mothership LAN directly — all real mothership access
+      happens over Tailscale instead.
+    caveat: >
+      Should NOT interfere with the DERP hairpin path (see port_forwards above and
+      docs/tailscale.md) — that traffic leaves a theatre's GL-iNet via its own WAN
+      path and re-enters via the WAN-facing port forward, so it arrives at
+      Mothership-LAN from the WAN zone, not directly from an Uplink-VLAN zone. This
+      rule targets direct inter-VLAN routing, a different path. Worth confirming
+      with a real `tailscale netcheck` test once built, since exact hairpin/zone
+      behavior is Cloud-Gateway-firmware-specific.
+
+  - name: Block uplink VLANs from each other
+    action: drop
+    source: [Uplink-VLAN-1, Uplink-VLAN-2, Uplink-VLAN-3, Uplink-VLAN-4]
+    destination: [Uplink-VLAN-1, Uplink-VLAN-2, Uplink-VLAN-3, Uplink-VLAN-4]
+    reason: Belt-and-suspenders on top of the Tailscale ACL cross-theatre block

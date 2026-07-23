@@ -1,0 +1,14 @@
+## rclone remote definition for one theatre's ATEM FTP server.
+## Generated per-theatre by generate-rclone-conf.sh — do not hand-edit, edit this
+## template and re-run the generator instead.
+##
+## rclone requires an "obscured" password, not plaintext — generate it with:
+##   rclone obscure 'the-real-password'
+## and paste the output below (or pass RCLONE_CONFIG_ATEM_THEATRE__THEATRE___PASS as an
+## obscured-password env var instead of writing it to disk at all).
+
+[atem-theatre__THEATRE__]
+type = ftp
+host = 192.168.__X__.2
+user = REPLACE_WITH_FTP_USER
+pass = REPLACE_WITH_OBSCURED_PASSWORD

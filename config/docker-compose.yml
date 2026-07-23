@@ -1,0 +1,331 @@
+# Full container stack for the consolidated services server (Unraid) — everything in
+# docs/topology.md's "Workload / Runs as" table except the two Windows VMs (VMix
+# instance, BirdDog Central — not Docker, not this file's concern).
+#
+# Brings up: Nextcloud (+ its DB/cache), Restreamer, NDI Discovery Server, the DERP
+# server, ATEM ISO Ingest, VMix Record Ingest, the UniFi Controller (+ its DB),
+# GLKVM-Cloud (rttys + coturn), ATEM Overseer, ATEM Fleet Admin, Flock, and the
+# Tailscale subnet router.
+#
+# Individual services also have their own standalone docs/compose fragments
+# (config/glkvm-cloud/docker-compose.yml.template, the docker run examples in
+# docs/tailscale.md and config/atem-iso-ingest/README.md) for running just one thing in
+# isolation — this file is the "bring up everything at once" version, kept in sync with
+# those but not generated from them.
+#
+# Before running:
+#   1. cp .env.template .env, fill in every REPLACE_ME value.
+#   2. Set MACVLAN_PARENT below to the real bonded interface (likely `bond0` per
+#      docs/topology.md's LACP setup — confirm the actual interface name on this Unraid
+#      box first).
+#   3. Run config/*/setup-nextcloud-external-storage.sh once Nextcloud itself is up,
+#      before starting the two ingest containers — see docs/deployment-runbook.md Phase 6.
+#   4. Generate config/vmix-record-ingest/rclone.conf (generate-rclone-conf.sh) before
+#      starting vmix-record-ingest — it's bind-mounted in, not generated at container
+#      start.
+#
+# Networking note: every service below except the two DB/cache sidecars sits on
+# macvlan-mothership and is reachable directly at its own LAN IP on whatever ports it
+# natively listens on — macvlan containers have a real L3 address on the physical
+# network, so Docker's `ports:`/host-publishing mechanism doesn't apply and isn't used
+# here (unlike bridge networking, there's no host-side NAT step to configure). This
+# also means Restreamer's per-stream SRT/RTMP listener ports (created dynamically
+# through its own UI/API, not fixed at container start) need no compose-level
+# port config either — they just bind directly on 192.168.1.14.
+
+networks:
+  macvlan-mothership:
+    driver: macvlan
+    driver_opts:
+      parent: ${MACVLAN_PARENT}
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+  internal-db:
+    driver: bridge
+    internal: true   # no route out — these two DBs are only reachable by their sibling app container, not the LAN
+
+services:
+  # ---- Nextcloud (192.168.1.13) ----------------------------------------------------
+  nextcloud-db:
+    image: mariadb:11
+    container_name: nextcloud-db
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --innodb-read-only-compressed=OFF
+    networks: [internal-db]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${NEXTCLOUD_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+    volumes:
+      - /mnt/user/appdata/nextcloud/db:/var/lib/mysql
+
+  nextcloud-redis:
+    # Not strictly required, but recommended by Nextcloud for file-locking performance
+    # under concurrent writers — and this box has a LOT of concurrent writers (12
+    # theatres' rclone syncs + both ingest pipelines hitting Nextcloud continuously).
+    image: redis:7-alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    networks: [internal-db]
+
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    depends_on: [nextcloud-db, nextcloud-redis]
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.13
+      internal-db: {}
+    environment:
+      MYSQL_HOST: nextcloud-db
+      MYSQL_DATABASE: nextcloud
+      MYSQL_USER: nextcloud
+      MYSQL_PASSWORD: ${NEXTCLOUD_DB_PASSWORD}
+      REDIS_HOST: nextcloud-redis
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD}
+      NEXTCLOUD_TRUSTED_DOMAINS: 192.168.1.13
+    volumes:
+      - /mnt/user/appdata/nextcloud/html:/var/www/html
+      # External Storage mount points for both ingest pipelines — same path both
+      # pull-iso.py and mount-and-sync.sh write into (ATEM_ISO_LOCAL_BASE /
+      # VMIX_RECORD_LOCAL_BASE below), and what setup-nextcloud-external-storage.sh
+      # in each ingest dir maps into Nextcloud's own filesystem view.
+      - /mnt/user/nextcloud-external:/mnt/user/nextcloud-external
+
+  # ---- Restreamer (192.168.1.14) ----------------------------------------------------
+  restreamer:
+    image: datarhei/restreamer:latest
+    container_name: restreamer
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.14
+    environment:
+      RS_USERNAME: ${RESTREAMER_USERNAME}
+      RS_PASSWORD: ${RESTREAMER_PASSWORD}
+    volumes:
+      - /mnt/user/appdata/restreamer/db:/restreamer/db
+
+  # ---- NDI Discovery Server (192.168.1.15) ------------------------------------------
+  ndi-discovery:
+    # Community image (not NDI/NewTek-published) built from the official NDI SDK 5.5 —
+    # https://hub.docker.com/r/pnxr/ndi-discovery-minimal — confirm still maintained
+    # and pinned to a specific tag before relying on `:latest` long-term.
+    image: pnxr/ndi-discovery-minimal:latest
+    container_name: ndi-discovery
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.15
+
+  # ---- DERP server (192.168.1.16) ---------------------------------------------------
+  # Exact invocation per docs/tailscale.md — kept in sync with it, not generated from it.
+  derp-server:
+    image: tailscale/derper:latest
+    container_name: derp-server
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.16
+    volumes:
+      - /mnt/user/appdata/derper/certs:/app/certs
+      # Needed for -verify-clients to check the connecting node against this tailnet —
+      # see docs/tailscale.md.
+      - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+    command:
+      - "-hostname=derp.example.net"
+      - "-certmode=letsencrypt"
+      - "-certdir=/app/certs"
+      - "-stun"
+      - "-stun-port=3478"
+      - "-verify-clients"
+
+  # ---- ATEM ISO Ingest (192.168.1.17) -----------------------------------------------
+  # Default approach (pull-iso.py, FTP REST-resume) — see docs/atem-iso-ingest.md for
+  # the rclone-mount-rsync alternative if preferred instead.
+  atem-iso-ingest:
+    image: python:3-slim
+    container_name: atem-iso-ingest
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.17
+    environment:
+      ATEM_FTP_USER: ${ATEM_FTP_USER}
+      ATEM_FTP_PASS: ${ATEM_FTP_PASS}
+      ATEM_FTP_REMOTE_DIR: ${ATEM_FTP_REMOTE_DIR:-/}
+      ATEM_ISO_LOCAL_BASE: /mnt/user/nextcloud-external
+      ATEM_ISO_STATE_FILE: /mnt/user/appdata/atem-iso-ingest/state.json
+    volumes:
+      - ./atem-iso-ingest/pull-iso.py:/app/pull-iso.py:ro
+      - /mnt/user/nextcloud-external:/mnt/user/nextcloud-external
+      - /mnt/user/appdata/atem-iso-ingest:/mnt/user/appdata/atem-iso-ingest
+    command: ["python", "/app/pull-iso.py"]
+
+  # ---- VMix Record Ingest (192.168.1.18) --------------------------------------------
+  # Only approach for this one (SMB requires mounting either way) — rclone mount +
+  # rsync --append, see docs/vmix-record-ingest.md. Needs FUSE, hence the extra
+  # capabilities/device below (not needed by atem-iso-ingest, which is plain Python).
+  vmix-record-ingest:
+    build: ./vmix-record-ingest
+    container_name: vmix-record-ingest
+    restart: unless-stopped
+    cap_add: [SYS_ADMIN]
+    devices: ["/dev/fuse"]
+    security_opt: ["apparmor:unconfined"]
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.18
+    environment:
+      VMIX_SHARE_NAME: ${VMIX_SHARE_NAME}
+      VMIX_MOUNT_BASE: /mnt/vmix-mounts
+      VMIX_RECORD_LOCAL_BASE: /mnt/user/nextcloud-external
+    volumes:
+      # rclone.conf is generated once, ahead of time, by generate-rclone-conf.sh (see
+      # config/vmix-record-ingest/README.md) — not created at container start.
+      - ./vmix-record-ingest/rclone.conf:/app/rclone.conf:ro
+      - /mnt/user/nextcloud-external:/mnt/user/nextcloud-external
+
+  # ---- UniFi Controller (192.168.1.19) ----------------------------------------------
+  unifi-db:
+    # Confirm the Mongo version this needs against whichever unifi-network-application
+    # tag you deploy — linuxserver's own docs list DB compatibility per image version,
+    # not fixed here since it drifts with UniFi releases.
+    image: mongo:7.0
+    container_name: unifi-db
+    restart: unless-stopped
+    networks: [internal-db]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${UNIFI_DB_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${UNIFI_DB_ROOT_PASSWORD}
+    volumes:
+      - /mnt/user/appdata/unifi/db:/data/db
+
+  unifi-network-application:
+    image: lscr.io/linuxserver/unifi-network-application:latest
+    container_name: unifi-network-application
+    restart: unless-stopped
+    depends_on: [unifi-db]
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.19
+      internal-db: {}
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+      MONGO_USER: ${UNIFI_DB_ROOT_USER}
+      MONGO_PASS: ${UNIFI_DB_ROOT_PASSWORD}
+      MONGO_HOST: unifi-db
+      MONGO_PORT: "27017"
+      MONGO_DBNAME: unifi
+      MONGO_AUTHSOURCE: admin
+    volumes:
+      - /mnt/user/appdata/unifi/config:/config
+
+  # ---- ATEM Overseer (192.168.1.21) --------------------------------------------------
+  # Fleet monitoring/tally dashboard for all 12 theatre ATEMs — a separate project
+  # (github.com/allansargeant/atem-overseer), not built from source in this repo. Image
+  # reference below is a placeholder — confirm the real published tag/registry (its own
+  # CI publishes multi-platform releases; not confirmed here whether that includes a
+  # container image) before deploying.
+  atem-overseer:
+    image: ghcr.io/allansargeant/atem-overseer:latest   # PLACEHOLDER — confirm real tag
+    container_name: atem-overseer
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.21
+    environment:
+      # Each theatre's ATEM sends its monitoring stream here — see
+      # docs/bandwidth-analysis.md for the per-theatre bandwidth this adds.
+      ATEM_OVERSEER_LISTEN_PORT: "${ATEM_OVERSEER_PORT:-8090}"
+    volumes:
+      - /mnt/user/appdata/atem-overseer:/app/data
+
+  # ---- ATEM Fleet Admin (192.168.1.23) -----------------------------------------------
+  # Bulk ATEM provisioning — a separate project (github.com/allansargeant/atem-fleet-admin),
+  # not built from source in this repo. Same image-reference caveat as ATEM Overseer above.
+  # Live network apply mode reaches all 12 theatres' ATEMs the same way ATEM ISO Ingest
+  # does — over Tailscale subnet routing, no separate network path needed.
+  atem-fleet-admin:
+    image: ghcr.io/allansargeant/atem-fleet-admin:latest   # PLACEHOLDER — confirm real tag
+    container_name: atem-fleet-admin
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.23
+    volumes:
+      - /mnt/user/appdata/atem-fleet-admin:/app/data
+
+  # ---- Flock (192.168.1.24) ----------------------------------------------------------
+  # BirdDog Play fleet manager — a separate project (github.com/allansargeant/flock),
+  # not built from source in this repo. Same image-reference caveat as the two ATEM
+  # tools above. Each theatre's BirdDog Play sends this its own 10 Mbps SRT preview
+  # stream — see docs/bandwidth-analysis.md and docs/open-questions.md #11 for the
+  # unconfirmed assumption that BirdDog Play can originate a stream while also
+  # decoding its primary program feed.
+  flock:
+    image: ghcr.io/allansargeant/flock:latest   # PLACEHOLDER — confirm real tag
+    container_name: flock
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.24
+    environment:
+      FLOCK_PREVIEW_LISTEN_PORT: "${FLOCK_PREVIEW_PORT:-9090}"
+    volumes:
+      - /mnt/user/appdata/flock:/app/data
+
+  # ---- GLKVM-Cloud (192.168.1.20 + .22) ----------------------------------------------
+  # Kept in sync with config/glkvm-cloud/docker-compose.yml.template (the standalone
+  # version, for deploying/testing this piece on its own) — see docs/glkvm-cloud.md for
+  # the WAN port-forward remap (8443/10443/3479) needed alongside this.
+  glkvm-rttys:
+    image: glzhitong/glkvm-cloud:latest
+    container_name: glkvm-cloud
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.20
+    environment:
+      GLKVM_ACCESS_IP: ${GLKVM_ACCESS_IP}
+      RTTYS_TOKEN: ${GLKVM_RTTYS_TOKEN}
+      RTTYS_PASS: ${GLKVM_RTTYS_PASS}
+      TURN_USER: ${GLKVM_TURN_USER}
+      TURN_PASS: ${GLKVM_TURN_PASS}
+    volumes:
+      - /mnt/user/appdata/glkvm-cloud/certs:/app/certs
+      - /mnt/user/appdata/glkvm-cloud/data:/app/data
+
+  glkvm-coturn:
+    image: coturn/coturn:edge-alpine
+    container_name: glkvm-coturn
+    restart: unless-stopped
+    networks:
+      macvlan-mothership:
+        ipv4_address: 192.168.1.22
+    command:
+      - "-n"
+      - "--realm=kvm.example.net"
+      - "--user=${GLKVM_TURN_USER}:${GLKVM_TURN_PASS}"
+
+  # ---- Tailscale subnet router (shares 192.168.1.2, the Unraid host's own IP) -------
+  tailscale-router:
+    image: tailscale/tailscale:latest
+    container_name: tailscale-router
+    restart: unless-stopped
+    network_mode: host
+    cap_add: [NET_ADMIN, NET_RAW]
+    environment:
+      TS_AUTHKEY: ${TAILSCALE_AUTHKEY}
+      TS_EXTRA_ARGS: --advertise-routes=192.168.1.0/24 --accept-routes
+      TS_STATE_DIR: /var/lib/tailscale
+    volumes:
+      - /mnt/user/appdata/tailscale-router:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
