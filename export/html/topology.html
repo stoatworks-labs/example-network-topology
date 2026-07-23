@@ -1,0 +1,403 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Topology</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/topology.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="topology">Topology</h1>
+<h2 id="theatre-nodes-12">Theatre nodes (×12)</h2>
+<p>Each theatre is its own subnet, NAT'd by its own GL-iNet
+<strong>A-1300 (Slate Plus)</strong> router. The router runs Tailscale
+as a subnet router (LAN + WAN side routing enabled), advertising the
+theatre's <code>/24</code>.</p>
+<p><strong>Physical wiring:</strong> the A-1300 has 1 WAN + 2 LAN
+gigabit ports. Both LAN ports are used:</p>
+<ul>
+<li><strong>LAN 1 → ATEM Mini Extreme ISO directly.</strong> Dedicated
+port, so the router's other LAN traffic (rclone syncs, control laptop,
+etc.) never shares a switch segment with it. The ATEM carries the
+heaviest sustained traffic of any theatre device — the near-real-time
+ISO ingest pull (see <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>) is
+a continuous 50-90 Mbps flow, well above BirdDog Play's — so it gets the
+dedicated port.</li>
+<li><strong>LAN 2 → 8-port unmanaged Netgear switch</strong>, which fans
+out to everything else: BirdDog Play, PowerPoint Main/Backup, VT
+Main/Backup, Control laptop (5 devices, 3 spare switch ports).</li>
+</ul>
+<p>All devices stay on the same <code>192.168.X.0/24</code> — this is a
+physical port split for traffic separation, not a VLAN/subnet split.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Address</th>
+<th>Physical connection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GL-iNet A-1300 router (LAN gateway)</td>
+<td><code>192.168.X.1</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>ATEM Mini Extreme ISO</td>
+<td><code>192.168.X.2</code></td>
+<td>A-1300 LAN 1 (direct)</td>
+</tr>
+<tr>
+<td>BirdDog Play</td>
+<td><code>192.168.X.20</code></td>
+<td>Netgear switch → A-1300 LAN 2</td>
+</tr>
+<tr>
+<td>PowerPoint Main</td>
+<td><code>192.168.X.5</code></td>
+<td>Netgear switch → A-1300 LAN 2</td>
+</tr>
+<tr>
+<td>PowerPoint Backup</td>
+<td><code>192.168.X.6</code></td>
+<td>Netgear switch → A-1300 LAN 2</td>
+</tr>
+<tr>
+<td>VT Main</td>
+<td><code>192.168.X.7</code></td>
+<td>Netgear switch → A-1300 LAN 2</td>
+</tr>
+<tr>
+<td>VT Backup</td>
+<td><code>192.168.X.8</code></td>
+<td>Netgear switch → A-1300 LAN 2</td>
+</tr>
+<tr>
+<td>Control laptop</td>
+<td><code>192.168.X.10</code></td>
+<td>Netgear switch → A-1300 LAN 2</td>
+</tr>
+</tbody>
+</table>
+<p><code>X</code> per the subnet map in the <a
+href="index.html#subnet-map">top-level README</a>: Theatre 1 →
+<code>2</code>, Theatre 2 → <code>3</code>, ... Theatre 12 →
+<code>13</code>.</p>
+<p>The ATEM's built-in FTP server (its ISO recording drive) is pulled
+continuously by the mothership over Tailscale subnet routing — see <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>.</p>
+<p><strong>Alternative to the GL-iNet router</strong>, documented but
+not recommended: plain switch + Tailscale on generic Linux — see <a
+href="topology-alternative-tailscale-switches.html"><code>docs/topology-alternative-tailscale-switches.md</code></a>.</p>
+<h2 id="uplink-vlan-grouping">Uplink VLAN grouping</h2>
+<p>Theatres are grouped 3-per-physical-VLAN purely to organize uplink
+cabling back to the mothership — <strong>this grouping does not itself
+provide cross-theatre isolation</strong>. Each GL-iNet A-1300 already
+NATs its own theatre LAN, and once every router joins the same tailnet,
+routes are reachable tailnet-wide unless Tailscale ACLs restrict them
+(see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>).</p>
+<p><strong>These VLANs are venue-supplied, not our
+infrastructure</strong> — each capped at 1 Gbps, each port expensive.
+The 4-VLAN/3-theatres-each split below is safe but conservative; the
+real bandwidth math supports consolidating to 2 VLANs (6 theatres each)
+with genuine margin to spare — see <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>
+for the full model and recommendation.</p>
+<table>
+<thead>
+<tr>
+<th>VLAN</th>
+<th>Theatres</th>
+<th>Subnets</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1, 2, 3</td>
+<td>.2.x, .3.x, .4.x</td>
+</tr>
+<tr>
+<td>2</td>
+<td>4, 5, 6</td>
+<td>.5.x, .6.x, .7.x</td>
+</tr>
+<tr>
+<td>3</td>
+<td>7, 8, 9</td>
+<td>.8.x, .9.x, .10.x</td>
+</tr>
+<tr>
+<td>4</td>
+<td>10, 11, 12</td>
+<td>.11.x, .12.x, .13.x</td>
+</tr>
+</tbody>
+</table>
+<h2 id="mothership--1921681x">Mothership — <code>192.168.1.x</code></h2>
+<p>Ubiquiti <strong>Cloud Gateway</strong>; all 4 VLANs terminate here
+via separate links. Also hosts the 4× "ready room" computers (physical,
+untouched) and the hardwired WAN.</p>
+<p><strong>Consolidated services server (Unraid).</strong> Everything
+else that used to be described as separate mothership boxes — Nextcloud,
+Restreamer, the VMix instance, BirdDog Central, the NDI Discovery
+Server, a self-hosted DERP server, the ATEM ISO ingest pipeline, the
+VMix record ingest pipeline, a self-hosted UniFi Controller, self-hosted
+GLKVM-Cloud, ATEM Overseer + ATEM Fleet Admin (fleet monitoring and
+provisioning for the 12 theatre ATEMs), and now Flock (BirdDog Play
+fleet manager) — runs on a single physical server instead, virtualized
+with Unraid. The server already exists (no procurement needed) — known
+so far: <strong>2× gigabit NICs (bonded — see below), a "decent"
+discrete GPU.</strong> Full spec (CPU/motherboard, RAM, exact GPU model)
+is TBD — see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a> and
+the calculated target minimum spec (storage pool layout, RAM, CPU, GPU
+tier, all worked from this box's actual workload) in <a
+href="server-specification.html"><code>docs/server-specification.md</code></a>.</p>
+<table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>Runs as</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VMix instance</td>
+<td>Windows VM, GPU passthrough</td>
+<td>Windows-only; benefits from hardware encode</td>
+</tr>
+<tr>
+<td>BirdDog Central</td>
+<td>Windows VM (separate from the VMix VM)</td>
+<td>Windows-only (<a href="https://birddog.tv/central-techspecs/">tech
+specs</a>); kept on its own VM so it can't take down the live VMix
+instance if it hangs</td>
+</tr>
+<tr>
+<td>Nextcloud</td>
+<td>Docker container</td>
+<td>official image + MariaDB + Redis (see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>)</td>
+</tr>
+<tr>
+<td>Restreamer</td>
+<td>Docker container</td>
+<td>official <code>datarhei/restreamer</code> image</td>
+</tr>
+<tr>
+<td>NDI Discovery Server</td>
+<td>Docker container</td>
+<td>see <a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a></td>
+</tr>
+<tr>
+<td>DERP server</td>
+<td>Docker container</td>
+<td>self-hosted relay fallback — see <a
+href="tailscale.html"><code>docs/tailscale.md</code></a></td>
+</tr>
+<tr>
+<td>ATEM ISO Ingest</td>
+<td>Docker container</td>
+<td>pulls all 12 theatres' ATEM ISO recordings via FTP, dual-writing to
+Nextcloud and the edit-suite NAS in the same pass — see <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> and
+<a href="live-editing.html"><code>docs/live-editing.md</code></a></td>
+</tr>
+<tr>
+<td>VMix Record Ingest</td>
+<td>Docker container</td>
+<td>pulls all 4 VMix PCs' recordings via SMB, same dual-write pattern —
+see <a
+href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a></td>
+</tr>
+<tr>
+<td>UniFi Controller</td>
+<td>Docker container</td>
+<td>self-hosted UniFi Network Application — local management/backup
+console for the Cloud Gateway, independent of cloud.ui.com — see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a></td>
+</tr>
+<tr>
+<td>GLKVM-Cloud (<code>rttys</code> + <code>coturn</code>)</td>
+<td>2 Docker containers</td>
+<td>self-hosted remote administration (web UI + SSH terminal) for the 14
+GL-iNet routers — see <a
+href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a></td>
+</tr>
+<tr>
+<td>ATEM Overseer</td>
+<td>Docker container</td>
+<td>fleet monitoring/tally dashboard for all 12 theatres' ATEMs —
+receives each theatre's monitoring stream, see <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a></td>
+</tr>
+<tr>
+<td>ATEM Fleet Admin</td>
+<td>Docker container</td>
+<td>bulk ATEM provisioning — model-aware config forms, live network
+apply via <code>atem-connection</code> over the same Tailscale subnet
+routing the ISO ingest pipeline uses, or XML+media folder export</td>
+</tr>
+<tr>
+<td>Flock</td>
+<td>Docker container</td>
+<td>BirdDog Play fleet manager — LAN discovery, tag-based grouping,
+BirdUI-parity settings, batch edits; receives each theatre's BirdDog
+Play preview stream, see <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a></td>
+</tr>
+<tr>
+<td>Tailscale subnet router</td>
+<td>Docker container, host networking</td>
+<td>advertises <code>192.168.1.0/24</code>; replaces the earlier
+"Nextcloud host" plan now that Nextcloud itself is a container on this
+same box</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Bonded NICs.</strong> Decided: bond the 2 gigabit NICs
+(802.3ad/LACP) rather than split traffic across them — SRT bandwidth
+isn't constant, and LACP's hash-based distribution spreads the many
+<em>simultaneous</em> flows this box handles (12 theatres' SRT fan-out,
+each to a different destination, the 12 incoming Overseer monitoring
+streams and Flock SRT previews, plus rclone/Nextcloud/BirdDog
+Central/NDI Discovery Server/DERP traffic) across both links by
+destination-IP/port hash — giving real aggregate headroom for bursty
+traffic, not just failover. Note this does <strong>not</strong> speed up
+any single flow; the benefit comes from having many distinct flows to
+hash across.</p>
+<p><strong>Assuming the Cloud Gateway supports LAG</strong> on the ports
+the Unraid server lands on (only UDM Pro/SE/Pro Max, UXG Enterprise, and
+EFG support port aggregation — not base Cloud Gateway models). If it
+turns out this one doesn't: drop an intermediate LACP-capable switch in
+between and bond through that instead — the bond doesn't care which
+device terminates it, only that something in the path speaks LACP, so
+this is a cheap fallback rather than a blocker.</p>
+<p>One thing that does need doing regardless of which device terminates
+the bond: <strong>LACP rate/hash policy must match on both
+ends.</strong> Ubiquiti gear hardcodes LACP rate <code>fast</code> and
+hash policy <code>layer3+4</code>; Unraid's bonding defaults differ
+(<code>slow</code> rate, layer2 hash) and need to be set to match, or
+the bond won't form correctly.</p>
+<p><strong>Why Unraid over TrueNAS SCALE:</strong> both now support
+Docker and GPU-passthrough VMs, but this box needs two
+GPU/Windows-adjacent VMs alongside several containers, and Unraid has
+the more mature, better-documented GPU passthrough workflow plus a more
+polished one-click container experience (Community Applications) —
+useful since this may be maintained on-site by AV staff rather than a
+Linux admin. Trade-off: Unraid requires a paid license (Lifetime tier is
+a $129 one-time cost); TrueNAS SCALE is free. Only VMix needs the
+passthrough GPU — BirdDog Central is NDI routing/control, not video
+encode, so it runs as a plain VM.</p>
+<p><strong>Tailscale note:</strong> Cloud Gateway (UniFi-OS-based)
+generally can't run Tailscale natively without an unofficial container
+hack, so the mothership subnet-router role runs as a container on the
+Unraid box instead of the Cloud Gateway itself. See <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>.</p>
+<h2 id="vmix-nodes-2">VMix nodes (×2)</h2>
+<p>Each has its own <strong>GL-iNet A-1300</strong> router (same model
+as the theatre routers) and its own Tailscale connection — a separate
+node on the tailnet, not part of the theatre it physically sits next to,
+just uplinked near it:</p>
+<table>
+<thead>
+<tr>
+<th>Node</th>
+<th>Uplinks near</th>
+<th>Subnet</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VMix Node 1</td>
+<td>Theatre 1</td>
+<td><code>192.168.20.x</code></td>
+<td>4× BirdDog P400 cameras, 2× VMix PCs</td>
+</tr>
+<tr>
+<td>VMix Node 2</td>
+<td>Theatre 4</td>
+<td><code>192.168.21.x</code></td>
+<td>4× BirdDog P400 cameras, 2× VMix PCs</td>
+</tr>
+</tbody>
+</table>
+<p>That makes <strong>14 GL-iNet A-1300s total</strong> across the
+network — 12 theatre routers plus these 2. Both LAN ports are bridged
+together on the VMix node routers (unlike the theatre routers, there's
+no single traffic-sensitive device here that needs its own dedicated
+port the way the ATEM does).</p>
+<p>Each VMix PC's own recording is pulled to the mothership the same way
+the ATEMs' recordings are — near-real-time, over this node's own
+dedicated uplink (not the adjacent theatre's) — see <a
+href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>.</p>
+<h2 id="edit-suite--19216822x">Edit suite —
+<code>192.168.22.x</code></h2>
+<p>Post-production subsystem at the mothership: 2× MacBook Pro editing
+workstations, a Mac mini running the DaVinci Resolve Project Server and
+Remote Render, and a dedicated fast-storage NAS, on their own 10GbE LAN
+— <strong>not</strong> on the Tailscale mesh (same room as the
+mothership, no distance for Tailscale to bridge) and not sharing the
+theatre-facing network's bandwidth budget. Routed to the mothership LAN
+only so the ingest containers can dual-write footage to the edit-suite
+NAS in the same pull that feeds Nextcloud — there is no separate
+recording-pool-to-NAS sync step. Full design, including the storage and
+project-server decisions and the DIT physical-media ingest workflow, in
+<a href="live-editing.html"><code>docs/live-editing.md</code></a>.</p>
+<p>See <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/topology.svg"><code>diagrams/topology.svg</code></a>
+for the full visual layout — every theatre, every device, every real IP
+— and <a
+href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> for
+the same inventory as a text table. Per-device configs: all 14 routers
+in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>,
+the Cloud Gateway in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/"><code>config/unifi/</code></a>,
+and Tailscale in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</p>
+</body></html>

@@ -1,0 +1,1140 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Example Network Topology</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>README.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="example-network-topology">Example Network Topology</h1>
+<p>A complete, fully-worked network design for a 12-theatre live event:
+every theatre streams its program feed and syncs its files back to a
+central "mothership," all riding over a single Tailscale mesh, with no
+reliance on venue Wi-Fi or a conference-provided network.</p>
+<p><strong>This is an anonymized reference design</strong>, published as
+a worked example of the whole process — topology, bandwidth modelling,
+hardware selection with rationale, generated configs, deployment
+runbook. It's a real design for a real event, with the identifying
+details generalized: all domains are placeholders on the IANA-reserved
+<code>example.net</code> (substitute your own), and nothing here names
+the event, client, or venue. Product names, prices, and throughput
+figures are real and cited.</p>
+<p><strong>Status: design finalized, nothing built yet.</strong> Every
+hardware decision is locked in, every device has a real IP, throughput
+has been checked against real-world figures and the venue's actual VLAN
+constraints, and Tailscale/GL-iNet/UniFi configs are generated and ready
+to apply — see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a> for
+the handful of things that still need real-world input before this goes
+from design to build, or <a
+href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a>
+for the full ordered build sequence.</p>
+<hr />
+<h2 id="the-shape-of-it">The shape of it</h2>
+<p>12 theatres, each its own isolated subnet, connect back to one
+mothership over Tailscale. Physical uplink cabling is grouped
+3-theatres-per-VLAN purely for cable management — the VLANs don't
+provide isolation themselves, <strong>Tailscale ACLs do</strong>: every
+theatre can reach the mothership, but never another theatre, and never a
+VMix node. Two extra "VMix nodes" hang off Theatre 1 and Theatre 4
+respectively, each with its own cameras, its own router, and its own
+place on the tailnet.</p>
+<p><div style="margin:1.5em 0"><svg viewBox="0 0 1600 1435" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1600" height="1435" fill="#ffffff"/>
+  <text x="800" y="30" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">Event Network — Full Device Inventory</text>
+  <text x="800" y="48" text-anchor="middle" font-size="11" fill="#666">Every device, every real IP — see docs/ip-address-map.md for the same data as text</text>
+  <g>
+    <rect x="600" y="60" width="400" height="150" rx="10" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
+    <text x="800" y="85" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff">MOTHERSHIP — 192.168.1.x</text>
+    <text x="800" y="107" text-anchor="middle" font-size="12" fill="#cfd3e6">Ubiquiti Cloud Gateway — 192.168.1.1</text>
+    <text x="800" y="125" text-anchor="middle" font-size="12" fill="#cfd3e6">← see consolidated services server detail</text>
+    <text x="800" y="143" text-anchor="middle" font-size="12" fill="#cfd3e6">4× Ready Room PCs — .30/.31/.32/.33 (physical)</text>
+    <text x="800" y="161" text-anchor="middle" font-size="12" fill="#cfd3e6">Hardwired WAN</text>
+    <text x="800" y="193" text-anchor="middle" font-size="11" fill="#f2b134" font-style="italic">Tailscale subnet router runs as a container on that same server →</text>
+  </g>
+  <g>
+    <rect x="20" y="60" width="570" height="336" rx="8" fill="#eef1f8" stroke="#4a5a8a" stroke-width="2"/>
+    <text x="305" y="83" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Consolidated services server — 1 physical box (Unraid) — 192.168.1.2</text>
+    <text x="305" y="99" text-anchor="middle" font-size="10" fill="#4a5a8a">Router + ready-room PCs stay physical; everything else below is virtualized here</text>
+    <line x1="40" y1="109" x2="570" y2="109" stroke="#c3cbe0"/>
+    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VMs (Windows)</text>
+    <text x="50" y="145" font-size="11" fill="#333">VMix instance — 192.168.1.11 (GPU passthrough)</text>
+    <text x="50" y="163" font-size="11" fill="#333">BirdDog Central — 192.168.1.12 (separate VM)</text>
+    <text x="40" y="181" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
+    <line x1="315" y1="115" x2="315" y2="333" stroke="#c3cbe0"/>
+    <text x="335" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">Docker containers</text>
+    <text x="345" y="145" font-size="11" fill="#333">Nextcloud — 192.168.1.13</text>
+    <text x="345" y="163" font-size="11" fill="#333">Restreamer — 192.168.1.14</text>
+    <text x="345" y="181" font-size="11" fill="#333">NDI Discovery Server — 192.168.1.15</text>
+    <text x="345" y="199" font-size="11" fill="#333">DERP server — 192.168.1.16</text>
+    <text x="345" y="217" font-size="11" fill="#333">ATEM ISO Ingest — 192.168.1.17</text>
+    <text x="345" y="235" font-size="11" fill="#333">VMix Record Ingest — 192.168.1.18</text>
+    <text x="345" y="253" font-size="11" fill="#333">UniFi Controller — 192.168.1.19</text>
+    <text x="345" y="271" font-size="11" fill="#333">GLKVM-Cloud (rttys+coturn) — .20/.22</text>
+    <text x="345" y="289" font-size="11" fill="#333">ATEM Overseer — 192.168.1.21</text>
+    <text x="345" y="307" font-size="11" fill="#333">ATEM Fleet Admin — 192.168.1.23</text>
+    <text x="345" y="325" font-size="11" fill="#333">Flock — 192.168.1.24</text>
+    <line x1="40" y1="343" x2="570" y2="343" stroke="#c3cbe0"/>
+    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) + GPU confirmed, full spec TBD</text>
+  </g>
+  <!-- VLAN trunk lines — squared-off elbows, staggered so 1/4 and 2/3 don't overlap -->
+  <polyline points="700,210 700,416 190,416" fill="none" stroke="#3a3a5a" stroke-width="2"/>
+  <polyline points="760,210 760,432 610,432" fill="none" stroke="#3a3a5a" stroke-width="2"/>
+  <polyline points="840,210 840,432 1030,432" fill="none" stroke="#3a3a5a" stroke-width="2"/>
+  <polyline points="900,210 900,416 1450,416" fill="none" stroke="#3a3a5a" stroke-width="2"/>
+  <text x="190" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 1</text>
+  <text x="610" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 2</text>
+  <text x="1030" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 3</text>
+  <text x="1450" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 4</text>
+  <g>
+  <rect x="60" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="190" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 1</text>
+  <text x="190" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.2.0/24</text>
+  <line x1="74" y1="506" x2="306" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="74" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="306" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.1</text>
+  <text x="74" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="306" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.2</text>
+  <text x="74" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="306" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.20</text>
+  <text x="74" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="306" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.5</text>
+  <text x="74" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="306" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.6</text>
+  <text x="74" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="306" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.7</text>
+  <text x="74" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="306" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.8</text>
+  <text x="74" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="306" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.10</text>
+  </g>
+  <g>
+  <rect x="60" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="190" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 2</text>
+  <text x="190" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.3.0/24</text>
+  <line x1="74" y1="731" x2="306" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="74" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="306" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.1</text>
+  <text x="74" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="306" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.2</text>
+  <text x="74" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="306" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.20</text>
+  <text x="74" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="306" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.5</text>
+  <text x="74" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="306" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.6</text>
+  <text x="74" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="306" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.7</text>
+  <text x="74" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="306" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.8</text>
+  <text x="74" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="306" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.10</text>
+  </g>
+  <g>
+  <rect x="60" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="190" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 3</text>
+  <text x="190" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.4.0/24</text>
+  <line x1="74" y1="956" x2="306" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="74" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="306" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.1</text>
+  <text x="74" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="306" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.2</text>
+  <text x="74" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="306" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.20</text>
+  <text x="74" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="306" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.5</text>
+  <text x="74" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="306" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.6</text>
+  <text x="74" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="306" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.7</text>
+  <text x="74" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="306" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.8</text>
+  <text x="74" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="306" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.10</text>
+  </g>
+  <g>
+  <rect x="480" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="610" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 4</text>
+  <text x="610" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.5.0/24</text>
+  <line x1="494" y1="506" x2="726" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="494" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="726" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.1</text>
+  <text x="494" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="726" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.2</text>
+  <text x="494" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="726" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.20</text>
+  <text x="494" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="726" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.5</text>
+  <text x="494" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="726" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.6</text>
+  <text x="494" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="726" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.7</text>
+  <text x="494" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="726" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.8</text>
+  <text x="494" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="726" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.10</text>
+  </g>
+  <g>
+  <rect x="480" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="610" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 5</text>
+  <text x="610" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.6.0/24</text>
+  <line x1="494" y1="731" x2="726" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="494" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="726" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.1</text>
+  <text x="494" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="726" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.2</text>
+  <text x="494" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="726" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.20</text>
+  <text x="494" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="726" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.5</text>
+  <text x="494" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="726" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.6</text>
+  <text x="494" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="726" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.7</text>
+  <text x="494" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="726" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.8</text>
+  <text x="494" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="726" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.10</text>
+  </g>
+  <g>
+  <rect x="480" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="610" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 6</text>
+  <text x="610" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.7.0/24</text>
+  <line x1="494" y1="956" x2="726" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="494" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="726" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.1</text>
+  <text x="494" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="726" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.2</text>
+  <text x="494" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="726" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.20</text>
+  <text x="494" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="726" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.5</text>
+  <text x="494" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="726" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.6</text>
+  <text x="494" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="726" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.7</text>
+  <text x="494" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="726" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.8</text>
+  <text x="494" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="726" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.10</text>
+  </g>
+  <g>
+  <rect x="900" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="1030" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 7</text>
+  <text x="1030" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.8.0/24</text>
+  <line x1="914" y1="506" x2="1146" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="914" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="1146" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.1</text>
+  <text x="914" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="1146" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.2</text>
+  <text x="914" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="1146" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.20</text>
+  <text x="914" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="1146" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.5</text>
+  <text x="914" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="1146" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.6</text>
+  <text x="914" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="1146" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.7</text>
+  <text x="914" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="1146" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.8</text>
+  <text x="914" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="1146" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.10</text>
+  </g>
+  <g>
+  <rect x="900" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="1030" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 8</text>
+  <text x="1030" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.9.0/24</text>
+  <line x1="914" y1="731" x2="1146" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="914" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="1146" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.1</text>
+  <text x="914" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="1146" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.2</text>
+  <text x="914" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="1146" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.20</text>
+  <text x="914" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="1146" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.5</text>
+  <text x="914" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="1146" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.6</text>
+  <text x="914" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="1146" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.7</text>
+  <text x="914" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="1146" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.8</text>
+  <text x="914" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="1146" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.10</text>
+  </g>
+  <g>
+  <rect x="900" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="1030" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 9</text>
+  <text x="1030" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.10.0/24</text>
+  <line x1="914" y1="956" x2="1146" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="914" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="1146" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.1</text>
+  <text x="914" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="1146" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.2</text>
+  <text x="914" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="1146" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.20</text>
+  <text x="914" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="1146" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.5</text>
+  <text x="914" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="1146" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.6</text>
+  <text x="914" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="1146" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.7</text>
+  <text x="914" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="1146" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.8</text>
+  <text x="914" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="1146" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.10</text>
+  </g>
+  <g>
+  <rect x="1320" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="1450" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 10</text>
+  <text x="1450" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.11.0/24</text>
+  <line x1="1334" y1="506" x2="1566" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="1334" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="1566" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.1</text>
+  <text x="1334" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="1566" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.2</text>
+  <text x="1334" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="1566" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.20</text>
+  <text x="1334" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="1566" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.5</text>
+  <text x="1334" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="1566" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.6</text>
+  <text x="1334" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="1566" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.7</text>
+  <text x="1334" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="1566" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.8</text>
+  <text x="1334" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="1566" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.10</text>
+  </g>
+  <g>
+  <rect x="1320" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="1450" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 11</text>
+  <text x="1450" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.12.0/24</text>
+  <line x1="1334" y1="731" x2="1566" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="1334" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="1566" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.1</text>
+  <text x="1334" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="1566" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.2</text>
+  <text x="1334" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="1566" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.20</text>
+  <text x="1334" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="1566" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.5</text>
+  <text x="1334" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="1566" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.6</text>
+  <text x="1334" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="1566" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.7</text>
+  <text x="1334" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="1566" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.8</text>
+  <text x="1334" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="1566" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.10</text>
+  </g>
+  <g>
+  <rect x="1320" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
+  <text x="1450" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 12</text>
+  <text x="1450" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.13.0/24</text>
+  <line x1="1334" y1="956" x2="1566" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
+  <text x="1334" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
+  <text x="1566" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.1</text>
+  <text x="1334" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
+  <text x="1566" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.2</text>
+  <text x="1334" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
+  <text x="1566" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.20</text>
+  <text x="1334" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
+  <text x="1566" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.5</text>
+  <text x="1334" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
+  <text x="1566" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.6</text>
+  <text x="1334" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
+  <text x="1566" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.7</text>
+  <text x="1334" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
+  <text x="1566" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.8</text>
+  <text x="1334" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
+  <text x="1566" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.10</text>
+  </g>
+  <!-- VMix Node 1 (off Theatre 1) -->
+  <g>
+  <rect x="60" y="1165" width="260" height="190" rx="8" fill="#c14953" stroke="#8f2f37" stroke-width="2"/>
+  <text x="190" y="1187" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">VMix Node 1</text>
+  <text x="190" y="1203" text-anchor="middle" font-size="10" fill="#fbdadd">192.168.20.0/24 — off Theatre 1</text>
+  <line x1="74" y1="1211" x2="306" y2="1211" stroke="#fbdadd" stroke-opacity="0.4"/>
+  <text x="74" y="1229" font-size="10.5" fill="#fbdadd">Node router (A-1300)</text>
+  <text x="306" y="1229" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.1</text>
+  <text x="74" y="1246" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 1</text>
+  <text x="306" y="1246" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.11</text>
+  <text x="74" y="1263" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 2</text>
+  <text x="306" y="1263" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.12</text>
+  <text x="74" y="1280" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 3</text>
+  <text x="306" y="1280" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.13</text>
+  <text x="74" y="1297" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 4</text>
+  <text x="306" y="1297" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.14</text>
+  <text x="74" y="1314" font-size="10.5" fill="#fbdadd">VMix PC 1</text>
+  <text x="306" y="1314" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.21</text>
+  <text x="74" y="1331" font-size="10.5" fill="#fbdadd">VMix PC 2</text>
+  <text x="306" y="1331" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.22</text>
+  </g>
+  <polyline points="320,490 360,490 360,1195 320,1195" fill="none" stroke="#8f2f37" stroke-width="2"/>
+  <!-- VMix Node 2 (off Theatre 4) -->
+  <g>
+  <rect x="480" y="1165" width="260" height="190" rx="8" fill="#c14953" stroke="#8f2f37" stroke-width="2"/>
+  <text x="610" y="1187" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">VMix Node 2</text>
+  <text x="610" y="1203" text-anchor="middle" font-size="10" fill="#fbdadd">192.168.21.0/24 — off Theatre 4</text>
+  <line x1="494" y1="1211" x2="726" y2="1211" stroke="#fbdadd" stroke-opacity="0.4"/>
+  <text x="494" y="1229" font-size="10.5" fill="#fbdadd">Node router (A-1300)</text>
+  <text x="726" y="1229" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.1</text>
+  <text x="494" y="1246" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 1</text>
+  <text x="726" y="1246" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.11</text>
+  <text x="494" y="1263" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 2</text>
+  <text x="726" y="1263" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.12</text>
+  <text x="494" y="1280" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 3</text>
+  <text x="726" y="1280" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.13</text>
+  <text x="494" y="1297" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 4</text>
+  <text x="726" y="1297" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.14</text>
+  <text x="494" y="1314" font-size="10.5" fill="#fbdadd">VMix PC 1</text>
+  <text x="726" y="1314" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.21</text>
+  <text x="494" y="1331" font-size="10.5" fill="#fbdadd">VMix PC 2</text>
+  <text x="726" y="1331" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.22</text>
+  </g>
+  <polyline points="740,490 780,490 780,1195 740,1195" fill="none" stroke="#8f2f37" stroke-width="2"/>
+  <text x="800" y="1395" text-anchor="middle" font-size="11" fill="#888">VLAN grouping = physical uplink cabling only. Cross-theatre isolation is enforced by Tailscale ACLs (config/tailscale-acl.json), not by the VLANs themselves.</text>
+  <text x="800" y="1413" text-anchor="middle" font-size="11" fill="#888">Uplink VLAN transit addressing (10.10.1-4.0/24) omitted here for space — see docs/ip-address-map.md and config/unifi/network-config.yaml.</text>
+</svg>
+</div></p>
+<p>Every box in that diagram is a real device with a real address — 134
+of them in total, counting the live-editing suite's own four. <a
+href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> has
+the same inventory as a plain text table, if that's easier to search or
+paste from.</p>
+<h2 id="streaming-srt-primary-ndi-backup">Streaming: SRT primary, NDI
+backup</h2>
+<p>Each theatre's <strong>BirdDog Play</strong> receives the event's
+program feed two ways:</p>
+<p><div style="margin:1.5em 0"><svg viewBox="0 0 1400 720" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1400" height="720" fill="#ffffff"/>
+  <text x="700" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">SRT / NDI Streaming Flow</text>
+
+  <defs>
+    <marker id="arrowSolid" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2a6f97"/>
+    </marker>
+    <marker id="arrowDashed" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#c14953"/>
+    </marker>
+    <marker id="arrowAmber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#b8860b"/>
+    </marker>
+  </defs>
+
+  <!-- Sources: VMix PCs at both nodes -->
+  <rect x="40" y="100" width="230" height="80" rx="6" fill="#c14953" stroke="#8f2f37"/>
+  <text x="155" y="130" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">VMix Node 1 PCs</text>
+  <text x="155" y="148" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.20.21</text>
+  <text x="155" y="164" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.20.22</text>
+
+  <rect x="40" y="220" width="230" height="80" rx="6" fill="#c14953" stroke="#8f2f37"/>
+  <text x="155" y="250" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">VMix Node 2 PCs</text>
+  <text x="155" y="268" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.21.21</text>
+  <text x="155" y="284" text-anchor="middle" font-size="11" fill="#fbdadd">192.168.21.22</text>
+
+  <!-- Restreamer -->
+  <rect x="420" y="160" width="230" height="90" rx="6" fill="#1a1a2e" stroke="#0d0d17"/>
+  <text x="535" y="192" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">Restreamer</text>
+  <text x="535" y="210" text-anchor="middle" font-size="11" fill="#cfd3e6">mothership — 192.168.1.14</text>
+  <text x="535" y="228" text-anchor="middle" font-size="11" fill="#cfd3e6">SRT fan-out</text>
+
+  <!-- BirdDog Central -->
+  <rect x="420" y="380" width="230" height="90" rx="6" fill="#1a1a2e" stroke="#0d0d17"/>
+  <text x="535" y="412" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">BirdDog Central</text>
+  <text x="535" y="430" text-anchor="middle" font-size="11" fill="#cfd3e6">mothership — 192.168.1.12</text>
+  <text x="535" y="448" text-anchor="middle" font-size="11" fill="#cfd3e6">NDI source</text>
+
+  <!-- NDI Discovery Server -->
+  <rect x="420" y="510" width="230" height="90" rx="6" fill="#7a5c00" stroke="#4d3900"/>
+  <text x="535" y="540" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">NDI Discovery Server</text>
+  <text x="535" y="558" text-anchor="middle" font-size="11" fill="#f3e2b0">mothership — 192.168.1.15 : 5959</text>
+  <text x="535" y="576" text-anchor="middle" font-size="11" fill="#f3e2b0">unicast TCP — bypasses mDNS</text>
+
+  <!-- BirdDog Play x12 (one per theatre) -->
+  <rect x="880" y="120" width="260" height="360" rx="8" fill="#2a6f97" stroke="#1c4d69"/>
+  <text x="1010" y="150" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">BirdDog Play</text>
+  <text x="1010" y="170" text-anchor="middle" font-size="12" fill="#e0eefc">×12 — one per theatre</text>
+  <text x="1010" y="190" text-anchor="middle" font-size="10" fill="#e0eefc">.2.20 .3.20 .4.20 .5.20 .6.20 .7.20</text>
+  <text x="1010" y="203" text-anchor="middle" font-size="10" fill="#e0eefc">.8.20 .9.20 .10.20 .11.20 .12.20 .13.20</text>
+  <line x1="900" y1="218" x2="1120" y2="218" stroke="#e0eefc"/>
+  <text x="1010" y="243" text-anchor="middle" font-size="11" fill="#e0eefc">Primary: SRT from Restreamer</text>
+  <text x="1010" y="263" text-anchor="middle" font-size="11" fill="#e0eefc">(unicast by IP — no discovery</text>
+  <text x="1010" y="279" text-anchor="middle" font-size="11" fill="#e0eefc">dependency, routes cleanly)</text>
+  <text x="1010" y="313" text-anchor="middle" font-size="11" fill="#e0eefc">Backup: NDI from BirdDog Central,</text>
+  <text x="1010" y="331" text-anchor="middle" font-size="11" fill="#e0eefc">found via the Discovery Server</text>
+  <text x="1010" y="349" text-anchor="middle" font-size="11" fill="#e0eefc">below (no mDNS needed)</text>
+  <text x="1010" y="373" text-anchor="middle" font-size="11" fill="#5a8f3c" font-weight="bold">confirmed: BirdUI (Network panel)</text>
+  <text x="1010" y="391" text-anchor="middle" font-size="11" fill="#5a8f3c" font-weight="bold">has a Discovery Server field</text>
+  <text x="1010" y="423" text-anchor="middle" font-size="11" fill="#e0eefc">SRT is unicast-by-IP already,</text>
+  <text x="1010" y="441" text-anchor="middle" font-size="11" fill="#e0eefc">so the primary path has no</text>
+  <text x="1010" y="459" text-anchor="middle" font-size="11" fill="#e0eefc">equivalent discovery problem.</text>
+
+  <!-- Primary path: VMix -> Restreamer -> BirdDog Play (solid) -->
+  <path d="M270,140 L420,190" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowSolid)"/>
+  <path d="M270,260 L420,210" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowSolid)"/>
+  <path d="M650,200 L880,220" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowSolid)"/>
+  <text x="345" y="130" font-size="11" fill="#2a6f97" font-weight="bold">SRT</text>
+  <text x="750" y="195" font-size="11" fill="#2a6f97" font-weight="bold">SRT (fan-out)</text>
+
+  <!-- Backup path: BirdDog Central -> BirdDog Play (dashed, data) -->
+  <path d="M650,425 L880,320" fill="none" stroke="#c14953" stroke-width="2.5" stroke-dasharray="8,5" marker-end="url(#arrowDashed)"/>
+  <text x="700" y="400" font-size="11" fill="#c14953" font-weight="bold">NDI (backup, data)</text>
+
+  <!-- Discovery registration/query paths (amber, dotted) -->
+  <path d="M650,540 L880,400" fill="none" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrowAmber)"/>
+  <text x="740" y="490" font-size="10" fill="#b8860b" font-style="italic">query (12×)</text>
+  <path d="M535,510 L535,470" fill="none" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="2,4" marker-end="url(#arrowAmber)"/>
+  <text x="545" y="493" font-size="10" fill="#b8860b" font-style="italic">register</text>
+
+  <!-- Legend -->
+  <line x1="60" y1="560" x2="120" y2="560" stroke="#2a6f97" stroke-width="2.5"/>
+  <text x="130" y="565" font-size="12" fill="#1a1a2e">Primary path (SRT, solid)</text>
+  <line x1="60" y1="590" x2="120" y2="590" stroke="#c14953" stroke-width="2.5" stroke-dasharray="8,5"/>
+  <text x="130" y="595" font-size="12" fill="#1a1a2e">Backup path (NDI, dashed)</text>
+  <line x1="60" y1="620" x2="120" y2="620" stroke="#b8860b" stroke-width="1.5" stroke-dasharray="2,4"/>
+  <text x="130" y="625" font-size="12" fill="#1a1a2e">Discovery registration/query (amber, dotted)</text>
+
+  <text x="700" y="670" text-anchor="middle" font-size="11" fill="#888">Tailscale doesn't forward mDNS/multicast, so BirdDog Central and BirdDog Play both register/query</text>
+  <text x="700" y="688" text-anchor="middle" font-size="11" fill="#888">against a unicast NDI Discovery Server on the mothership (port 5959) instead of relying on local mDNS.</text>
+</svg>
+</div></p>
+<ul>
+<li><strong>Primary — SRT</strong>, unicast by IP from the mothership's
+Restreamer straight to each theatre's BirdDog Play. No discovery
+mechanism needed, so it's the more robust path — and it can originate
+directly from the ATEM's own built-in hardware streaming engine or from
+VMix, no computer required either way.</li>
+<li><strong>Backup — NDI</strong>, from BirdDog Central. NDI normally
+discovers sources over local mDNS multicast, which Tailscale can't carry
+between theatres — so both ends instead register with a self-hosted
+<strong>NDI Discovery Server</strong>, a unicast-TCP service built into
+NDI 5+ specifically for this WAN/VPN case. Confirmed working on BirdDog
+Play's own firmware (BirdUI's Network panel has a Discovery Server field
+built in).</li>
+</ul>
+<p><strong>Why BirdDog Play at all, rather than a laptop running
+VLC?</strong> Zero on-site config, native dual-protocol support,
+broadcast-grade unattended reliability, and three ways to manage all 12
+units centrally from the mothership — BirdUI, BirdDog Central, and <a
+href="https://github.com/allansargeant/flock">Flock</a> (a purpose-built
+fleet manager for exactly this device). Full comparison in <a
+href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>.</p>
+<h2 id="file-sync-rclone-up-webdav-local">File sync: rclone up, WebDAV
+local</h2>
+<p><div style="margin:1.5em 0"><svg viewBox="0 0 1300 560" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1300" height="560" fill="#ffffff"/>
+  <text x="650" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">File Sync Flow</text>
+
+  <defs>
+    <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2a6f97"/>
+    </marker>
+    <marker id="arrow3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#5a8f3c"/>
+    </marker>
+  </defs>
+
+  <!-- Theatre laptops (x4 roles, x12 theatres) -->
+  <rect x="40" y="90" width="280" height="150" rx="8" fill="#2a6f97" stroke="#1c4d69"/>
+  <text x="180" y="118" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Theatre laptops (×12 theatres)</text>
+  <line x1="60" y1="130" x2="300" y2="130" stroke="#e0eefc"/>
+  <text x="180" y="152" text-anchor="middle" font-size="12" fill="#e0eefc">PowerPoint Main / Backup</text>
+  <text x="180" y="172" text-anchor="middle" font-size="12" fill="#e0eefc">VT Main / Backup</text>
+  <text x="180" y="198" text-anchor="middle" font-size="11" fill="#bcd8f0">each runs rclone</text>
+  <text x="180" y="216" text-anchor="middle" font-size="10" fill="#bcd8f0">192.168.{2-13}.5/.6/.7/.8 — 48 laptops total</text>
+
+  <!-- Ready room PCs -->
+  <rect x="40" y="330" width="280" height="120" rx="8" fill="#5a8f3c" stroke="#3d6528"/>
+  <text x="180" y="360" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Ready Room PCs</text>
+  <text x="180" y="382" text-anchor="middle" font-size="12" fill="#e2f0d9">4× — 192.168.1.30–.33</text>
+  <text x="180" y="404" text-anchor="middle" font-size="11" fill="#cde8c0">live local WebDAV mount</text>
+  <text x="180" y="422" text-anchor="middle" font-size="11" fill="#cde8c0">(no rclone — same LAN)</text>
+
+  <!-- Nextcloud -->
+  <rect x="880" y="200" width="280" height="160" rx="8" fill="#1a1a2e" stroke="#0d0d17"/>
+  <text x="1020" y="232" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">Nextcloud</text>
+  <text x="1020" y="252" text-anchor="middle" font-size="12" fill="#cfd3e6">mothership — 192.168.1.13</text>
+  <line x1="900" y1="266" x2="1140" y2="266" stroke="#3a3a5a"/>
+  <text x="1020" y="290" text-anchor="middle" font-size="12" fill="#cfd3e6">/$TheatreName/ per theatre</text>
+  <text x="1020" y="312" text-anchor="middle" font-size="11" fill="#9aa0c0">(rclone targets, one folder each)</text>
+  <text x="1020" y="336" text-anchor="middle" font-size="11" fill="#9aa0c0">+ ready room WebDAV root</text>
+
+  <!-- Arrows -->
+  <path d="M320,165 L880,255" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrow2)"/>
+  <text x="560" y="185" font-size="12" fill="#2a6f97" font-weight="bold">rclone sync (over Tailscale, WAN)</text>
+
+  <path d="M320,390 L880,320" fill="none" stroke="#5a8f3c" stroke-width="2.5" marker-end="url(#arrow3)"/>
+  <text x="560" y="400" font-size="12" fill="#5a8f3c" font-weight="bold">WebDAV mount (local LAN, no rclone)</text>
+
+  <text x="650" y="520" text-anchor="middle" font-size="11" fill="#888">Theatre laptops sync up over the tailnet via rclone; ready room PCs write straight to Nextcloud over a local WebDAV mount since they share the mothership LAN.</text>
+</svg>
+</div></p>
+<p>Theatre laptops (PowerPoint and VT, main and backup — 48 across all
+12 theatres) each run <code>rclone</code>, syncing their theatre's
+folder up to Nextcloud over the tailnet. The mothership's 4 ready-room
+PCs skip rclone entirely and mount Nextcloud directly over local WebDAV,
+since they already share its LAN.</p>
+<h2 id="atem-iso-ingest-near-real-time-no-manual-chunking">ATEM ISO
+ingest: near-real-time, no manual chunking</h2>
+<p>Each theatre's ATEM Mini Extreme ISO records up to 9 H.264 streams (8
+camera ISOs + program) to a USB SSD — and, unlike most of this design,
+there's no laptop involved: the mothership pulls directly from the
+ATEM's <strong>built-in FTP server</strong> over Tailscale subnet
+routing, transferring only the bytes appended since the last check. That
+matters because the file is <em>constantly growing</em>: a naive
+whole-file re-sync on a schedule doesn't survive the math for a real
+session (a 3-hour, 6-stream recording is 50-80GB — re-uploading that
+<em>whole thing</em> every 10 minutes takes longer than 10 minutes,
+falling permanently behind). Two documented ways to get that incremental
+transfer: FTP's own <code>REST</code>/resume command directly (the
+default — plain rsync can't be used for this leg, since it needs SSH or
+an rsync daemon and the ATEM only speaks FTP), or
+<code>rclone mount</code> (presenting the ATEM's FTP share as a local
+path) paired with <code>rsync --append</code>, which transfers only the
+new tail without needing rsync's usual full-file checksum pass. Either
+way, the pull writes straight into the folder Nextcloud has mounted as
+External Storage, so there's no second upload step and no need to slice
+the video file itself — full design in <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>.</p>
+<h2
+id="vmix-record-ingest-same-mechanism-a-windows-smb-share-instead">VMix
+record ingest: same mechanism, a Windows SMB share instead</h2>
+<p>The 4 VMix PCs (2 per node) get the same treatment, just retargeted
+at a Windows SMB share instead of an FTP server — SMB is a genuine
+network filesystem protocol, so mounting it is the native way to access
+it here, if anything a better fit than the ATEM's FTP-only case rather
+than a stretch of the same pattern. <code>rclone mount</code> presents
+each PC's share as a local path, and <code>rsync --append</code>
+transfers only the new tail, same reasoning as the ATEM ingest's
+alternative approach. Each VMix node has its own dedicated A-1300 uplink
+— not shared with the theatre it physically sits near — so this traffic
+never competes with that theatre's ATEM ingest or SRT feed. Full design
+in <a
+href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>.</p>
+<h2
+id="self-hosted-admin-tooling-unifi-controller--glkvm-cloud">Self-hosted
+admin tooling: UniFi Controller + GLKVM-Cloud</h2>
+<p>Two self-hosted services on the consolidated server, both following
+the same rule the rest of this design does — no dependency on a vendor's
+own cloud for managing this design's own infrastructure:</p>
+<ul>
+<li><strong>UniFi Controller</strong> (self-hosted UniFi Network
+Application) gives a local, independent management console for the Cloud
+Gateway, separate from relying on <code>cloud.ui.com</code> — the Cloud
+Gateway ships with its own built-in controller and works fine without
+this, so it's optional, but not depending on a vendor cloud to
+administer the mothership's own router fits the pattern everything else
+here follows.</li>
+<li><strong>GLKVM-Cloud</strong> gives centralized, browser-based SSH
+terminal and web-admin proxy access to all 14 GL-iNet routers at once,
+instead of 14 separate sessions — using GLKVM-Cloud's documented support
+for embedded OpenWrt devices, not its flagship KVM-hardware feature set
+(there's no physical KVM unit anywhere in this design). Full design,
+including a real WAN-port-forward collision this surfaced with the DERP
+server and how it was resolved, in <a
+href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a>.</li>
+</ul>
+<h2 id="fleet-management-atem-overseer--fleet-admin-and-flock">Fleet
+management: ATEM Overseer + Fleet Admin, and Flock</h2>
+<p>Three more mothership services, this time for the theatre hardware
+itself rather than the network infrastructure — all separate projects
+(<a
+href="https://github.com/allansargeant/atem-overseer"><code>atem-overseer</code></a>,
+<a
+href="https://github.com/allansargeant/atem-fleet-admin"><code>atem-fleet-admin</code></a>,
+<a
+href="https://github.com/allansargeant/flock"><code>flock</code></a>),
+not built from source in this repo:</p>
+<ul>
+<li><strong>ATEM Overseer</strong> is a fleet-wide monitoring/tally
+dashboard — every theatre's ATEM sends it a dedicated low-bitrate
+monitoring stream (10 Mbps, folded into the bandwidth model below),
+giving one central multiview view of all 12 theatres instead of walking
+to each one.</li>
+<li><strong>ATEM Fleet Admin</strong> provisions many ATEMs at once from
+model-aware config forms, either pushed live over the network (reaching
+all 12 theatres the same way ATEM ISO Ingest does — Tailscale subnet
+routing, no separate path needed) or exported as loadable XML + a media
+folder.</li>
+<li><strong>Flock</strong> does the same fleet-manager job as ATEM Fleet
+Admin, but for the 12 theatres' BirdDog Play units — LAN discovery,
+tag-based grouping, BirdUI-parity settings, batch edits. Each BirdDog
+Play also sends Flock its own 10 Mbps SRT preview stream, same treatment
+as Overseer's — also folded into the bandwidth model below.</li>
+</ul>
+<h2 id="bandwidth-real-numbers-right-sized-vlans">Bandwidth: real
+numbers, right-sized VLANs</h2>
+<p>The 4 uplink VLANs turned out to be <strong>venue-supplied, not our
+infrastructure</strong> — 1 Gbps each, with expensive ports, which flips
+the goal from "isolate cleanly" to "minimum VLAN count at adequate
+performance." The full model, grounded in real figures (SRT ~5.8-10.4
+Mbps via long-GOP H.264 + SRT/WireGuard overhead, ATEM ISO ingest ~62-94
+Mbps plus the ATEM Overseer and Flock monitoring/preview streams — ~10.4
+Mbps apiece — together dominating per-theatre upstream, full NDI at
+1080p50 a very different ~130 Mbps roughly regardless of content), is in
+<a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.
+Headlines:</p>
+<ul>
+<li>The current 4-VLAN plan runs at 27-39% utilization under normal
+operation — still comfortable, though real-time ATEM ingest plus both
+monitoring streams have eaten a genuine chunk of what used to be a much
+wider margin.</li>
+<li><strong>Consolidating to 2 VLANs</strong> is still workable but has
+real eroded margin (53-78%, down from 41-65% before either monitoring
+stream existed) for normal SRT-primary operation — worth actively
+re-weighing now, not just noting. A <strong>mass NDI fallback</strong>
+(e.g. a Restreamer failure pushing all 12 theatres onto NDI at once)
+pushes 2 VLANs to 90% with no room left; 3-4 VLANs stay comfortable
+through that same event.</li>
+<li><strong>1 VLAN no longer works with real-time ATEM ingest, full
+stop</strong> — it now exceeds capacity under normal expected load
+(106%), not just an unlucky worst-case day. Deferring ATEM ingest to
+end-of-session pulls (rather than real-time) is required to make 1 VLAN
+viable at all, not just a nice-to-have lever anymore.</li>
+<li><strong>A separate, previously-missed finding</strong>: each
+theatre's own A-1300 has a tighter ceiling (~170 Mbps) than the shared
+VLAN — a theatre running ATEM ingest and an NDI fallback simultaneously
+can exceed <em>its own router's</em> capacity regardless of VLAN count.
+Mitigation: pause that theatre's ATEM ingest during an NDI fallback
+(cheap, config-only) — still works with both monitoring streams added,
+but with less spare margin than before. A higher-throughput GL-iNet
+model would also fix it, but not cleanly — see the doc for why.</li>
+</ul>
+<h2 id="why-tailscale-avoids-derp-relay-here">Why Tailscale avoids DERP
+relay here</h2>
+<p>Every device in this design — all 12 theatres, both VMix nodes, the
+mothership — sits behind the <em>same</em> shared venue internet
+connection. That's an unusually favorable setup for Tailscale: direct
+connections are likely either over the true private LAN path or via a
+NAT hairpin through that one shared public IP, with public DERP relay
+only as a last resort. As extra insurance, a self-hosted DERP server
+(reachable at <code>derp.example.net:443</code>) runs on the mothership
+itself, so even relayed traffic never actually leaves the venue. Full
+reasoning in <a
+href="tailscale.html"><code>docs/tailscale.md</code></a>.</p>
+<h2 id="hardware-confirmed">Hardware, confirmed</h2>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Hardware</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mothership router</td>
+<td>Ubiquiti <strong>Cloud Gateway</strong></td>
+<td>Can't run Tailscale natively — that role moves to a container on the
+services server instead</td>
+</tr>
+<tr>
+<td>Consolidated services server</td>
+<td><strong>Unraid</strong>, single physical box (already on hand)</td>
+<td>Hosts VMix + BirdDog Central as separate Windows VMs (only VMix gets
+GPU passthrough), plus Nextcloud/Restreamer/NDI Discovery
+Server/DERP/ATEM ISO Ingest/VMix Record Ingest/UniFi
+Controller/GLKVM-Cloud/ATEM Overseer/ATEM Fleet Admin/Flock as Docker
+containers. Chosen over TrueNAS SCALE for its more mature
+GPU-passthrough track record. Calculated target spec (storage pools,
+RAM, CPU, GPU tier, NIC validation) in <a
+href="server-specification.html"><code>docs/server-specification.md</code></a></td>
+</tr>
+<tr>
+<td>Theatre + VMix node routers</td>
+<td>GL-iNet <strong>A-1300</strong> (Slate Plus) ×14</td>
+<td>12 theatre routers + both VMix node routers, same model throughout.
+~170 Mbps WireGuard, comfortable headroom for normal operation (~55%
+combined); 2 LAN ports let the ATEM Mini Extreme ISO sit on its own
+dedicated port, away from the rest of the room's traffic — it carries
+the heaviest sustained load (near-real-time ISO ingest). Its own ceiling
+is the tighter constraint during an NDI fallback though (128% combined
+with ATEM ingest, resolved by pausing that theatre's ingest during the
+fallback) — margin worth watching if any further theatre-to-mothership
+stream ever gets added, see <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.
+Full case for GL-iNet + Tailscale specifically — segmentation,
+multi-WAN, pay-per-device WiFi economics, other uses beyond this event,
+and the same ceiling reasoning — in <a
+href="gl-inet-rationale.html"><code>docs/gl-inet-rationale.md</code></a></td>
+</tr>
+<tr>
+<td>Theatre playback</td>
+<td><strong>BirdDog Play</strong> ×12</td>
+<td>Zero-config, native SRT+NDI, centrally fleet-managed — see
+above</td>
+</tr>
+<tr>
+<td>Server NICs</td>
+<td><strong>Bonded</strong>, 802.3ad/LACP</td>
+<td>SRT bandwidth isn't constant — LACP spreads the many simultaneous
+flows this box handles (12 theatres' SRT fan-out, rclone, Nextcloud,
+DERP) across both links for real aggregate headroom</td>
+</tr>
+</tbody>
+</table>
+<p>See <a
+href="open-questions.html"><code>docs/open-questions.md</code></a> for
+the reasoning behind every one of these, including the couple of things
+assumed rather than confirmed (and the fallback if an assumption turns
+out wrong).</p>
+<h2 id="live-editing-a-separate-subsystem-not-the-theatre-network">Live
+editing: a separate subsystem, not the theatre network</h2>
+<p>2× MacBook Pro editing workstations plus dedicated fast storage at
+the mothership, editing event content as it arrives rather than waiting
+until after the event — deliberately on its <strong>own dedicated 10GbE
+LAN</strong> (<code>192.168.22.x</code>), not part of the Tailscale mesh
+or the theatre-facing network the rest of this repo is sized for.
+Editing needs sustained multi-gigabit throughput per editor; putting
+that on the existing bonded 1GbE would either starve the editors or risk
+contention with the live ingest pipelines still running during the
+event.</p>
+<p>Key decisions, each evaluated rather than assumed:</p>
+<ul>
+<li><strong>Dedicated NAS, not Nextcloud's own storage</strong> — the
+same rclone/rsync pull that ingests each theatre's ATEM/VMix footage
+into Nextcloud writes a second copy straight to the edit-suite NAS at
+the same time, no chained re-sync. Decouples editing entirely from the
+live show's infrastructure.</li>
+<li><strong>A dedicated Mac mini running both the Resolve Project Server
+and Remote Render</strong> — needed because the whole workflow below is
+one shared show project both editors work against, not two independent
+copies (confirmed <strong>not</strong> possible on a Blackmagic Cloud
+Store appliance itself, which is storage-only). Combining both roles on
+one box isn't documented as forbidden by Blackmagic but is thinly
+precedented in practice — see Decision 2 in <a
+href="live-editing.html"><code>docs/live-editing.md</code></a> for the
+full honesty-check.</li>
+<li><strong>Blackmagic Cloud's internet sync service — not needed
+here.</strong> A genuinely separate product from the Cloud Store
+hardware, built for cross-site collaboration; this is a single-venue
+setup with no second site to sync with.</li>
+<li><strong>A pre-built Resolve project structure, generated by <a
+href="https://github.com/allansargeant/resolve-configurator">resolve-configurator</a></strong>
+— a companion project to this design — scaffolds a bin per theatre-day
+and an empty timeline per session ahead of time, plus writes the exact
+smart-bin rules as a one-time-apply recipe (Resolve's own scripting API
+can't create real smart bins). Once footage lands on the NAS and that
+recipe's been applied, each session's bin auto-fills with just its own
+clips — editors open a session, drag in, top-and-tail, export.</li>
+</ul>
+<p>Also covers a complementary DIT (Digital Imaging Technician) ingest
+workflow for physical media — the ATEM's own USB SSD and any standalone
+camera cards — comparing ShotPut Pro, OffShoot, Silverstack, and the
+companion tools FoolCat (camera reports) and o/PARASHOOT (safe card
+reformatting). Full design in <a
+href="live-editing.html"><code>docs/live-editing.md</code></a>.</p>
+<h2 id="subnet-map">Subnet map</h2>
+<p>Mothership on <code>192.168.1.x</code>; theatres contiguous from
+<code>.2.x</code> through <code>.13.x</code>, grouped 3 per physical
+VLAN purely for uplink cabling.</p>
+<table>
+<thead>
+<tr>
+<th>Theatre</th>
+<th>Subnet</th>
+<th>VLAN (uplink grouping)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>192.168.2.x</td>
+<td>VLAN 1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>192.168.3.x</td>
+<td>VLAN 1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>192.168.4.x</td>
+<td>VLAN 1</td>
+</tr>
+<tr>
+<td>4</td>
+<td>192.168.5.x</td>
+<td>VLAN 2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>192.168.6.x</td>
+<td>VLAN 2</td>
+</tr>
+<tr>
+<td>6</td>
+<td>192.168.7.x</td>
+<td>VLAN 2</td>
+</tr>
+<tr>
+<td>7</td>
+<td>192.168.8.x</td>
+<td>VLAN 3</td>
+</tr>
+<tr>
+<td>8</td>
+<td>192.168.9.x</td>
+<td>VLAN 3</td>
+</tr>
+<tr>
+<td>9</td>
+<td>192.168.10.x</td>
+<td>VLAN 3</td>
+</tr>
+<tr>
+<td>10</td>
+<td>192.168.11.x</td>
+<td>VLAN 4</td>
+</tr>
+<tr>
+<td>11</td>
+<td>192.168.12.x</td>
+<td>VLAN 4</td>
+</tr>
+<tr>
+<td>12</td>
+<td>192.168.13.x</td>
+<td>VLAN 4</td>
+</tr>
+</tbody>
+</table>
+<p>VMix Node 1 (off Theatre 1): <code>192.168.20.x</code>. VMix Node 2
+(off Theatre 4): <code>192.168.21.x</code>. See <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>
+for whether this 4-VLAN grouping is the right count to actually build,
+or whether to consolidate.</p>
+<h2
+id="operations-building-it-running-it-and-the-road-not-taken">Operations:
+building it, running it, and the road not taken</h2>
+<p>Three docs turn the design into something an on-site crew can
+actually execute:</p>
+<ul>
+<li><a
+href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a>
+— the full ordered build sequence, Phase 0 (confirmations) through Phase
+7 (pre-event verification), each step linking back to the doc with the
+detail. This is the doc to have open on build day.</li>
+<li><a
+href="troubleshooting.html"><code>docs/troubleshooting.md</code></a> —
+the gotchas surfaced <em>during design</em> (unreachable theatres, DERP
+relay when direct was expected, NIC bonds that won't form, ingest
+falling behind, missing monitoring previews), each as symptom → cause →
+fix, so they don't have to be rediscovered under show pressure.</li>
+<li><a
+href="topology-alternative-tailscale-switches.html"><code>docs/topology-alternative-tailscale-switches.md</code></a>
+— the road not taken: plain switches + Tailscale on generic Linux boxes
+instead of GL-iNet routers. Documented with working configs (<a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/alt-tailscale-switch/"><code>config/alt-tailscale-switch/</code></a>)
+so the decision can be revisited with evidence, but not recommended —
+the doc explains why.</li>
+</ul>
+<h2 id="before-build--open-items">Before build — open items</h2>
+<p>Design is finalized; these are the headline items still needing
+real-world input before the config in this repo gets applied (the
+complete list, including a few smaller ones, lives in <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>; the
+ordered build sequence is <a
+href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a>).</p>
+<ul class="task-list">
+<li><label><input type="checkbox" />Check the existing consolidated
+services server against the calculated target spec in <a
+href="server-specification.html"><code>docs/server-specification.md</code></a>
+(CPU/RAM/GPU headroom, storage pool layout).</label></li>
+<li><label><input type="checkbox" />Add the
+<code>derp.example.net</code> DNS record for the self-hosted DERP
+server.</label></li>
+<li><label><input type="checkbox" />Verify the DERP hairpin isn't caught
+by the uplink-VLAN firewall block before relying on it.</label></li>
+<li><label><input type="checkbox" />Confirm the real ATEM ISO
+bitrate/active-channel count and empirically verify partial-file
+playability.</label></li>
+<li><label><input type="checkbox" />Confirm what VMix is actually
+recording and set up real SMB shares/credentials on all 4 VMix
+PCs.</label></li>
+<li><label><input type="checkbox" />Confirm the final VLAN count with
+the venue, and decide whether a mass-NDI-fallback event needs to survive
+at full quality (drives 3-4 vs. 2 VLANs) — <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.</label></li>
+<li><label><input type="checkbox" />Add the <code>kvm.example.net</code>
+DNS record and confirm <code>GLKVM_ACCESS_IP</code>'s exact format for
+the WAN-remapped GLKVM-Cloud ports — <a
+href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a>.</label></li>
+<li><label><input type="checkbox" />Confirm ATEM Overseer's, ATEM Fleet
+Admin's, and Flock's real container images, and whether the ATEM/BirdDog
+Play can actually originate their monitoring/preview streams alongside
+their primary feeds — <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>
+#11.</label></li>
+<li><label><input type="checkbox" />Implement the second write
+destination (the edit-suite NAS) in the actual ingest scripts —
+documented in <a
+href="live-editing.html"><code>docs/live-editing.md</code></a> but not
+yet a code change — <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>
+#15.</label></li>
+<li><label><input type="checkbox" />Decide how much footage the
+live-editing subsystem needs access to, confirm the Mac mini's combined
+Project Server + Remote Render role holds up under real load, and
+whether any standalone cameras are in scope — <a
+href="live-editing.html"><code>docs/live-editing.md</code></a>, <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>
+#12-14.</label></li>
+</ul>
+<h2 id="everything-in-this-repo">Everything in this repo</h2>
+<p><strong>Design docs</strong></p>
+<ul>
+<li><a href="topology.html"><code>docs/topology.md</code></a> — full
+network layout: subnets, VLAN grouping, mothership, VMix nodes, theatre
+wiring</li>
+<li><a
+href="server-specification.html"><code>docs/server-specification.md</code></a>
+— calculated minimum spec for the consolidated server (storage pools,
+RAM, CPU, GPU tier, NIC validation)</li>
+<li><a
+href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> —
+every device on the network, with its real IP (134 devices, including
+the live-editing subsystem's NAS, 2 MacBook Pros, and Project
+Server/Remote Render Mac mini)</li>
+<li><a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a> —
+SRT/NDI streaming path, the NDI Discovery Server plan</li>
+<li><a
+href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>
+— why BirdDog Play over a laptop + VLC for theatre playback</li>
+<li><a
+href="gl-inet-rationale.html"><code>docs/gl-inet-rationale.md</code></a>
+— why GL-iNet + Tailscale for segmentation/routing,
+multi-WAN/pay-per-device WiFi economics, and other uses (LED processors,
+mixing desks, mesh) beyond this event</li>
+<li><a href="live-editing.html"><code>docs/live-editing.md</code></a> —
+post-production subsystem at the mothership: dedicated NAS/network,
+Resolve collaboration decisions, the resolve-configurator-driven edit
+workflow, DIT ingest tool comparison</li>
+<li><a
+href="file-sync-flow.html"><code>docs/file-sync-flow.md</code></a> —
+rclone + WebDAV sync to Nextcloud</li>
+<li><a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> —
+near-real-time ATEM ISO ingest into Nextcloud, no manual chunking</li>
+<li><a
+href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>
+— same mechanism, targeting each VMix PC's SMB share</li>
+<li><a href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a> —
+self-hosted GLKVM-Cloud for centralized remote administration of the 14
+GL-iNet routers</li>
+<li><a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>
+— real-world throughput math against the venue's 1 Gbps VLANs, and how
+many are actually needed</li>
+<li><a href="tailscale.html"><code>docs/tailscale.md</code></a> —
+DERP-avoidance reasoning, the self-hosted DERP server, verification
+commands</li>
+<li><a
+href="open-questions.html"><code>docs/open-questions.md</code></a> —
+every decision made, how it was reached, and what's still genuinely
+open</li>
+<li><a
+href="topology-alternative-tailscale-switches.html"><code>docs/topology-alternative-tailscale-switches.md</code></a>
+— plain switch + Tailscale-on-Linux alternative to GL-iNet, not
+recommended but documented</li>
+<li><a
+href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a>
+— ordered build checklist synthesizing every doc/config into one
+sequence</li>
+<li><a
+href="troubleshooting.html"><code>docs/troubleshooting.md</code></a> —
+known gotchas surfaced during design, symptom → cause → fix</li>
+</ul>
+<p><strong>Diagrams</strong> (<a
+href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/"><code>diagrams/</code></a>)
+— topology (full device inventory), streaming-flow, file-sync-flow,
+live-editing-dataflow (dual-write into the edit suite), and
+live-editing-project-structure (resolve-configurator → smart-bin recipe
+→ editor workflow), all as standalone SVGs</p>
+<p><strong>Offline exports</strong> (<a
+href="https://github.com/allansargeant/example-network-topology/blob/master/export/"><code>export/</code></a>)
+— every doc as a self-contained HTML file and an A4 PDF, plus a combined
+<code>full-documentation</code> version of each — see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/export/README.md"><code>export/README.md</code></a></p>
+<p><strong>Generated configs</strong></p>
+<ul>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>
+— the entire consolidated server's Docker stack in one file, see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/README.md"><code>config/README.md</code></a></li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
+— ACL policy (cross-theatre isolation) + the self-hosted DERP
+region</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-commands.sh"><code>config/tailscale-up-commands.sh</code></a>
+— per-role <code>tailscale up</code> template</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>
+— the same, fully instantiated for all 15 tailnet nodes</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
+— UCI network config for all 14 routers (12 theatres + 2 VMix nodes),
+generated from templates</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/"><code>config/unifi/</code></a>
+— Cloud Gateway VLAN/DHCP/firewall/port-forward reference</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>
+— the FTP-pull ingest script (and rclone+rsync alternative) plus
+Nextcloud External Storage setup</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>
+— the same rclone+rsync combo, targeting each VMix PC's SMB share</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/glkvm-cloud/"><code>config/glkvm-cloud/</code></a>
+— the self-hosted GLKVM-Cloud docker-compose stack (<code>rttys</code> +
+<code>coturn</code>)</li>
+<li><a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/alt-tailscale-switch/"><code>config/alt-tailscale-switch/</code></a>
+— configs for the plain-switch/generic-Linux alternative, not
+recommended but documented</li>
+</ul>
+</body></html>

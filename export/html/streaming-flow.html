@@ -1,0 +1,111 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Streaming flow — SRT / NDI</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/streaming-flow.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="streaming-flow--srt--ndi">Streaming flow — SRT / NDI</h1>
+<h2 id="primary-path-srt">Primary path (SRT)</h2>
+<pre><code>VMix PCs (both nodes) --SRT--&gt; Restreamer (mothership) --SRT (fan-out)--&gt; BirdDog Play ×12 (one per theatre)</code></pre>
+<p>SRT is unicast-by-IP, so this path has no discovery dependency and
+should route cleanly over the tailnet.</p>
+<h2 id="backup-path-ndi">Backup path (NDI)</h2>
+<pre><code>BirdDog Central (mothership) --NDI--&gt; BirdDog Play ×12 (one per theatre)</code></pre>
+<p><strong>Bandwidth note:</strong> full NDI (not HX) at 1080p50 is ~125
+Mbps per stream, roughly constant regardless of content — 12-22x SRT's
+figures, and without SRT's "static content is cheap" discount. Fine for
+a single theatre falling back — <em>provided that theatre's ATEM ISO
+ingest is paused for the duration</em>, since NDI plus the ingest
+together exceed the theatre's own A-1300 WireGuard ceiling — and a real
+capacity question if this path ever has to carry all 12 theatres at once
+(e.g. a Restreamer failure). See <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>
+for the full impact at per-router, per-VLAN, and mothership-NIC
+level.</p>
+<p><strong>Caveat, and the fix:</strong> NDI relies on mDNS multicast
+for discovery, which does not cross a Tailscale-routed boundary —
+Tailscale is point-to-point WireGuard and doesn't forward multicast/mDNS
+(<a href="https://github.com/tailscale/tailscale/issues/8884">still an
+open feature request</a>, not something MagicDNS papers over). Plain
+local mDNS discovery will not find BirdDog Central across theatres on
+its own.</p>
+<p><strong>Plan: run an NDI Discovery Server on the mothership.</strong>
+NDI 5+ added this specifically for WAN/VPN scenarios — it's unicast TCP
+(default port <strong>5959</strong>), so it works fine across the
+tailnet with no multicast involved:</p>
+<ul>
+<li>Run the discovery server as a small service on the mothership,
+alongside BirdDog Central.</li>
+<li>Point BirdDog Central (sender) and all 12 BirdDog Play units
+(receivers) at that server's IP. On Windows/macOS this is the NDI Tools
+Access Manager "Advanced" tab; on Linux it's
+<code>~/.ndi/ndi-config.v1.json</code>.</li>
+<li>Once a sender has a discovery server configured, it stops using mDNS
+entirely — it's visible only to finders pointed at the same server.</li>
+<li>Tailscale MagicDNS can supply a stable hostname for the discovery
+server's address instead of hardcoding its Tailscale IP, if the
+receiving device's config field accepts a hostname — a convenience, not
+a substitute for the discovery server itself.</li>
+</ul>
+<p><strong>Confirmed on BirdDog Play:</strong> BirdUI (the PLAY's web
+admin — browse to its IP, default password <code>birddog</code>) has a
+Network panel with NDI-specific settings including a Discovery Server
+toggle. Switch it ON, enter a comma-delimited list of Discovery Server
+IP address(es), click APPLY. BirdDog's own docs describe this as the
+mechanism for locating NDI sources "on different subnets" — exactly this
+cross-theatre case — and it supports multiple servers for failover.
+Sources: <a
+href="https://birddog.tv/wp-content/uploads/2022/11/BirdDog-PLAY_User-Guide_231003.pdf">BirdDog
+PLAY User Guide</a>, <a
+href="https://birddog.tv/wp-content/uploads/2024/04/BirdDog_BirdUI_User-Guide.pdf">BirdUI
+User Guide</a>. Change the default admin password before the event —
+BirdUI grants full device config access.</p>
+<p>See <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/streaming-flow.svg"><code>diagrams/streaming-flow.svg</code></a>
+— primary path solid, backup path dashed. For why BirdDog Play is the
+theatre-side receiver at all (vs. a laptop</p>
+<ul>
+<li>VLC), see <a
+href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>.</li>
+</ul>
+</body></html>

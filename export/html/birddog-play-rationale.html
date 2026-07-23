@@ -1,0 +1,182 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Why BirdDog Play (not a laptop + VLC) for theatre playback</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/birddog-play-rationale.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="why-birddog-play-not-a-laptop--vlc-for-theatre-playback">Why
+BirdDog Play (not a laptop + VLC) for theatre playback</h1>
+<p>Each theatre's screen is driven by a <strong>BirdDog Play</strong> —
+a dedicated, purpose-built NDI/SRT decoder — rather than a
+general-purpose laptop running a media player. This documents the
+reasoning, alongside the closest realistic alternative.</p>
+<h2 id="zero-config-in-the-theatre">Zero-config in the theatre</h2>
+<p>BirdDog Play needs no on-site setup beyond physical connection: plug
+it into the theatre screen and the network, point it at a source, done.
+No OS to patch, no application to configure per-session, nothing for
+on-site staff to babysit beyond power and a cable. That matters at this
+scale — 12 theatres, unattended for most of a live event.</p>
+<h2 id="protocol-support-srt-primary-ndi-backup-both-natively">Protocol
+support: SRT primary, NDI backup, both natively</h2>
+<ul>
+<li><strong>SRT</strong> — the primary path in this design (see <a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>) is
+bandwidth-efficient by design (long-GOP H.264, see <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>
+for real figures). In this design it originates from VMix via the
+mothership's Restreamer, but the protocol keeps options open: the ATEM
+Mini Extreme ISO also has a <strong>built-in hardware streaming
+engine</strong> that can stream SRT directly over Ethernet with no
+computer involved (<a
+href="https://www.blackmagicdesign.com/products/atemmini/techspecs">Blackmagic
+tech specs</a>), unused here but available as a fallback origin. BirdDog
+Play receives either without caring which one is sending.</li>
+<li><strong>NDI</strong> — the backup path (BirdDog Central → BirdDog
+Play, via the NDI Discovery Server — see <a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>) is
+handled natively too, with no separate plugin or configuration
+step.</li>
+</ul>
+<h2 id="remote-control-from-the-mothership">Remote control from the
+mothership</h2>
+<p>Three ways to manage all 12 units centrally, none of which require
+physically visiting a theatre:</p>
+<ul>
+<li><strong>BirdUI</strong> — each unit's own web admin, reachable
+directly (already the mechanism used to configure the NDI Discovery
+Server setting — <a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>).</li>
+<li><strong>BirdDog Central</strong> — already part of this design as a
+mothership VM (<a
+href="topology.html"><code>docs/topology.md</code></a>) — centralized
+routing/control across the fleet.</li>
+<li><strong><a
+href="https://github.com/allansargeant/flock">Flock</a></strong> — a
+fleet-management tool for exactly this device: LAN discovery, tag-based
+grouping, full BirdUI-parity settings per device, and batch edits across
+a group (Rust + Docker). Purpose-built for managing many BirdDog Play
+units as one fleet rather than 12 individual devices, which is precisely
+this deployment's shape.</li>
+</ul>
+<h2 id="comparison-birddog-play-vs-laptop--vlc">Comparison: BirdDog Play
+vs. laptop + VLC</h2>
+<p>The realistic alternative is a laptop in each theatre running VLC,
+pointed at the same SRT/ NDI sources.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>BirdDog Play</th>
+<th>Laptop + VLC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Setup</td>
+<td>Plug in, done</td>
+<td>Install/patch OS, install VLC, configure stream URL per source</td>
+</tr>
+<tr>
+<td>SRT</td>
+<td>Native, purpose-built decode</td>
+<td>Native from VLC 3+ (<a
+href="https://srtlab.github.io/srt-cookbook/apps/vlc-media-player.html">SRT
+CookBook</a>) — the one protocol VLC handles cleanly</td>
+</tr>
+<tr>
+<td>NDI</td>
+<td>Native, purpose-built decode</td>
+<td>Requires a separate third-party plugin (<a
+href="https://docs.ndi.video/all/using-ndi/ndi-tools/plugins/ndi-for-vlc">NDI
+for VLC</a>); reliably <em>outputting</em> VLC's playback as NDI is
+well-documented, but consistently <em>receiving and playing</em> an NDI
+source as input is far less so</td>
+</tr>
+<tr>
+<td>Remote management</td>
+<td>BirdUI, BirdDog Central, or Flock — purpose-built for this
+device</td>
+<td>Nothing built in — would need RDP/VNC/TeamViewer bolted on, none of
+it purpose-built for stream monitoring/control</td>
+</tr>
+<tr>
+<td>Unattended reliability</td>
+<td>Broadcast-grade embedded device, designed to run 24/7
+unattended</td>
+<td>General-purpose OS: updates, driver issues, VLC hangs on a dropped
+stream sometimes need a manual restart</td>
+</tr>
+<tr>
+<td>Recovery from a dropped stream</td>
+<td>Automatic reconnect</td>
+<td>Not guaranteed — depends on VLC settings, may need manual
+intervention</td>
+</tr>
+<tr>
+<td>Footprint/power</td>
+<td>Small, low power, unobtrusive</td>
+<td>Full laptop: bigger, hotter, more power, another thing that can be
+bumped/closed/updated mid-show</td>
+</tr>
+<tr>
+<td>Attack surface</td>
+<td>Purpose-built embedded device</td>
+<td>Full general-purpose OS — much larger surface</td>
+</tr>
+<tr>
+<td>Cost per unit</td>
+<td>Lower, purpose-built</td>
+<td>A laptop is not free even if "already owned" — it's now unavailable
+for anything else, and carries more ongoing maintenance</td>
+</tr>
+</tbody>
+</table>
+<h2 id="recommendation">Recommendation</h2>
+<p>BirdDog Play, as already implemented throughout this design. The
+laptop + VLC path is real and technically works for SRT specifically,
+but loses on every axis that matters for 12 unattended theatres running
+for the duration of a live event: zero-config deployment, clean NDI
+support, purpose-built fleet management (BirdUI/BirdDog Central/Flock),
+and broadcast-grade reliability without needing on-site intervention
+when something drops.</p>
+</body></html>

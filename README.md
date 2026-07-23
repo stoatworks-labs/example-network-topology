@@ -312,6 +312,8 @@ Design is finalized; these are the headline items still needing real-world input
 
 **Diagrams** ([`diagrams/`](diagrams/)) — topology (full device inventory), streaming-flow, file-sync-flow, live-editing-dataflow (dual-write into the edit suite), and live-editing-project-structure (resolve-configurator → smart-bin recipe → editor workflow), all as standalone SVGs
 
+**Offline exports** ([`export/`](export/)) — every doc as a self-contained HTML file and an A4 PDF, plus a combined `full-documentation` version of each — see [`export/README.md`](export/README.md)
+
 **Generated configs**
 - [`config/docker-compose.yml`](config/docker-compose.yml) — the entire consolidated server's Docker stack in one file, see [`config/README.md`](config/README.md)
 - [`config/tailscale-acl.json`](config/tailscale-acl.json) — ACL policy (cross-theatre isolation) + the self-hosted DERP region

@@ -1,0 +1,137 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Alternative: plain switches + Tailscale on generic Linux, no GL-iNet routers</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/topology-alternative-tailscale-switches.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1
+id="alternative-plain-switches--tailscale-on-generic-linux-no-gl-inet-routers">Alternative:
+plain switches + Tailscale on generic Linux, no GL-iNet routers</h1>
+<p>Same theatre topology (isolated <code>/24</code> per theatre, subnet
+routing, Tailscale ACLs doing cross-theatre isolation) — different
+hardware. Instead of a GL-iNet A-1300 doing router+NAT+DHCP+Tailscale in
+one appliance, use a plain unmanaged switch for LAN fanout plus a small
+generic Linux box (mini-PC/NUC, or the theatre's existing control
+laptop) running Tailscale as a subnet router with NAT/DHCP built from
+standard Linux tools (nftables + dnsmasq). Config in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/alt-tailscale-switch/"><code>config/alt-tailscale-switch/</code></a>.</p>
+<p><strong>Why a router-equivalent device is still required, not
+eliminated:</strong> the ATEM and BirdDog Play are closed appliances —
+they can't run the Tailscale client themselves. Some device must still
+advertise the theatre's subnet on their behalf. "Pure Tailscale, no
+router" only works if literally every device can run Tailscale; since
+two can't, this alternative just moves the subnet-router role onto
+generic Linux instead of GL-iNet's firmware. The
+<code>tailscale up</code> invocations themselves are identical either
+way — see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>
+— Tailscale doesn't care what hardware runs it.</p>
+<h2 id="comparison">Comparison</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>GL-iNet A-1300 (chosen)</th>
+<th>Generic Linux box + switch (alternative)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Setup effort</td>
+<td>Config file, done (see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>)</td>
+<td>Build + harden NAT/DHCP/Tailscale from scratch per box</td>
+</tr>
+<tr>
+<td>Throughput confidence</td>
+<td>Vendor datasheet, ~170 Mbps WireGuard</td>
+<td>Unverified until benchmarked on whatever's chosen</td>
+</tr>
+<tr>
+<td>Physical footprint</td>
+<td>One compact unit per theatre</td>
+<td>Separate PC + separate switch + 2 power supplies</td>
+</tr>
+<tr>
+<td>Dedicated ATEM port</td>
+<td>Built-in (2 LAN ports)</td>
+<td>Needs a 2nd NIC/dongle to replicate</td>
+</tr>
+<tr>
+<td>Wi-Fi</td>
+<td>Built-in</td>
+<td>Extra hardware if needed at all</td>
+</tr>
+<tr>
+<td>Spares/swap-in</td>
+<td>Re-flash identical UCI config</td>
+<td>Re-provision a whole OS image</td>
+</tr>
+<tr>
+<td>Maintenance</td>
+<td>Vendor firmware updates</td>
+<td>Ongoing OS patching, our responsibility</td>
+</tr>
+<tr>
+<td>Flexibility/CPU headroom</td>
+<td>Fixed, embedded-class</td>
+<td>Higher, if it matters later</td>
+</tr>
+<tr>
+<td>Unit cost at required throughput</td>
+<td>~$100-class travel router</td>
+<td>Often more, once a real NIC + case + PSU are added</td>
+</tr>
+</tbody>
+</table>
+<h2 id="recommendation-gl-inet">Recommendation: GL-iNet</h2>
+<p>This is 12 identical small router/switch appliances for a touring
+event that need to just work — exactly the product category a travel
+router is built for. A generic Linux box gives more flexibility and CPU
+headroom we don't need here, at the cost of more setup work, more
+failure modes, no vendor throughput guarantee, and a bulkier kit per
+theatre. The one real advantage of the alternative — no vendor lock-in —
+doesn't outweigh those costs for this deployment. Keep GL-iNet as the
+primary; this alternative is documented for completeness, not as an
+equally-weighted option.</p>
+</body></html>

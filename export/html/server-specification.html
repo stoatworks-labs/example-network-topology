@@ -1,0 +1,764 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Consolidated services server — minimum specification</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/server-specification.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1
+id="consolidated-services-server--minimum-specification">Consolidated
+services server — minimum specification</h1>
+<p>The server itself is already on hand (see <a
+href="topology.html"><code>docs/topology.md</code></a>) — this document
+calculates the <strong>target minimum spec</strong> to check that
+hardware against, working forward from the actual workload this box runs
+(<a href="topology.html"><code>docs/topology.md</code></a>'s
+VM/container table) rather than a generic "decent server" guess. Where a
+figure depends on something this repo hasn't pinned down (the
+mothership's own VMix instance's camera/channel count, the event's
+actual day count/hours), that's flagged explicitly rather than assumed —
+see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a> for
+the running list.</p>
+<h2 id="storage--three-pools-not-one-array">Storage — three pools, not
+one array</h2>
+<p>Unraid's traditional parity array is built around mixed-size spinning
+disks with a single-write-at-a-time parity bottleneck, absorbed by an
+SSD cache pool that the overnight "mover" drains onto the array — a good
+fit for bulk archival storage, a poor fit for a box whose entire storage
+workload here is already flash. Recommendation: skip the legacy array
+entirely and use three separate Unraid <strong>pools</strong> (ZFS,
+available since Unraid 6.12), each sized and mirrored for what it
+actually holds.</p>
+<h3 id="containervm-pool">Container/VM pool</h3>
+<p>Holds <code>docker.img</code>, all container <code>appdata</code>
+(including the three databases — MariaDB, MongoDB, Redis — that want
+fast, low-latency small-I/O access), and both Windows VM vdisks.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Estimate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VMix instance vdisk</td>
+<td>~100 GB (OS + app + local scratch)</td>
+</tr>
+<tr>
+<td>BirdDog Central vdisk</td>
+<td>~80 GB (OS + app)</td>
+</tr>
+<tr>
+<td><code>docker.img</code></td>
+<td>~50 GB</td>
+</tr>
+<tr>
+<td>Combined <code>appdata</code> (12 containers + the Tailscale subnet
+router + 3 DBs)</td>
+<td>~58 GB</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>~288 GB</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Minimum: 500 GB usable, mirrored NVMe</strong> (2× ~512GB+
+NVMe) — comfortable headroom over the ~288 GB estimate, and mirrored
+because rebuilding two Windows VMs from scratch mid-event is real
+downtime, not just an inconvenience. NVMe specifically (not SATA SSD)
+because VM and database performance is latency-sensitive, not
+throughput-bound.</p>
+<p><strong>Drive class: mainstream consumer NVMe with onboard DRAM
+cache</strong> (not a DRAM-less budget drive) is genuinely sufficient
+here — no need for the enterprise tier the recording pool below needs.
+VM/appdata churn is nowhere near enough sustained write volume to
+meaningfully test even consumer-grade endurance ratings, and the
+workload cares about consistent low-queue-depth latency (how snappy a
+container restart or a DB query feels), which good consumer NVMe already
+delivers.</p>
+<h3 id="content-pool--500-gb-as-specified">Content pool — 500 GB (as
+specified)</h3>
+<p>Nextcloud's own storage: theatre laptop content synced via rclone
+(established at 10-20 GB/theatre × 12 theatres = <strong>120-240
+GB</strong>, see <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>),
+plus Nextcloud's own app/database footprint and versioning overhead
+(flagged as a real multiplier in <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>'s
+versioning caveat — version retention settings directly affect how much
+of this budget versioning eats into). 500 GB gives roughly 2-4x headroom
+over the raw 120-240 GB content estimate, which comfortably absorbs
+version history without needing an aggressive retention policy from day
+one.</p>
+<p><strong>Recommendation: mirrored, SATA SSD is adequate</strong> (no
+NVMe-level latency requirement here) — mirrored less for data-loss
+prevention (every laptop is still the source of truth for its own
+content even if this copy is lost) and more for
+<strong>availability</strong>: a lost content pool mid-event means
+re-running the initial bulk sync for all 12 theatres, which is itself
+only a ~20-40 minute operation at 50-100 Mbps
+(<code>docs/bandwidth-analysis.md</code>) but is a real, avoidable
+disruption during a live event.</p>
+<p><strong>Drive class: same reasoning as the container/VM pool</strong>
+— mainstream consumer SATA SSD with DRAM cache, the cheapest reasonable
+tier that still isn't a DRAM-less budget part. Gentle, sporadic write
+pattern; no case for spending more here.</p>
+<h3 id="recording-pool--8-tb-all-flash-as-specified">Recording pool — 8
+TB, all-flash (as specified)</h3>
+<p>This is where the calculation actually matters — both <em>why</em> it
+has to be flash and <em>whether 8 TB is enough</em>.</p>
+<p><strong>Why all-flash, not spinning disk — it's not about raw
+throughput.</strong> Combined worst-case write load onto this pool, from
+<a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>'s
+own established figures:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Per-unit worst case</th>
+<th>Count</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ATEM ISO ingest</td>
+<td>~90.4 Mbps (94 Mbps incl. WireGuard tax)</td>
+<td>12 theatres</td>
+<td>~1,085 Mbps</td>
+</tr>
+<tr>
+<td>VMix Record ingest</td>
+<td>~30 Mbps (assumed, unconfirmed — see
+<code>docs/open-questions.md</code>)</td>
+<td>4 PCs</td>
+<td>~120 Mbps</td>
+</tr>
+<tr>
+<td><strong>Combined</strong></td>
+<td></td>
+<td></td>
+<td><strong>~1,205 Mbps ≈ 151 MB/s</strong></td>
+</tr>
+</tbody>
+</table>
+<p>151 MB/s sustained is well within a single 7200 RPM HDD's <em>rated
+sequential</em> throughput on paper — so the case for flash isn't the
+aggregate number, it's the <strong>access pattern</strong>. That 151
+MB/s isn't one stream, it's <strong>16 independent files being appended
+to concurrently</strong> (12 ATEM + 4 VMix, each on its own ~60-90s poll
+cycle — see <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> and
+<a
+href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>),
+with Nextcloud's own targeted <code>occ files:scan</code> indexing calls
+layered on top of that. A spinning disk pays a real seek penalty
+(~5-15ms) every time it switches between those 16+ scattered write
+targets — under this specific concurrent-scattered pattern, achievable
+HDD throughput collapses to a small fraction of its rated sequential
+number, while any flash drive (no seek penalty) handles 151 MB/s of
+concurrent random-ish writes without strain. The "all-flash" requirement
+is about the write <em>pattern</em> this design creates, not the
+volume.</p>
+<p><strong>Does 8 TB actually cover the event?</strong> This is the one
+figure genuinely blocked on an input this repo doesn't have:
+<strong>actual event duration (days × active-recording hours/day) isn't
+established anywhere in this design.</strong> Working from the same
+combined-load figures:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Combined rate</th>
+<th>8 TB covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Realistic (5-7 active ATEM channels/theatre, per
+<code>docs/bandwidth-analysis.md</code>)</td>
+<td>~99.4 MB/s ≈ 349 GB/hr</td>
+<td><strong>~23.5 hours</strong></td>
+</tr>
+<tr>
+<td>Worst case (all 9 ATEM channels/theatre)</td>
+<td>~150.6 MB/s ≈ 530 GB/hr</td>
+<td><strong>~15.5 hours</strong></td>
+</tr>
+</tbody>
+</table>
+<p>At a typical ~8-10 hour active-program day, that's roughly
+<strong>1.5-3 days</strong> of continuous worst-to-realistic-case
+recording before the pool fills — workable for a short event, tight for
+a longer one, and this assumes every theatre is actually near its
+"realistic" active-channel count for the whole day, which per the
+original design intent ("likely only 4-6 [channels] will actually have
+any data") may be conservative. <strong>Confirm actual event length
+against this table before treating 8 TB as settled</strong> — if it's a
+multi-day event without a periodic archive-off step already planned,
+either the day count needs to fit the budget above, or a nightly
+archive-to-cold-storage step needs adding to free capacity for the next
+day. The ingest pipelines write directly into Nextcloud's External
+Storage location and, in the same pull, the edit-suite NAS (<a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>, <a
+href="live-editing.html"><code>docs/live-editing.md</code></a>) —
+neither write has an offload stage that frees <em>this</em> pool.
+Tracked in <code>docs/open-questions.md</code>.</p>
+<p><strong>Redundancy — worth adding capacity for, not assumed in the 8
+TB figure.</strong> This pool is the authoritative archive: the
+dual-write to the edit-suite NAS (<a
+href="live-editing.html"><code>docs/live-editing.md</code></a>) does
+give the footage a second landing spot at ingest time, but that copy may
+be a curated subset (open-questions #12) and one of the candidate NAS
+units is RAID 0 — so a failure here still risks footage that can't be
+re-shot. Two ways to get 8 TB <em>usable</em> with 1-drive fault
+tolerance:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Raw capacity needed</th>
+<th>Trade-off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>2× 8 TB NVMe, mirrored</strong></td>
+<td>16 TB raw</td>
+<td>Simplest to reason about, fastest resilver, 50% capacity
+overhead</td>
+</tr>
+<tr>
+<td><strong>4× ~2.7 TB NVMe, RAID-Z1</strong></td>
+<td>~10.8 TB raw</td>
+<td>75% capacity efficiency vs. 50%, slower resilver on failure, more
+drives to manage</td>
+</tr>
+</tbody>
+</table>
+<p>Recommend the mirror for the same reason Unraid was chosen over
+TrueNAS SCALE elsewhere in this design (<code>docs/topology.md</code>) —
+operational simplicity, since this may be maintained by AV staff rather
+than a storage specialist, matters more here than squeezing out the last
+few TB of efficiency.</p>
+<p><strong>Endurance.</strong> Since this repo already treats the router
+hardware as reusable across events (see <a
+href="gl-inet-rationale.html"><code>docs/gl-inet-rationale.md</code></a>),
+the same applies here — a full pool fill is roughly 8 TB of actual flash
+writes (these are byte-range <em>appends</em>, not whole-file rewrites,
+so total written ≈ total recorded, not a multiple of it), and a mirrored
+pair each independently absorb that same 8 TB per event. Even a
+deliberately-generous worst-case estimate — ~530 GB/hr sustained for a
+full 24 h/day across ~20 event-days a year, beyond what the pool could
+even hold without nightly archive-off — comes to roughly 260 TB/year of
+actual writes to the pool — comfortably inside what even the
+<em>lower</em> enterprise endurance tier (see below) is rated for over a
+normal warranty period, so endurance headroom isn't actually the tight
+constraint here once the right drive class is picked.</p>
+<p><strong>Drive class: this is the one pool where consumer-grade flash
+— even a good, DRAM-cached, high-TBW consumer drive — isn't the right
+call, and endurance isn't the reason.</strong> The deciding factor is
+<strong>power-loss protection (PLP)</strong>: capacitor-backed circuitry
+that flushes a drive's write cache to permanent storage if power drops
+mid-write. Consumer/prosumer NVMe drives don't have this. A generator
+hiccup, a tripped breaker, or a UPS transfer glitch mid-event — exactly
+the kind of thing a live event's own power setup can produce — risks
+losing whatever was sitting in the drive's write cache at that instant,
+on the one pool in this whole design with no second copy of the data
+anywhere else. That's the actual argument for <strong>enterprise-class
+NVMe</strong> here specifically (not "enterprise is always better,"
+which isn't true for the other two pools above) — server-validated
+drives with capacitor-backed PLP, provisioned for sustained
+high-queue-depth writes without the cache-cliff behavior consumer drives
+show once their fast write cache fills under prolonged concurrent load.
+Enterprise drives are also sold in more than one endurance tier
+(commonly around 1 drive-write-per-day vs. 3× that for a heavier-duty
+tier) — the lighter of the two tiers already has large margin over this
+workload's realistic annual write volume, so there's no need to pay for
+the heavier tier's endurance on top of the PLP requirement that's
+actually driving this choice.</p>
+<h2 id="write-caching">Write caching</h2>
+<p>With every pool already flash (no legacy spinning array behind
+anything), the classic Unraid "SSD cache pool absorbing writes before
+the overnight mover" pattern doesn't apply here — there's no slow array
+for it to shield. What actually buffers the bursty, 16-concurrent-stream
+ingest pattern described above is:</p>
+<ul>
+<li><strong>RAM</strong> — the OS page cache smooths write bursts before
+they hit the drives (see the RAM section below, which already budgets
+for this).</li>
+<li><strong>The drives' own onboard DRAM cache</strong> — a real
+purchasing consideration: choose NVMe drives with onboard DRAM (not
+DRAM-less/QLC-only budget drives), since sustained multi-stream
+concurrent writes are exactly the workload DRAM-less drives handle
+worst.</li>
+</ul>
+<h2 id="nic--validating-the-already-decided-2-bonded-gbe">NIC —
+validating the already-decided 2× bonded GbE</h2>
+<p><a href="topology.html"><code>docs/topology.md</code></a> already
+settled on 2× gigabit NICs, bonded (802.3ad LACP). Checking that against
+the heaviest combined load this design has identified — the
+mass-NDI-fallback disaster scenario from <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>,
+layered on top of full ATEM ingest:</p>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>Load</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Inbound (theatres → mothership)</td>
+<td>ATEM ingest worst case (~1,123 Mbps) + VMix ingest (~120 Mbps) +
+ATEM Overseer (~125 Mbps) + Flock (~125 Mbps)</td>
+<td>~1,493 Mbps</td>
+</tr>
+<tr>
+<td>Outbound (mothership → theatres), all 12 theatres on NDI fallback
+simultaneously</td>
+<td>12 × ~130 Mbps</td>
+<td>~1,560 Mbps</td>
+</tr>
+</tbody>
+</table>
+<p>(Inbound total updated from an earlier ~1,205 Mbps once ATEM
+Overseer's and Flock's monitoring/preview streams were added — see <a
+href="topology.html"><code>docs/topology.md</code></a> — each
+contributing ~125 Mbps fleet-wide on top of what was already accounted
+for.)</p>
+<p>Both directions run independently over a full-duplex link, so they
+don't stack against each other — but each direction needs to fit across
+the bond's two physical 1 Gbps links via LACP's per-flow hashing (each
+<em>individual</em> flow is capped at 1 Gbps, since LACP doesn't split
+one flow across both links). With 14+ independent theatre flows in each
+direction (12 ATEM ingest + 12 Overseer + 12 Flock inbound, each
+individually well under 1 Gbps — worst case ~94 Mbps ATEM, ~10.4 Mbps
+apiece for Overseer/Flock, ~130 Mbps NDI outbound), the hash has plenty
+of separate flows to distribute across both links without any single one
+bottlenecking — <strong>the existing 2× 1GbE bonded design still checks
+out, including against the worst-case disaster scenario</strong>, not
+just normal operation. Margin has narrowed since this was first
+validated (~1,205 → ~1,493 Mbps inbound, both still comfortably under
+the bond's ~2,000 Mbps aggregate), the same erosion <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>
+tracks everywhere else Overseer and Flock touch this design — see that
+doc's own worked-through comparison of this exact disaster scenario with
+and without pausing ATEM ingest fleet-wide, which is the more
+consequential mitigation than the NIC choice itself.</p>
+<p><strong>One load deliberately NOT counted against this bond: the
+dual-write to the edit-suite NAS.</strong> The same ingest containers
+that produce the inbound figures above also write every recording out
+again to the edit-suite NAS at <code>192.168.22.2</code> (<a
+href="live-editing.html"><code>docs/live-editing.md</code></a>) — up to
+another ~1,243 Mbps of outbound at worst case. If that leg transited the
+theatre-facing bond it would stack on top of the NDI-fallback outbound
+and break the conclusion above — so it must <strong>not</strong>: the
+edit suite is its own 10GbE LAN, and this box needs a separate
+edit-LAN-facing interface (a 10GbE NIC, or at minimum its own dedicated
+port) for that traffic, counted in the spec alongside the 2× bonded
+theatre-facing GbE.</p>
+<p><strong>Worth it anyway: 2× 2.5GbE, if the box/switch already support
+it at no real added cost.</strong> Doesn't change the conclusion above,
+but many current motherboards ship 2.5GbE onboard already, and it buys
+real margin against the one thing this analysis can't fully account for
+— LACP hash distribution isn't perfectly even in practice, and real
+headroom above a "checks out, but not by a huge margin" number is cheap
+insurance if it's already sitting on the board.</p>
+<h2 id="ram">RAM</h2>
+<table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>Estimate</th>
+<th>Basis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VMix instance VM</td>
+<td>32 GB</td>
+<td><a
+href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">vMix's
+own "Mid" tier guidance</a> (4-6 cameras, HD multi-cam) — see GPU
+section for the caveat on which tier actually fits</td>
+</tr>
+<tr>
+<td>BirdDog Central VM</td>
+<td>8 GB</td>
+<td>Routing/control app, not encode — lighter than VMix</td>
+</tr>
+<tr>
+<td>Nextcloud + MariaDB + Redis</td>
+<td>6 GB</td>
+<td>InnoDB buffer pool + PHP workers + Redis cache</td>
+</tr>
+<tr>
+<td>UniFi Controller + MongoDB</td>
+<td>3 GB</td>
+<td>Manages only the Cloud Gateway (the 14 GL-iNet routers are
+GLKVM-Cloud's, not UniFi's) — MongoDB's WiredTiger cache doesn't need
+much at this scale</td>
+</tr>
+<tr>
+<td>ATEM Overseer + Flock</td>
+<td>5 GB</td>
+<td>Unlike the other admin/control-plane containers below, these two are
+actually decoding video — up to 12 concurrent theatre streams apiece for
+their monitoring dashboards (see <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>),
+not just pushing config or metadata</td>
+</tr>
+<tr>
+<td>Restreamer, NDI Discovery, DERP, both ingest containers, GLKVM-Cloud
+(rttys+coturn), ATEM Fleet Admin, Tailscale router</td>
+<td>9 GB</td>
+<td>9 lightweight containers, ~1 GB each budgeted</td>
+</tr>
+<tr>
+<td>Unraid OS + ZFS ARC (3 pools, ~8.5 TB combined)</td>
+<td>8 GB</td>
+<td>Soft ZFS guidance is roughly 1 GB RAM per TB of pool for decent ARC
+hit rate — this is a floor, not a hard requirement, ZFS is adaptive</td>
+</tr>
+<tr>
+<td><strong>Subtotal</strong></td>
+<td><strong>~71 GB</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Minimum, with headroom</strong></td>
+<td><strong>96 GB</strong></td>
+<td>71 GB doesn't map to a clean DIMM configuration on an 8-channel
+platform (see CPU section) — 96 GB is the next practical capacity above
+it with real margin, not just rounding up to the subtotal</td>
+</tr>
+<tr>
+<td><strong>Recommended</strong></td>
+<td><strong>128 GB</strong></td>
+<td>Matches vMix's own "64 GB for heavy Instant Replay" guidance with
+room to spare, and gives ZFS ARC meaningfully more room across all three
+pools</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ECC, not just capacity.</strong> All three storage pools
+above are ZFS — ZFS leans on RAM for checksumming and its ARC read
+cache, and a bit flip in ordinary (non-ECC) RAM can get silently written
+into a checksum or into the recording pool's parity/mirror data before
+anyone notices, which defeats the whole point of using ZFS for the one
+pool holding unrepeatable footage. ECC RAM catches and corrects that
+class of error before it propagates. Pair this with a platform that has
+<em>validated</em> ECC support (see the CPU section below) — ECC only
+protects against silent corruption if it's actually enabled and working,
+which isn't guaranteed on every board that merely accepts ECC modules
+electrically.</p>
+<h2 id="cpu">CPU</h2>
+<table>
+<thead>
+<tr>
+<th>Workload</th>
+<th>Estimate</th>
+<th>Basis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VMix instance</td>
+<td>8 cores dedicated</td>
+<td><a
+href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">vMix's
+official "Mid" tier</a>: "Core i7 / Core Ultra 7, 3.5-4.5 GHz, 8+ cores"
+for 4-6 camera HD multi-cam</td>
+</tr>
+<tr>
+<td>BirdDog Central</td>
+<td>2 cores</td>
+<td>Routing/control, not encode</td>
+</tr>
+<tr>
+<td>Docker stack (12 containers + the Tailscale subnet router + 3
+DBs)</td>
+<td>5-7 cores shared</td>
+<td>Mostly I/O-bound; Restreamer's SRT relay (remux, not transcode, per
+this design's primary path) and ATEM Overseer + Flock (each decoding up
+to 12 concurrent monitoring streams) are the heaviest individual
+containers, still light relative to VMix's own budget</td>
+</tr>
+<tr>
+<td>Unraid OS/array overhead</td>
+<td>2 cores</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Subtotal</strong></td>
+<td><strong>17-19 cores</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Minimum</strong></td>
+<td><strong>16 cores / 32 threads, high sustained (not just boost)
+clock</strong></td>
+<td>Rounds slightly below the subtotal's high end — see platform-class
+discussion below, which matters more than squeezing out the last 1-3
+cores</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The platform class matters more than the core count, and this
+is worth spelling out rather than just naming a chip.</strong> A 16-core
+desktop CPU is easy to find — the actual constraint is everything
+<em>around</em> it:</p>
+<ul>
+<li><strong>PCIe lanes.</strong> Between the GPU and up to 8 NVMe drives
+spread across the three pools above, this box realistically wants 24-40+
+usable PCIe lanes. Mainstream consumer desktop platforms (the socket a
+typical Ryzen 9 or Core i9/Ultra 9 sits in) top out around half that
+once you account for the GPU slot, chipset-shared bandwidth, and onboard
+I/O all competing for the same limited lane budget — workable if you're
+willing to compromise the number of drives or share lanes through
+bifurcation, tight otherwise. A <strong>workstation/HEDT-class
+platform</strong> (Threadripper PRO or a high-end Xeon W, not a consumer
+desktop chip) is the category that actually clears this without
+compromise — this is the same reason HEDT platforms exist at all, not a
+preference.</li>
+<li><strong>Validated ECC.</strong> Some mainstream consumer boards
+technically accept ECC memory electrically, but whether ECC actually
+<em>functions</em> — gets detected, enabled, and does correction —
+varies board-to-board and isn't something to gamble on for the pool
+holding irreplaceable footage. Workstation platforms build ECC support
+into the platform itself, officially validated, not a maybe.</li>
+<li><strong>Sustained clock over peak boost.</strong> vMix is a
+continuously-loaded, real-time workload, not a bursty one — a CPU's
+<em>base</em> clock under sustained all-core load is a better predictor
+of live-production performance than its headline single-core boost
+number. Worth actually comparing base clocks across whichever specific
+chips are shortlisted, not just core count.</li>
+</ul>
+<p><strong>Trade-off worth being upfront about</strong>:
+workstation/HEDT platforms cost meaningfully more (CPU + motherboard
+together) than the mainstream desktop alternative, and idle power draw
+for 24/7 operation runs higher too. That's a real cost, not a rounding
+error — but the alternative doesn't actually satisfy this box's lane and
+ECC requirements, so it's not a straightforward "save money" option,
+it's a different, smaller build with real compromises attached.</p>
+<p><strong>Also required, not a separate line item: IOMMU (Intel VT-d)
+or AMD-Vi support</strong> on both the CPU and motherboard, for GPU
+passthrough to the VMix VM — already flagged as unconfirmed in <a
+href="open-questions.html"><code>docs/open-questions.md</code></a> #1;
+whatever CPU/board combination is checked against this spec, confirm
+this specifically. Both platform classes above support it; this is
+really only a risk on very old hardware.</p>
+<h2 id="gpu">GPU</h2>
+<p>VMix strongly recommends a dedicated NVIDIA GPU for NVENC hardware
+encode — already the existing design's own reasoning for GPU passthrough
+(<a href="topology.html"><code>docs/topology.md</code></a>:
+"Windows-only; benefits from hardware encode"). Current vMix-published
+tiers (<a
+href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">source</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>GPU</th>
+<th>Use case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entry (1-2 cams)</td>
+<td>RTX 5060 Ti (16 GB)</td>
+<td>1080p stream + record</td>
+</tr>
+<tr>
+<td><strong>Mid (4-6 cams)</strong></td>
+<td><strong>RTX 5070 Ti</strong></td>
+<td>HD multi-cam, 1080p replay</td>
+</tr>
+<tr>
+<td>Demanding (8+ cams / 4K)</td>
+<td>RTX 5080+</td>
+<td>4K productions, multicorder</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Genuinely can't pin an exact minimum here</strong>, and worth
+being upfront about why: the 2 VMix <em>nodes</em> clearly handle "4×
+BirdDog P400 cameras, 2× VMix PCs" each (<a
+href="topology.html"><code>docs/topology.md</code></a>) — but what the
+mothership's own separate <strong>VMix instance</strong> VM actually
+processes isn't documented anywhere in this repo. Recommend the
+<strong>Mid tier (RTX 5070 Ti-equivalent performance/encode
+class)</strong> as a reasonable working target absent that detail —
+check the existing "decent GPU" already on hand (<a
+href="topology.html"><code>docs/topology.md</code></a>/<a
+href="open-questions.html"><code>docs/open-questions.md</code></a>)
+against this table once the mothership VMix instance's actual
+role/channel count is confirmed.</p>
+<p><strong>Card class: a workstation/professional-line GPU at that
+performance tier, not the consumer gaming card itself</strong> — this is
+a genuinely different recommendation from just naming a GeForce tier,
+and worth the reasoning:</p>
+<ul>
+<li><strong>Chassis fit.</strong> Consumer gaming GPUs are built for
+open-air desktop-tower cooling (multiple large fans dumping heat
+sideways into the case, relying on front-to-back case airflow to clear
+it). A server chassis rarely has that airflow profile. Workstation cards
+in this class commonly ship as compact, single-slot, blower-style
+coolers that pull air in and exhaust it straight out the card's own
+bracket — the form factor is built for a server/rack enclosure, not
+retrofitted into one.</li>
+<li><strong>Driver behavior under continuous load.</strong> Consumer GPU
+drivers are tuned for gaming sessions — burst to a high boost clock,
+then throttle. A continuously-loaded encode workload running for a
+multi-day event wants a driver branch built for sustained clocks under
+indefinite load, which is what the workstation/enterprise driver track
+is actually validated for.</li>
+<li><strong>ECC VRAM</strong>, same rationale as ECC system RAM above —
+protects against silent corruption during a multi-day continuous
+run.</li>
+<li><strong>Licensing.</strong> Consumer GPU license terms typically
+carry restrictive language around "datacenter"-style deployment that
+doesn't clearly define whether a single VM on owned hardware counts — a
+real, if loosely-worded and thinly-enforced, gray area for running a
+gaming card inside a server chassis long-term. The
+workstation/professional line's license doesn't carry that ambiguity;
+it's built for exactly this deployment shape. Worth noting this is a
+licensing question, not a technical one — passthrough itself works fine
+on either card class.</li>
+<li>The actual NVENC encode silicon is typically the <strong>same
+generation</strong> across the consumer and workstation lines at a
+comparable performance tier — this isn't a "buy workstation for better
+encoding" argument, the encode quality/capability is essentially
+equivalent. It's specifically about fit for continuous server
+operation.</li>
+</ul>
+<p><strong>Worth knowing when pricing this out</strong>: the historical
+cost gap between a workstation-class card and its consumer-tier
+equivalent has narrowed substantially in 2026 amid broader GPU
+memory/component pricing pressure — confirm current pricing before
+assuming the workstation option carries the large multiplier it used
+to.</p>
+<h2
+id="summary--minimum-spec-to-check-the-existing-server-against">Summary
+— minimum spec to check the existing server against</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Minimum</th>
+<th>Why this class</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU</td>
+<td>16 cores / 32 threads, workstation/HEDT platform (Threadripper PRO
+or Xeon W class, not a mainstream desktop chip), strong sustained
+clock</td>
+<td>PCIe lane count for GPU + up to 8 NVMe drives, validated ECC
+support</td>
+</tr>
+<tr>
+<td>Motherboard</td>
+<td>Workstation/HEDT chipset, IOMMU/AMD-Vi capable, validated ECC
+support, enough PCIe 4.0/5.0 lanes for 3 NVMe pools + GPU</td>
+<td>Same reasoning as CPU — the two are a package</td>
+</tr>
+<tr>
+<td>RAM</td>
+<td>96 GB minimum, 128 GB recommended, ECC, populate all available
+channels</td>
+<td>ZFS data integrity across all 3 pools; matches vMix's own heavy-use
+guidance</td>
+</tr>
+<tr>
+<td>GPU</td>
+<td>NVENC-capable, workstation/professional line at an RTX 5070
+Ti-equivalent tier (unconfirmed exact tier — see above)</td>
+<td>Server-chassis cooling fit, sustained-clock driver, ECC VRAM,
+cleaner passthrough licensing</td>
+</tr>
+<tr>
+<td>Container/VM pool</td>
+<td>500 GB usable, mirrored, consumer-grade DRAM-cached NVMe</td>
+<td>Latency-sensitive VM/DB workload; consumer endurance is more than
+enough</td>
+</tr>
+<tr>
+<td>Content pool</td>
+<td>500 GB usable, mirrored, consumer-grade DRAM-cached SATA SSD</td>
+<td>Gentle Nextcloud file I/O; no case for spending more</td>
+</tr>
+<tr>
+<td>Recording pool</td>
+<td>8 TB usable, mirrored (16 TB raw), enterprise-grade NVMe with
+power-loss protection</td>
+<td>PLP is the deciding factor — this pool is the authoritative archive
+(the edit-suite NAS dual-write copy may be a subset, and may be RAID 0 —
+see <a href="live-editing.html"><code>docs/live-editing.md</code></a>);
+confirm event duration against the capacity table above first</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>2× 1GbE, bonded LACP (already decided, validated above) — 2× 2.5GbE
+if free to obtain — <strong>plus a separate edit-LAN-facing interface
+(10GbE) for the dual-write leg</strong></td>
+<td>Checks out even against the mass-NDI-fallback disaster scenario,
+provided the edit-suite dual-write never rides the theatre-facing
+bond</td>
+</tr>
+</tbody>
+</table>
+<p>Everything above is a calculated <strong>target</strong>, not a
+purchase order — the actual box is already on hand per
+<code>docs/topology.md</code>. Next step is checking its real spec
+against this table and updating <a
+href="open-questions.html"><code>docs/open-questions.md</code></a> #1
+with the result.</p>
+</body></html>

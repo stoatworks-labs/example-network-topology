@@ -1,0 +1,674 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bandwidth analysis — venue-supplied VLANs</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/bandwidth-analysis.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="bandwidth-analysis--venue-supplied-vlans">Bandwidth analysis —
+venue-supplied VLANs</h1>
+<p><strong>New constraint that changes the calculus:</strong> the 4
+uplink VLANs are not our infrastructure — they're supplied by the venue
+over their existing structured cabling, each hard-capped at <strong>1
+Gbps</strong>, and <strong>each VLAN port is expensive</strong>. The
+goal is minimum VLAN count at adequate performance, not the reverse.
+This replaces the earlier framing in <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>
+(which assumed we controlled VLAN addressing/count freely) — the
+<em>addressing</em> there is still fine, the <em>count</em> now has a
+real cost pressure behind it that this doc quantifies.</p>
+<p><strong>Assumption to confirm with the venue:</strong> the 1 Gbps
+figure is treated here as a standard switched-Ethernet full-duplex
+rating (1 Gbps <em>each direction</em>, not a shared aggregate) — true
+for virtually all modern structured cabling, but worth a one-line
+confirmation rather than assuming.</p>
+<h2 id="tailscalewireguard-overhead">Tailscale/WireGuard overhead</h2>
+<p>Every figure below that crosses the tailnet (SRT, NDI, ATEM ingest,
+rclone) is wrapped in a WireGuard tunnel between the theatre's A-1300
+and the mothership's Tailscale container — that adds a real,
+quantifiable tax on top of the raw payload. For IPv4 at full-size
+(1500B) packets, WireGuard's header overhead is 60 bytes (20B IP + 8B
+UDP + 32B WireGuard header) — <strong>~4.0%</strong> (<a
+href="https://lists.zx2c4.com/pipermail/wireguard/2017-December/002201.html">header
+breakdown</a>). All figures in this doc already have that 4% folded
+in.</p>
+<p><strong>Presenter internet does NOT get this tax.</strong> It's a
+separate path — presenter laptops go straight out to the internet via
+the A-1300's normal NAT/WAN, never touching the Tailscale tunnel at all
+(see <a href="tailscale.html"><code>docs/tailscale.md</code></a>: only
+the 14 A-1300s and the mothership run Tailscale; nothing routes
+presenter traffic through it). It may still share the same physical VLAN
+link and the same router (unconfirmed — see the recommendation at the
+end of this doc), but it never shares the encrypted tunnel or its
+overhead.</p>
+<h2
+id="real-world-per-traffic-type-figures-wireguard-overhead-included-where-it-applies">Real-world
+per-traffic-type figures (WireGuard overhead included where it
+applies)</h2>
+<table>
+<thead>
+<tr>
+<th>Traffic</th>
+<th>Direction</th>
+<th>Basis</th>
+<th>Figure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SRT, baseline (static/motion-graphics)</td>
+<td>Mothership → theatre</td>
+<td>3-6 Mbps encoder for low-motion 1080p H.264, +25% SRT overhead (<a
+href="https://www.haivision.com/blog/all/how-to-configure-srt-settings-video-encoder-optimal-performance/">Haivision</a>),
++4% WireGuard</td>
+<td><strong>~5.8 Mbps</strong></td>
+</tr>
+<tr>
+<td>SRT, peak (opening/closing, higher motion)</td>
+<td>Mothership → theatre</td>
+<td>6-8 Mbps encoder + 25% overhead + 4% WireGuard</td>
+<td><strong>~10.4 Mbps</strong></td>
+</tr>
+<tr>
+<td><strong>NDI backup, active (1080p50, full — not HX)</strong></td>
+<td>Mothership → theatre</td>
+<td>Official NDI spec (<a
+href="https://docs.ndi.video/all/getting-started/white-paper/bandwidth">docs.ndi.video</a>)
+— <strong>roughly constant regardless of content</strong>, unlike SRT's
+H.264 long-GOP; the "mostly static graphics" discount does not apply
+here. +4% WireGuard</td>
+<td><strong>~130 Mbps</strong></td>
+</tr>
+<tr>
+<td>ATEM ISO ingest, realistic</td>
+<td>Theatre → mothership</td>
+<td>5-7 active streams × 10 Mbps (your figures) + 4% WireGuard</td>
+<td><strong>~62 Mbps</strong></td>
+</tr>
+<tr>
+<td>ATEM ISO ingest, worst case</td>
+<td>Theatre → mothership</td>
+<td>all 9 streams × 10 Mbps + 4% WireGuard</td>
+<td><strong>~94 Mbps</strong></td>
+</tr>
+<tr>
+<td><strong>ATEM Overseer monitoring stream</strong></td>
+<td>Theatre → mothership</td>
+<td>10 Mbps per theatre (your figure) + 4% WireGuard — flat, doesn't
+scale with ATEM channel count like ISO ingest does, see <a
+href="topology.html"><code>docs/topology.md</code></a></td>
+<td><strong>~10.4 Mbps</strong></td>
+</tr>
+<tr>
+<td><strong>Flock BirdDog Play preview stream</strong></td>
+<td>Theatre → mothership</td>
+<td>10 Mbps SRT per theatre (your figure) + 4% WireGuard — flat, same
+treatment as the Overseer stream, see <a
+href="topology.html"><code>docs/topology.md</code></a></td>
+<td><strong>~10.4 Mbps</strong></td>
+</tr>
+<tr>
+<td>rclone file sync, steady-state</td>
+<td>Theatre → mothership</td>
+<td>sporadic post-ingest updates only — see below</td>
+<td><strong>~5 Mbps avg</strong></td>
+</tr>
+<tr>
+<td>rclone file sync, worst case</td>
+<td>Theatre → mothership</td>
+<td>multiple laptops syncing simultaneously (was already implicit in the
+per-theatre worst-case upstream total below; made explicit here)</td>
+<td><strong>~15 Mbps</strong></td>
+</tr>
+<tr>
+<td>rclone file sync, initial bulk ingest</td>
+<td>Theatre → mothership</td>
+<td>10-20 GB/theatre, <strong>one-time</strong></td>
+<td>not a sustained-load concern — see below</td>
+</tr>
+<tr>
+<td>Presenter internet</td>
+<td>Both, shared VLAN link, <strong>no WireGuard tax</strong></td>
+<td>web/slides/occasional demo video — <strong>unconfirmed whether it
+shares this VLAN or is separate infrastructure</strong></td>
+<td>~10-25 Mbps allowance</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Initial bulk ingest isn't a bandwidth risk if scheduled
+right.</strong> 15 GB at a generously throttled 100 Mbps takes ~20
+minutes; even at a conservative 50 Mbps, ~40 minutes. Run it during
+load-in/setup, not concurrent with a live session, and it's a non-issue
+regardless of VLAN count. Don't let this drive the VLAN-count
+decision.</p>
+<h2
+id="per-theatre-sustained-budget-during-a-live-session-excluding-the-one-time-bulk-ingest">Per-theatre
+sustained budget (during a live session, excluding the one-time bulk
+ingest)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Realistic</th>
+<th>Worst case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Upstream (theatre → mothership)</td>
+<td><strong>~88 Mbps</strong></td>
+<td>~129 Mbps</td>
+</tr>
+<tr>
+<td>Downstream (mothership → theatre)</td>
+<td><strong>~21 Mbps</strong></td>
+<td>35 Mbps</td>
+</tr>
+</tbody>
+</table>
+<p>Upstream is dominated by ATEM ISO ingest, with Overseer's and Flock's
+monitoring/preview streams together now a real secondary contributor
+rather than noise — <strong>~88 Mbps</strong> breaks down as ATEM ISO
+(~62 Mbps) + Overseer (~10.4 Mbps) + Flock (~10.4 Mbps) + rclone (~5
+Mbps); <strong>~129 Mbps</strong> worst case as ATEM ISO (~94 Mbps) +
+Overseer (~10.4 Mbps) + Flock (~10.4 Mbps) + rclone worst-case (~15
+Mbps). Both monitoring streams are flat regardless of ATEM channel
+count, unlike ISO ingest — see <a
+href="topology.html"><code>docs/topology.md</code></a> for what they're
+for.</p>
+<h2
+id="new-finding-check-the-a-1300s-own-ceiling-not-just-the-shared-vlan">New
+finding: check the A-1300's own ceiling, not just the shared VLAN</h2>
+<p>The GL-iNet A-1300's own published WireGuard throughput (~170 Mbps,
+see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>) is a
+<strong>separate, tighter bottleneck</strong> from the shared VLAN —
+every byte a theatre sends/receives over the tailnet has to pass through
+that one router's crypto engine, regardless of how much headroom the
+VLAN itself has.</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Upstream</th>
+<th>Downstream</th>
+<th>Combined</th>
+<th>vs. ~170 Mbps ceiling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal (SRT active)</td>
+<td>88.2 Mbps</td>
+<td>5.8 Mbps</td>
+<td>94.0 Mbps</td>
+<td>55% — still comfortable, though the two monitoring streams together
+have eaten roughly a fifth of the headroom this used to have (was
+43%)</td>
+</tr>
+<tr>
+<td><strong>NDI fallback, this theatre only, ATEM still
+ingesting</strong></td>
+<td>88.2 Mbps</td>
+<td>130.0 Mbps</td>
+<td><strong>218.2 Mbps</strong></td>
+<td><strong>128% — exceeds the router's own ceiling</strong> (was 116%
+before Overseer, 122% with just Overseer)</td>
+</tr>
+</tbody>
+</table>
+<p>This holds <strong>regardless of VLAN consolidation</strong> — it's
+not a VLAN-count problem at all, it's a single-router problem that shows
+up the moment one theatre's ATEM ingest and NDI fallback run at the same
+time; Overseer and Flock's streams each widen that gap further, since
+both are genuinely new loads riding the same router regardless of what
+else is happening — and unlike ATEM ISO ingest, neither is something
+you'd necessarily want to pause during the exact moment (an NDI
+fallback) when knowing what's actually on screen matters most. Two
+caveats worth being honest about: the 170 Mbps figure is a vendor
+single-direction benchmark, not a confirmed simultaneous-bidirectional
+rating (flagged already in <code>docs/open-questions.md</code>), and
+even under a more favorable per-direction reading, NDI alone (130 Mbps)
+is still 76% of that ceiling on its own, with little room left for
+anything else sharing the same crypto engine.</p>
+<p><strong>Practical mitigation:</strong> if a theatre's SRT feed fails
+and it falls back to NDI, pause or throttle <em>that theatre's</em> ATEM
+ISO ingest for the duration — near-real-time review footage is a lower
+priority than the live show staying on air, and the ATEM's own SSD keeps
+recording the full-quality master regardless of whether the ingest
+pipeline is running. This is a cheap, config-only fallback response, not
+a design change. <strong>Still sufficient on its own, but with
+noticeably less margin than before both monitoring streams
+existed</strong> — pausing just the ATEM ISO ingest leaves Overseer
+(10.4 Mbps) + Flock (10.4 Mbps) + rclone</p>
+<ul>
+<li>NDI (130 Mbps) at roughly <strong>92% of the router's
+ceiling</strong> (was 86% with just Overseer, 79% before either
+existed). Still under the ceiling, but the margin this mitigation buys
+back has shrunk each time a new monitoring stream was added — worth
+watching if a fourth one is ever proposed, since this specific fallback
+stops working once the two monitoring streams alone plus NDI exceed 170
+Mbps on their own (they don't yet: 10.4+10.4+130=150.8, 89% —
+comfortable headroom even before rclone is added back in).</li>
+</ul>
+<p><strong>Worked through fully — NDI fallback + ATEM paused, at every
+level this design has a bottleneck at</strong>, since "still under the
+ceiling" at one figure doesn't tell the whole story on its own:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Without the mitigation (ATEM still ingesting)</th>
+<th>With it (ATEM paused)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Single theatre's own A-1300</strong> (upstream + downstream
+combined, vs. 170 Mbps)</td>
+<td>218.2 Mbps — <strong>128%, exceeds the ceiling</strong></td>
+<td>155.8 Mbps realistic (<strong>92%</strong>) / <strong>165.8 Mbps
+worst case (97%)</strong> — both under, but worst case leaves only ~7
+Mbps of headroom</td>
+</tr>
+<tr>
+<td><strong>That theatre's VLAN group, upstream side only</strong> (NDI
+itself doesn't touch upstream — full-duplex, separate capacity)</td>
+<td>n/a — this is exactly what the mitigation removes</td>
+<td>Drops to just rclone + Overseer + Flock per theatre (25.8-35.8 Mbps)
+— even a fully-loaded 6-theatre group sits at 15.5-21.5% upstream,
+nowhere near a concern</td>
+</tr>
+<tr>
+<td><strong>Mothership's own bonded NIC, mass-fallback disaster
+case</strong> (all 12 theatres on NDI at once)</td>
+<td>Downstream 1,560 Mbps + upstream ~1,553 Mbps worst case — both sides
+genuinely loaded</td>
+<td>Downstream unchanged at 1,560 Mbps (NDI doesn't care about the ATEM
+side), but <strong>upstream drops to just 310-430 Mbps</strong> — the
+mitigation's biggest payoff shows up here, not at the single-router
+level</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The one number worth remembering from this table: 97% at
+worst case, single theatre.</strong> The mitigation reliably resolves
+the per-router ceiling problem (128% → under 100% either way), but under
+the pessimistic rclone assumption it leaves only about 3% headroom —
+comfortably safe on paper, uncomfortably close in practice if anything
+else about that theatre's traffic runs a little hotter than modeled.
+Pausing ATEM ingest fleet-wide during a genuine mass NDI fallback is
+unambiguously the right call regardless — that's where the mitigation
+actually earns its keep, cutting the mothership's own upstream load from
+~1,553 Mbps to ~310-430 Mbps (a ~72-80% reduction depending on realistic
+vs. worst-case rclone) at exactly the moment the network is already
+under the most stress.</p>
+<p><strong>Alternative: a higher-throughput GL-iNet model.</strong>
+Would fix this numerically, but not cleanly for either mid/high-tier
+option:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>WireGuard (vendor)</th>
+<th>LAN ports</th>
+<th>Form factor</th>
+<th>~Price</th>
+<th>NDI-fallback+ATEM+Overseer+Flock utilization</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A-1300 (current)</td>
+<td>170 Mbps</td>
+<td>2</td>
+<td>Pocket travel router</td>
+<td>~$100</td>
+<td>128%</td>
+</tr>
+<tr>
+<td>Beryl AX (GL-MT3000)</td>
+<td><a href="https://www.gl-inet.com/en-us/products/gl-mt3000">300
+Mbps</a></td>
+<td><strong>1 only</strong></td>
+<td>Pocket travel router</td>
+<td>~$100-140</td>
+<td>73%</td>
+</tr>
+<tr>
+<td>Flint 2 (GL-MT6000)</td>
+<td><a href="https://www.gl-inet.com/en-us/products/gl-mt6000">900
+Mbps</a></td>
+<td>5 (2×2.5GbE+4×1GbE, minus WAN)</td>
+<td>233×137×53mm, 761g</td>
+<td>~$170</td>
+<td>24%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Beryl AX is a trap for this design specifically</strong> —
+better throughput, but only 1 LAN port total, so it can't replicate the
+dedicated-ATEM-port wiring (<a
+href="topology.html"><code>docs/topology.md</code></a>) without an
+external switch ATEM would then have to share anyway, undoing exactly
+the isolation that wiring was for.</p>
+<p><strong>Flint 2 genuinely solves it</strong> — ports to spare,
+comfortable margin (24% vs. 128%) — but it's ~3x the volume and ~5x the
+weight of the A-1300, no longer pocket-travel-router class for a 14-unit
+touring kit, at ~70% more per unit. Its 900 Mbps figure carries the same
+caveat as the A-1300's 170 Mbps: a vendor benchmark, not a confirmed
+real-world simultaneous-bidirectional rating under this exact mixed
+traffic.</p>
+<p><strong>Given the software mitigation above already fixes the same
+problem at zero hardware cost and no footprint change</strong>, a router
+swap isn't the recommended fix — it's a genuine option if the
+touring-kit footprint and cost increase are acceptable trade-offs, not a
+clear upgrade.</p>
+<h2 id="is-the-current-plan-4-vlans-3-theatres-each-sufficient">Is the
+current plan (4 VLANs, 3 theatres each) sufficient?</h2>
+<p><strong>Yes, with large margin — at the VLAN level.</strong> Per-VLAN
+upstream aggregate: 3 × 88 = <strong>~265 Mbps realistic (27% of 1
+Gbps)</strong>, 3 × 129 ≈ 388 Mbps even at worst case (39%). Downstream
+is lower still. The VLAN was never actually at risk — the per-router
+ceiling above is the one that actually bites first, and no VLAN count
+changes that.</p>
+<h2
+id="consolidating-further-fewer-more-expensive-vlans-handling-more-theatres-each">Consolidating
+further (fewer, more expensive VLANs handling more theatres each)</h2>
+<table>
+<thead>
+<tr>
+<th>VLANs</th>
+<th>Theatres/VLAN</th>
+<th>Upstream, realistic</th>
+<th>Upstream, worst case</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 (current)</td>
+<td>3</td>
+<td>265 Mbps (27%)</td>
+<td>388 Mbps (39%)</td>
+<td>Comfortable, as designed</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4</td>
+<td>353 Mbps (35%)</td>
+<td>518 Mbps (52%)</td>
+<td>Comfortable, but now over half the link at worst case</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>6</strong></td>
+<td><strong>529 Mbps (53%)</strong></td>
+<td><strong>776 Mbps (78%)</strong></td>
+<td><strong>Workable, real margin eroding — over half the link even at
+realistic load, no longer the wide 65% worst-case margin it had before
+either monitoring stream existed</strong></td>
+</tr>
+<tr>
+<td>1</td>
+<td>12</td>
+<td><strong>1058 Mbps (106% — exceeds the link even at realistic
+load)</strong></td>
+<td><strong>1553 Mbps (155%)</strong></td>
+<td><strong>Not viable, full stop</strong> — this used to only fail at
+worst case; it now fails under normal expected conditions</td>
+</tr>
+</tbody>
+</table>
+<p>The worst-case column is normally the one that matters for a go/no-go
+call, but <strong>1 VLAN has crossed a real threshold here</strong>: it
+no longer needs an unlucky worst-case day to fail, it exceeds the link
+under the <em>realistic</em>, expected-case assumptions this whole
+document otherwise treats as the comfortable baseline. <strong>2 VLANs
+(6 theatres each) is still the furthest safe consolidation</strong>, but
+between Overseer and Flock, the two monitoring streams have eaten a real
+chunk of its margin — 78% worst-case (was 65% before either existed),
+and now over half the link (53%) even at realistic load, which wasn't
+true before. Worth re-weighing whether 2 VLANs is still the right call
+now that "comfortable" and "worst case" are closer together than they
+used to be. This is still <strong>at the VLAN level; the per-router
+finding above is tighter and applies regardless</strong>. This holds for
+normal operation (SRT primary) — <strong>see the NDI fallback scenario
+below, which revises this</strong> for the case where the backup path
+has to carry real load.</p>
+<h2
+id="if-the-ndi-backup-path-actually-activates--very-different-math">If
+the NDI backup path actually activates — very different math</h2>
+<p>The bandwidth model above assumes SRT is what's actually flowing
+downstream. NDI (full, not HX) is a fundamentally different animal:
+<strong>~130 Mbps at 1080p50 with WireGuard overhead, roughly constant
+regardless of content</strong> (<a
+href="https://docs.ndi.video/all/getting-started/white-paper/bandwidth">official
+NDI spec</a>) — NDI's compression doesn't get cheaper for
+static/motion-graphics content the way SRT's H.264 long-GOP does. That's
+~12-22x the SRT figures above, and it changes which scenario the
+VLAN-count decision actually needs to survive.</p>
+<p><strong>A single theatre falling back is a non-event at the VLAN
+level</strong> — 130 Mbps extra on one theatre's downstream fits
+comfortably even inside a fully-loaded 6-theatre VLAN group (though see
+the per-router finding above — that theatre's own A-1300 is a tighter
+constraint than the VLAN). The real VLAN-level question is a
+<strong>mass fallback</strong>: since BirdDog Central/NDI is a separate
+path from Restreamer/SRT, a Restreamer failure (a single container,
+single point of failure) would push <em>every</em> theatre onto NDI
+simultaneously — that's the scenario worth sizing for, not the
+single-theatre case.</p>
+<table>
+<thead>
+<tr>
+<th>VLANs</th>
+<th>Theatres/VLAN</th>
+<th>Downstream if ALL theatres in the group fall back to NDI at once
+(incl. presenter internet)</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4 (current)</td>
+<td>3</td>
+<td>450 Mbps (45%)</td>
+<td>Still comfortable</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4</td>
+<td>600 Mbps (60%)</td>
+<td>Workable, less margin than 4 but not tight</td>
+</tr>
+<tr>
+<td><strong>2 (bandwidth-only recommendation above)</strong></td>
+<td><strong>6</strong></td>
+<td><strong>900 Mbps (90%)</strong></td>
+<td><strong>Tight — no real margin left</strong></td>
+</tr>
+<tr>
+<td>1</td>
+<td>12</td>
+<td>1800 Mbps (180%)</td>
+<td>Not viable at any scale</td>
+</tr>
+</tbody>
+</table>
+<p>This is the direct trade-off the earlier 2-VLAN recommendation
+glossed over: it's safe for <em>normal</em> operation, but a mass NDI
+fallback at 2 VLANs leaves almost no headroom (90%, combined with
+whatever ATEM upstream is doing on the other direction at the same
+time). At the current 4-VLAN split, the same event is still comfortable
+(45%).</p>
+<p><strong>Revised recommendation:</strong> if the design needs to
+gracefully survive a mass simultaneous NDI fallback (Restreamer going
+down, most plausible trigger), <strong>stay at 3-4 VLANs rather than
+consolidating to 2</strong> — the bandwidth-only case for 2 VLANs
+assumed the backup path stays rare and low-volume, which doesn't hold if
+you actually need it to work at full scale. If a mass fallback event is
+judged acceptable to handle operationally instead (e.g. running
+degraded/reduced-quality NDI, or accepting some theatres go dark until
+Restreamer recovers, rather than provisioning full-bandwidth NDI for all
+12 at once), 2 VLANs remains viable — but that's now an explicit choice
+being made, not a free consequence of the SRT numbers alone.</p>
+<h2
+id="splitting-further-instead-more-cheaper-per-theatre-but-more-numerous-vlans">Splitting
+further instead (more, cheaper-per-theatre but more numerous VLANs)</h2>
+<p>Going the other direction (6 or 12 VLANs, 1-2 theatres each) buys
+essentially nothing on the bandwidth side — even the current 4-VLAN plan
+runs at 27-39% utilization under normal SRT operation, and a comfortable
+45% even under a mass NDI fallback (see above), nowhere near needing
+more headroom. It also does nothing for the per-router NDI-fallback
+finding above, since that's a single-router problem, not something more
+VLANs can fix. The only genuine benefit of more/smaller VLANs is
+<strong>fault isolation</strong>: a failed venue port or switch takes
+out fewer theatres. Given the explicit cost pressure on VLAN count, the
+bandwidth numbers don't support this direction — it's a resilience
+trade-off to make consciously if at all, not one the traffic model asks
+for.</p>
+<h2
+id="the-highest-leverage-lever-real-time-atem-ingest-is-the-dominant-cost">The
+highest-leverage lever: real-time ATEM ingest is the dominant cost</h2>
+<p>ATEM ISO ingest is ~71% of realistic upstream load per theatre —
+still the dominant single item, but down from ~92% before either
+monitoring stream existed (~80% with just Overseer), now that Overseer's
+and Flock's flat 10.4 Mbps apiece are real contributors, not noise. It
+exists purely for near-real-time review during the event — see <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>'s
+"master vs. mirror" framing: <strong>the ATEM's own SSD remains the
+authoritative master regardless</strong>, pulled in full after each
+session either way. If VLAN count/cost turns out to be the binding
+constraint rather than a one-time design choice, deferring ATEM ingest
+to end-of-session pulls (instead of continuous near-real-time) drops
+per-theatre upstream from ~88 Mbps to **~25.8 Mbps realistic / ~35.8
+Mbps worst case** (rclone + Overseer's 10.4 Mbps + Flock's 10.4 Mbps,
+none of which go away — <strong>unlike ATEM ISO, neither monitoring
+stream is deferrable, both are live feeds</strong>) — at which point
+<strong>1 VLAN for all 12 theatres sits at ~31% realistic / ~43%
+worst-case utilization</strong>. Real, workable margin, but a genuinely
+different number from the "trivially safe ~12%" this lever used to buy
+before either monitoring stream existed — it's still the single biggest
+lever available (bigger than any VLAN-topology change), and it's still
+enough to make 1 VLAN viable where it otherwise now isn't (see the table
+above), just not quite the near-zero-risk free pass it once was. Losing
+same-day review access to footage (not the final deliverable) is still
+the cost. Has nothing to do with the per-router NDI-fallback finding
+above — that's purely a downstream/NDI issue.</p>
+<h2 id="vmix-nodes-uplinks">VMix nodes' uplinks</h2>
+<p>Not yet assigned to a VLAN group in the existing docs. Given the cost
+pressure, they shouldn't get dedicated VLANs of their own for just 2
+nodes — fold each into whichever group its adjacent theatre already
+belongs to (Node 1 → Theatre 1's group, Node 2 → Theatre 4's group).
+VMix record-ingest bitrate is unconfirmed (see <a
+href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>
+open items), but even at a generous assumed 20-30 Mbps/PC (comparable to
+a single ATEM channel), adding 2 PCs' worth of traffic to a 6-theatre
+VLAN group (529 Mbps realistic) still leaves room, if less than it used
+to — worth re-checking against the 2-VLAN group's now-thinner margin
+above once VMix's real bitrate is confirmed. The same per-router
+NDI-fallback caveat above would apply to the VMix node's own A-1300 too,
+if its record ingest and an NDI fallback ever coincide on that same
+router.</p>
+<h2 id="recommendation">Recommendation</h2>
+<ul>
+<li><strong>Confirm the full-duplex assumption with the venue</strong>
+before finalizing any count.</li>
+<li><strong>Set up the per-theatre NDI-fallback mitigation regardless of
+VLAN count</strong> — pause/ throttle that theatre's ATEM ingest when it
+falls back to NDI. This isn't optional the way the VLAN-count trade-offs
+are; without it, one theatre alone can exceed its own A-1300's ~170 Mbps
+ceiling (128% combined) even on a fully over-provisioned VLAN. It still
+works with both monitoring streams added, but with less margin doing so
+than it used to (92% post-mitigation, was 79% before Overseer/Flock
+existed) — worth being aware this mitigation has less room to absorb a
+<em>fifth</em> new upstream/downstream load if one ever gets
+proposed.</li>
+<li><strong>1 VLAN is no longer a real option, full stop — not just a
+worst-case risk.</strong> Before Overseer and Flock existed, 1 VLAN was
+viable if ATEM ingest was deferred to end-of-session pulls. It still is
+(~31% realistic / ~43% worst-case with ATEM deferred), but with
+real-time ATEM ingest kept, 1 VLAN now exceeds the link even under
+normal, expected-case assumptions (106%), not just an unlucky worst-case
+day. If a single VLAN is genuinely the target, real-time ATEM ingest has
+to be deferred — that's now a requirement rather than the discretionary
+lever it used to be.</li>
+<li><strong>Decide how much a mass NDI fallback needs to survive at full
+quality</strong> — the actual fork in the VLAN-count recommendation, not
+a footnote:
+<ul>
+<li>If a Restreamer failure pushing all 12 theatres onto NDI
+simultaneously must keep working at full 1080p50 quality: <strong>stay
+at 3-4 VLANs</strong>. 2 VLANs puts that scenario at 90% utilization
+with no real margin.</li>
+<li>If that event is acceptable to handle operationally instead
+(degraded/reduced-quality NDI, or some theatres going dark until
+Restreamer recovers, rather than full-bandwidth NDI for all 12 at once):
+<strong>2 VLANs (6 theatres each)</strong> is still viable for normal
+SRT-primary operation, but weigh this carefully now — halves current
+VLAN cost, keeps real-time ATEM ingest, but margin has eroded a real
+amount since this recommendation was first made: 78% worst-case (was 65%
+before either monitoring stream existed) and now over half the link
+(53%) even at realistic load, which wasn't true before. This is the
+trade-off most worth revisiting given everything added since the
+original 2-VLAN call.</li>
+</ul></li>
+<li><strong>Fold both VMix nodes into their adjacent theatre's VLAN
+group</strong> rather than requesting dedicated VLANs for them, but
+re-check their real bitrate against the thinner margin above once it's
+confirmed.</li>
+<li><strong>If VLAN cost pressure is severe enough to want a single
+VLAN</strong>, deferring ATEM ISO ingest to end-of-session pulls is now
+a requirement, not an optional lever — real-time ATEM ingest alone
+pushes 1 VLAN over capacity at realistic load, before worst case even
+enters into it. Note this doesn't fix the NDI downstream problem, though
+— 1 VLAN is not viable for a mass NDI fallback (180%) regardless of
+what's done on the ATEM side, since that's a downstream, not upstream,
+load.</li>
+<li><strong>Resolve the presenter-internet question</strong> (shared
+with production VLANs or separate venue circuit) before treating any of
+the above as final — it's folded into the downstream figures above as a
+conservative shared-infrastructure assumption, and downstream isn't the
+binding constraint under normal SRT operation, but it should still be
+confirmed.</li>
+</ul>
+</body></html>

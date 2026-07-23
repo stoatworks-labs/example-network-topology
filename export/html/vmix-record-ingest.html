@@ -1,0 +1,142 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>VMix record ingest — near-real-time, Nextcloud-aware</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/vmix-record-ingest.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="vmix-record-ingest--near-real-time-nextcloud-aware">VMix record
+ingest — near-real-time, Nextcloud-aware</h1>
+<p>Goal: same as <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> —
+get each VMix PC's growing recording onto the mothership's Nextcloud as
+close to real time as possible, without corrupting anything and without
+falling permanently behind. Covers all 4 VMix PCs: VMix Node 1
+(<code>192.168.20.21</code>/<code>.22</code>, off Theatre 1) and VMix
+Node 2 (<code>192.168.21.21</code>/<code>.22</code>, off Theatre 4) —
+see <a
+href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>.</p>
+<h2 id="why-this-is-actually-simpler-than-the-atem-case">Why this is
+actually simpler than the ATEM case</h2>
+<p>The ATEM Mini Extreme ISO only exposes its recording drive over FTP —
+a file-transfer protocol, not a filesystem-access protocol, so a
+mount-based approach there needs <code>rclone mount</code> as a FUSE
+bridge (that's the ATEM doc's <em>alternative</em> path; its default
+pulls via FTP <code>REST</code> resume with no mount at all).
+<strong>VMix PCs run Windows, which natively serves SMB</strong> — a
+real network filesystem protocol, designed to be mounted. There's no
+bridging trick needed here; SMB <em>is</em> the native way two machines
+share a filesystem on a LAN. That makes this the more natural fit for a
+mount-based approach, not a stretch of the ATEM pattern onto a different
+protocol.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Same shape as the ATEM ingest, reusing the identical tools (<a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>
+mirrors <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/rclone-mount-rsync/"><code>config/atem-iso-ingest/rclone-mount-rsync/</code></a>),
+as its own Unraid container (<code>192.168.1.18</code>):</p>
+<pre><code>VMix PC (192.168.2X.2X, SMB share) --[Tailscale, via that VMix node&#39;s own A-1300]--&gt; Unraid
+                                                              |
+                                                    rclone mount (SMB backend)
+                                                              |
+                                                              v
+                                                rsync --append into Nextcloud&#39;s
+                                                External Storage (Local) folder
+                                                              |
+                                                   targeted `occ files:scan`
+                                                              |
+                                                              v
+                                                     visible in Nextcloud, growing</code></pre>
+<p><code>rsync --append</code> (not rsync's general checksum-diff
+algorithm) is what makes this incremental — it seeks straight to the
+destination's current size and transfers only the new tail, rather than
+reading/hashing the whole file. Same reasoning as the ATEM ingest's
+<code>rclone-mount-rsync</code> alternative; see that doc for the full
+explanation of why this differs from rsync's usual delta-transfer
+mode.</p>
+<p><strong>Second write destination for live editing.</strong> Same as
+the ATEM ingest: the pull also writes to the edit suite's dedicated NAS
+(<code>192.168.22.x</code>) alongside Nextcloud's External Storage, one
+read off the VMix PC's SMB share, two writes. See <a
+href="live-editing.html"><code>docs/live-editing.md</code></a> for the
+editing subsystem this feeds — not yet implemented in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/mount-and-sync.sh"><code>config/vmix-record-ingest/mount-and-sync.sh</code></a>,
+tracked in <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>.</p>
+<p><strong>A native Linux CIFS mount (<code>mount -t cifs</code>) is a
+simpler alternative</strong> to <code>rclone mount</code> for SMB
+specifically — no FUSE bridge needed at all, since the kernel has
+first-class SMB client support. The tooling here uses rclone anyway, to
+reuse the exact same config/script pattern already built for the ATEM
+ingest rather than introduce a third mechanism. Worth reconsidering if
+operational simplicity outweighs consistency.</p>
+<h2 id="why-bandwidth-isnt-a-shared-concern-with-the-atem-ingest">Why
+bandwidth isn't a shared concern with the ATEM ingest</h2>
+<p>Each VMix node has <strong>its own dedicated GL-iNet A-1300 uplink
+and its own Tailscale connection</strong> — it is not part of the
+theatre subnet it physically sits near (see <a
+href="topology.html"><code>docs/topology.md</code></a>). So VMix Node
+1's record-ingest traffic rides over Node 1's own link, entirely
+separate from Theatre 1's ATEM ISO ingest and SRT traffic. There's no
+contention between the two ingest pipelines sharing a link — each just
+needs to fit inside its own node's ~170 Mbps ceiling.</p>
+<h2 id="open-items">Open items</h2>
+<ul>
+<li><strong>Confirm what VMix is actually recording</strong> — program
+mix only, or per-input ISO the same way the ATEMs do — and at what
+resolution/codec/bitrate. None of this is assumed here; it directly
+determines the real bandwidth load on each VMix node's uplink.</li>
+<li><strong>Set up SMB sharing on the real PCs</strong> — confirm the
+actual recording folder path and share name, and use a dedicated,
+minimal-privilege (read-only) local account for the ingest process
+rather than an admin/shared login.</li>
+<li><strong>Same partial-file-safety question as the ATEM ingest, but
+easier to answer</strong>: VMix recording formats are more commonly
+designed for editability during capture than consumer camera formats,
+but this should still be empirically checked (open a currently-recording
+file's ingested copy in a player) rather than assumed.</li>
+<li><strong>Confirm the version-retention setting on Nextcloud</strong>
+covers these folders too (see the same caveat in
+<code>docs/atem-iso-ingest.md</code>) — same risk of accumulating
+snapshots on a repeatedly-changing external-storage file.</li>
+</ul>
+</body></html>

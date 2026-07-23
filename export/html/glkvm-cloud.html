@@ -1,0 +1,220 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GLKVM-Cloud — remote administration for the GL-iNet router fleet</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/glkvm-cloud.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1
+id="glkvm-cloud--remote-administration-for-the-gl-inet-router-fleet">GLKVM-Cloud
+— remote administration for the GL-iNet router fleet</h1>
+<p><strong>Self-hosted GLKVM-Cloud</strong> (<a
+href="https://github.com/gl-inet/glkvm-cloud"><code>gl-inet/glkvm-cloud</code></a>),
+run as Docker containers on the consolidated services server, gives
+centralized remote access to all <strong>14 GL-iNet A-1300
+routers</strong> (12 theatres + 2 VMix nodes) — their web admin UI and
+an SSH terminal, both reachable through one browser session, without
+exposing any individual router's admin interface to the WAN or needing
+14 separate tunnels. Same self-hosted-over-vendor-cloud rationale
+already used for the DERP server and the UniFi Controller: no dependency
+on GL.iNet's own <code>glkvm.com</code> cloud, no subscription, no third
+party in the path when administering the router fleet during a live
+event.</p>
+<p><strong>There is no physical KVM unit in this design.</strong>
+GLKVM-Cloud's flagship product is a KVM-over-IP hardware line (the
+Comet/GL-RM1) for out-of-band access to bare-metal servers — not used
+here. What's actually in scope is the platform's separately-documented
+<strong>HTTP/HTTPS web proxy and device-management capability for
+embedded devices like OpenWrt and Raspberry Pi</strong> — the A-1300s
+already run OpenWrt/UCI (see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>),
+which puts them squarely in that supported category.</p>
+<h2 id="why-centralize-router-administration-at-all">Why centralize
+router administration at all</h2>
+<p>14 identical GL-iNet A-1300s (12 theatre routers, 2 VMix node
+routers) is exactly the kind of fleet that benefits from one console
+instead of 14 separate admin logins — same motivation as <a
+href="https://github.com/allansargeant/flock">Flock</a> for the BirdDog
+Play fleet (see <a
+href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>).
+GLKVM-Cloud's documented features that apply directly:</p>
+<ul>
+<li><strong>Web-based SSH terminal</strong> to any registered router,
+through the browser — no SSH client, no per-router WAN exposure, no VPN
+client needed on the admin's own device.</li>
+<li><strong>HTTP/HTTPS proxy to each router's own web admin
+(LuCI)</strong> — same centralization for the GUI side.</li>
+<li><strong>Batch command execution across multiple devices</strong> —
+push a config check or command to some or all of the 14 routers at once,
+rather than 14 individual sessions.</li>
+<li><strong>User group management + LDAP/OIDC</strong> — if more than
+one person needs scoped admin access during the event, without sharing
+one shared router password.</li>
+</ul>
+<h2 id="software-self-hosted-glkvm-cloud--two-containers">Software:
+self-hosted GLKVM-Cloud — two containers</h2>
+<p>The upstream <code>docker-compose/docker-compose.yml</code> (<a
+href="https://github.com/gl-inet/glkvm-cloud/blob/main/docker-compose/docker-compose.yml">reference</a>)
+defines <strong>two</strong> services, both landing on the consolidated
+services server with their own macvlan IPs (same pattern as every other
+container there):</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Image</th>
+<th>IP</th>
+<th>Ports</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rttys</code></td>
+<td><code>glzhitong/glkvm-cloud:latest</code></td>
+<td><code>192.168.1.20</code></td>
+<td>443/tcp (Web UI), 5912/tcp (device connection), 10443/tcp (WebSocket
+proxy)</td>
+<td>The actual GLKVM-Cloud application</td>
+</tr>
+<tr>
+<td><code>coturn</code></td>
+<td><code>coturn/coturn:edge-alpine</code></td>
+<td><code>192.168.1.22</code></td>
+<td>3478 tcp+udp</td>
+<td>TURN relay for WebRTC (separate off-the-shelf container, not
+GL.iNet's own code)</td>
+</tr>
+</tbody>
+</table>
+<p><code>coturn</code> exists in the upstream stack for GLKVM-Cloud's
+live remote-desktop/KVM feature, which doesn't apply to routers (there's
+no framebuffer to capture on an OpenWrt device) — deployed anyway as the
+standard reference stack rather than assuming it's safe to drop; not
+confirmed whether <code>rttys</code>'s SSH-terminal/web-proxy features
+have any dependency on it internally. Revisit once actually running.</p>
+<p>Manual Docker/docker-compose deployment supports both x86_64 and
+arm64 (<a
+href="https://github.com/gl-inet/glkvm-cloud/blob/main/docker-compose/README.md">deployment
+docs</a>). Minimum self-host requirements per GL.iNet: 1 CPU core, ≥1 GB
+RAM, ≥40 GB storage, ≥3 Mbps — trivial next to what VMix/BirdDog Central
+already need on this box.</p>
+<h2 id="registering-the-14-routers">Registering the 14 routers</h2>
+<p>Each A-1300 registers to the self-hosted instance by running a
+connection script copied from the GLKVM-Cloud web UI (OpenWrt supports
+SSH/shell, so this is a normal <code>opkg</code>/script-based install,
+same mechanism as any other device type GLKVM-Cloud supports). Since
+every router already runs Tailscale and accepts routes back to
+<code>192.168.1.0/24</code> (see <a
+href="tailscale.html"><code>docs/tailscale.md</code></a>), <strong>that
+registration traffic rides the existing tailnet — no WAN port-forward
+needed for it.</strong> WAN exposure is only about the <em>admin's</em>
+browser reaching the GLKVM-Cloud web UI itself from a device that isn't
+on the tailnet (see below).</p>
+<h2 id="wan-reachability--and-the-derp-port-collision">WAN reachability
+— and the DERP port collision</h2>
+<p>Remote (off-venue) admin access to the GLKVM-Cloud web UI needs to be
+reachable from the internet, the same way <code>derp.example.net</code>
+is (<a href="tailscale.html"><code>docs/tailscale.md</code></a>) —
+useful since, per this repo's own rule, only the routers and the
+mothership's Tailscale container are on the tailnet — no admin laptops
+or other client devices (see <a
+href="tailscale.html"><code>docs/tailscale.md</code></a>). But the Cloud
+Gateway has one public IP, and DERP already owns WAN
+<code>443/tcp</code> and WAN <code>3478/udp</code> — a straight 1:1
+forward of GLKVM-Cloud's own port numbers would collide with both.
+Resolution: forward different WAN-side port numbers to GLKVM-Cloud's
+real (internal, unchanged) ports —</p>
+<table>
+<thead>
+<tr>
+<th>WAN port</th>
+<th>Proto</th>
+<th>Forwards to</th>
+<th>Why remapped</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8443</td>
+<td>TCP</td>
+<td><code>192.168.1.20:443</code></td>
+<td>WAN 443/tcp already goes to DERP</td>
+</tr>
+<tr>
+<td>10443</td>
+<td>TCP</td>
+<td><code>192.168.1.20:10443</code></td>
+<td>no collision, forwarded as-is</td>
+</tr>
+<tr>
+<td>3479</td>
+<td>TCP+UDP</td>
+<td><code>192.168.1.22:3478</code></td>
+<td>WAN 3478/udp already goes to DERP's STUN; kept TCP alongside it on
+the same alternate port for one consistent "DERP = 3478, GLKVM-Cloud =
+3479" mental model, even though 3478/tcp alone was actually free</td>
+</tr>
+</tbody>
+</table>
+<p>Suggested hostname: <strong><code>kvm.example.net</code></strong>,
+same domain as <code>derp.example.net</code>, pointed at the same public
+IP — reached as <code>https://kvm.example.net:8443</code>, with
+<code>GLKVM_ACCESS_IP</code> set to match so <code>rttys</code>
+advertises the right address/port back to the browser rather than its
+own LAN IP.</p>
+<p><strong>Not fully verified against a real deployment — confirm before
+relying on it:</strong> the existence and general purpose of
+<code>GLKVM_ACCESS_IP</code> is documented upstream, but its exact
+accepted format (hostname only vs. <code>host:port</code>) isn't
+confirmed here. If a plain env var doesn't cover the WAN-side port remap
+cleanly, the fallback is a second public IP or an SNI-routing reverse
+proxy in front of both DERP and GLKVM-Cloud on the literal 443 — more
+moving parts, only worth it if the simple remap doesn't work. Tracked in
+<a href="open-questions.html"><code>docs/open-questions.md</code></a>
+(question 7).</p>
+<p>See <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/glkvm-cloud/"><code>config/glkvm-cloud/</code></a>
+for the docker-compose template, and <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
+for the port forwards above.</p>
+</body></html>

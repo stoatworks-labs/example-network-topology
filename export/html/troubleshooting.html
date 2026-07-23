@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Troubleshooting</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/troubleshooting.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="troubleshooting">Troubleshooting</h1>
+<p>Known gotchas surfaced during design — check here before assuming
+something's broken.</p>
+<h2 id="theatre-cant-reach-the-mothership-at-all">"Theatre can't reach
+the mothership at all"</h2>
+<ul>
+<li><strong>Routes not approved.</strong> Advertising a route with
+<code>--advertise-routes</code> isn't enough — it must be approved in
+the Tailscale admin console (or via <code>autoApprovers</code>). Check
+first; this is the single most common reason a fresh subnet router
+doesn't work.</li>
+<li><strong>Check <code>tailscale status</code></strong> on the
+theatre's A-1300 — confirms whether the peer connection is up at all
+before debugging further.</li>
+</ul>
+<h2 id="two-theatres-can-talk-to-each-other-should-be-impossible">"Two
+theatres can talk to each other" (should be impossible)</h2>
+<ul>
+<li>This should never happen if <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
+is loaded correctly — theatres can only reach
+<code>tag:mothership</code>. Confirm the ACL is actually applied in the
+admin console, not just present in this repo.</li>
+<li>Remember: physical VLAN grouping provides <strong>zero</strong>
+isolation on its own — it's cabling organization only. If ACLs are
+missing/misconfigured, cross-theatre reachability is the default, not a
+bug in the VLANs.</li>
+</ul>
+<h2 id="tailscale-is-using-derp-relay-instead-of-direct">"Tailscale is
+using DERP relay instead of direct"</h2>
+<ul>
+<li>Expected sometimes — see <a
+href="tailscale.html"><code>docs/tailscale.md</code></a> for why direct
+connections are likely but not guaranteed here (depends on whether the
+Cloud Gateway allows inter-VLAN UDP).</li>
+<li>Run <code>tailscale netcheck</code> to see which DERP region is
+preferred. If it's not the self-hosted <code>example</code> region,
+check: is <code>derp.example.net</code> actually resolving? Is the WAN
+port forward (443/tcp, 3478/udp) actually in place? Neither works until
+both exist — see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>.</li>
+<li>If the self-hosted DERP is reachable from the mothership's own LAN
+but not from a theatre, suspect the uplink-VLAN firewall block in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
+catching the hairpin path — see the caveat attached to that rule.</li>
+</ul>
+<h2 id="the-nic-bond-wont-form--only-shows-one-active-link">"The NIC
+bond won't form / only shows one active link"</h2>
+<ul>
+<li><strong>LACP rate mismatch.</strong> Ubiquiti gear hardcodes LACP
+rate <code>fast</code>; Unraid's bonding default is <code>slow</code>.
+Both ends must match — see <a
+href="topology.html"><code>docs/topology.md</code></a>.</li>
+<li><strong>Cloud Gateway doesn't support LAG at all</strong> on base
+(non-Pro/SE/Pro Max) models. If so, bond through an intermediate
+LACP-capable switch instead — already the agreed fallback, not a new
+problem.</li>
+</ul>
+<h2 id="birddog-play-isnt-finding-the-ndi-backup-source">"BirdDog Play
+isn't finding the NDI backup source"</h2>
+<ul>
+<li>Confirm the Discovery Server IP is actually entered in BirdUI's
+Network panel on <em>both</em> BirdDog Central and every PLAY unit —
+one-sided config does nothing.</li>
+<li>Plain mDNS will never work across theatres; if Discovery Server
+isn't configured, this is expected behavior, not a fault. See <a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>.</li>
+</ul>
+<h2
+id="ingested-files-atem-or-vmix-arent-showing-up-in-nextcloud">"Ingested
+files (ATEM or VMix) aren't showing up in Nextcloud"</h2>
+<ul>
+<li>Writing to the folder isn't enough — Nextcloud needs
+<code>occ files:scan</code> to index it. Check the cron job from
+<code>setup-nextcloud-external-storage.sh</code> is actually installed
+and running, not just printed once during setup.</li>
+<li>If files appear but seem stuck at an old size, check the ingest
+container's logs — a failed FTP/SMB reconnect will silently stall the
+pull loop rather than crash it.</li>
+</ul>
+<h2 id="ingest-is-falling-behind--theatre-uplink-saturated">"Ingest is
+falling behind / theatre uplink saturated"</h2>
+<ul>
+<li>Confirm the real ATEM bitrate/active-channel count and VMix
+recording settings — the bandwidth math in <a
+href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> and
+<a
+href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>
+assumes figures that were never verified against real hardware.</li>
+<li>If using the <code>rclone-mount-rsync</code> alternative, confirm
+<code>rsync --append</code> is actually being used (not falling back to
+a full re-copy) — check <code>--itemize-changes</code> output.</li>
+</ul>
+<h2 id="a-copied-atemvmix-file-wont-play">"A copied ATEM/VMix file won't
+play"</h2>
+<ul>
+<li>Confirmed only "very likely" safe to read mid-write, never
+empirically tested — see the open item in both ingest docs. If it fails,
+the safest fallback is to only pull once recording has fully stopped
+(loses the near-real-time property, but guarantees a valid file).</li>
+</ul>
+<h2 id="atem-overseer--flock-isnt-showing-a-theatres-live-preview">"ATEM
+Overseer / Flock isn't showing a theatre's live preview"</h2>
+<ul>
+<li>Confirm the ATEM/BirdDog Play in that theatre is actually configured
+to originate its second monitoring/preview stream, not just its primary
+program feed — this is a genuinely unconfirmed capability, not assumed
+working out of the box, see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>
+#11.</li>
+<li>Check the stream is actually reaching the container's IP
+(<code>192.168.1.21</code> for Overseer, <code>192.168.1.24</code> for
+Flock — see <a
+href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>) over
+the tailnet, same routing path as every other theatre-to-mothership
+stream in this design.</li>
+<li>If every other theatre works but one doesn't, suspect that theatre's
+own A-1300 hitting its combined-load ceiling rather than anything
+Overseer/Flock-side — see the per-router finding in <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.</li>
+</ul>
+<h2 id="gl-inet-static-dhcp-leases-arent-applying">"GL-iNet static DHCP
+leases aren't applying"</h2>
+<ul>
+<li>Every <code>REPLACE_WITH_MAC_nn</code> placeholder in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
+must be swapped for the device's real MAC first — the generated configs
+ship with placeholders deliberately, not real defaults.</li>
+</ul>
+</body></html>

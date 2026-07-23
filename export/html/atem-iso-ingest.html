@@ -1,0 +1,279 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ATEM ISO ingest — near-real-time, Nextcloud-aware</title><style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+       sans-serif; font-size: 16px; line-height: 1.55; color: #1f2328;
+       max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; background: #fff; }
+h1, h2, h3, h4 { line-height: 1.25; margin-top: 1.6em; margin-bottom: .6em;
+       font-weight: 650; }
+h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h2 { font-size: 1.45em; border-bottom: 1px solid #d1d9e0; padding-bottom: .3em; }
+h3 { font-size: 1.2em; }
+a { color: #0969da; text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+       monospace; font-size: .85em; background: #f0f2f5; padding: .15em .35em;
+       border-radius: 4px; }
+pre { background: #f6f8fa; border: 1px solid #e3e8ee; border-radius: 6px;
+      padding: 14px; overflow-x: auto; line-height: 1.4; }
+pre code { background: none; padding: 0; font-size: .8em; }
+table { border-collapse: collapse; margin: 1em 0; display: block; overflow-x: auto;
+        max-width: 100%; }
+th, td { border: 1px solid #d1d9e0; padding: 6px 12px; text-align: left;
+         vertical-align: top; }
+th { background: #f6f8fa; font-weight: 650; }
+tr:nth-child(even) td { background: #fafbfc; }
+blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
+             color: #59636e; }
+img, svg { max-width: 100%; height: auto; }
+hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
+ul.task-list { list-style: none; padding-left: 1.2em; }
+.doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
+            padding-bottom: .8em; margin-bottom: 1.5em; }
+.doc-section { page-break-before: always; }
+.doc-section:first-of-type { page-break-before: avoid; }
+@media print {
+  body { font-size: 10.5pt; max-width: none; padding: 0; }
+  pre { white-space: pre; overflow-x: hidden; }
+  pre code { font-size: 7.4pt; }
+  table { display: table; width: 100%; overflow-wrap: break-word;
+          font-size: 8pt; }
+  th, td { padding: 3px 6px; }
+  a { color: #1f2328; }
+  h1, h2, h3 { page-break-after: avoid; }
+  pre, img, svg { page-break-inside: avoid; }
+}
+@page { size: A4; margin: 15mm 13mm; }
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/atem-iso-ingest.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="atem-iso-ingest--near-real-time-nextcloud-aware">ATEM ISO ingest
+— near-real-time, Nextcloud-aware</h1>
+<p>Goal: get each theatre's ATEM Mini Extreme ISO recordings (up to 9
+H.264 streams — 8 camera ISOs + program — at ~10 Mbps each) onto the
+mothership's Nextcloud as close to real time as the hardware allows,
+without corrupting anything and without the theatre's uplink falling
+permanently behind.</p>
+<h2 id="the-two-hardware-facts-that-shape-this">The two hardware facts
+that shape this</h2>
+<ul>
+<li><strong>The ATEM has a built-in FTP server</strong>, and files can
+be browsed/transferred over it <em>while recording is still in
+progress</em> — confirmed via multiple independent accounts (<a
+href="https://aaronparecki.com/2022/01/25/8/">aaronparecki.com</a>, <a
+href="https://resource.dopus.com/t/ftp-access-to-atem-mini-iso-failed/42809">Directory
+Opus forum</a>). This is also the only mechanism available — the unit
+has no NDI output and its Ethernet port doesn't expose the drive over
+SMB/NFS, only FTP.</li>
+<li><strong>The files are very likely safe to read mid-write.</strong>
+Blackmagic markets editing an ISO recording in DaVinci Resolve
+<em>before the event even finishes</em> — that only works if the
+container format is structured so a partial file is valid up to
+whatever's been flushed so far (in practice, this means fragmented MP4 —
+periodic <code>moof</code>/<code>mdat</code> boxes rather than one index
+at the very end). Treat this as <strong>very likely true given the
+marketed capability, but worth a quick empirical check</strong> (copy a
+file mid-recording, confirm <code>ffprobe</code>/a media player can open
+it) before relying on it operationally.</li>
+</ul>
+<h2 id="why-not-plain-rsync-and-why-not-plain-rclone-sync">Why not plain
+rsync, and why not plain rclone sync</h2>
+<p><strong>Plain rsync can't connect at all</strong> — it needs SSH or
+an rsync daemon on the far end, and the ATEM only speaks FTP. There's no
+bridging that directly; the ATEM never exposes rsync or SSH.</p>
+<p><strong>A naive periodic <code>rclone sync</code>/whole-file re-copy
+doesn't survive the bandwidth math.</strong> Real numbers: at a
+realistic 4–6 active camera ISOs + program (~10 Mbps each), a 3-hour
+session is already 50–80 GB. Re-uploading the <em>entire current
+file</em> every 10 minutes would take longer than 10 minutes to transfer
+at the A-1300's ~170 Mbps ceiling — the sync falls permanently behind
+almost immediately for any session longer than about 15–20 minutes.
+Genuinely incremental transfer isn't a nice-to-have here, it's
+required.</p>
+<p><strong>Two ways to get genuinely incremental transfer</strong> —
+both implemented, pick one (see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>):</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Mechanism</th>
+<th>Why it's incremental</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>pull-iso.py</code></strong> (default)</td>
+<td>FTP's own <code>REST &lt;offset&gt;</code> command — the same
+"resume from byte offset" mechanism
+<code>curl --continue-at</code>/<code>lftp --continue</code>/<code>wget -c</code>
+use</td>
+<td>Deterministic: explicitly requests only bytes past the last known
+offset. No cache layer involved.</td>
+</tr>
+<tr>
+<td><strong><code>rclone-mount-rsync/</code></strong> (alternative)</td>
+<td><code>rclone mount</code> presents the ATEM's FTP share as a local
+FUSE path; <code>rsync --append</code> (not rsync's general
+checksum-diff algorithm) transfers only the tail past the destination's
+current size</td>
+<td>Also deterministic — <code>--append</code> seeks straight to the
+destination's size rather than reading/hashing the whole file, so it
+doesn't depend on rclone's VFS cache behaving well for a growing remote
+file — a real concern for mount-based approaches that
+<code>--append</code> sidesteps entirely</td>
+</tr>
+</tbody>
+</table>
+<p>Both are legitimate. <code>pull-iso.py</code> has fewer moving parts
+(no persistent FUSE mounts to supervise);
+<code>rclone-mount-rsync/</code> uses tools you may already operate day
+to day, at the cost of 12 FUSE mounts to keep healthy. Neither uses
+rsync's <em>general</em> block-checksum algorithm (which genuinely would
+require reading the whole file every pass) — that algorithm only saves
+network bytes when both ends speak the rsync wire protocol to each
+other, which isn't possible against an FTP-only source regardless of
+what sits in between.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Centralized entirely on the Unraid server as its own container
+(<code>192.168.1.17</code>) — no software installed on any theatre
+laptop, consistent with how VMix/BirdDog Central/NDI Discovery
+Server/DERP are already consolidated there. Reaches each theatre's ATEM
+over Tailscale subnet routing (see <a
+href="tailscale.html"><code>docs/tailscale.md</code></a> — this is
+exactly the "route between subnets where needed" case the subnet-router
+setup was built for). Described below for the default
+(<code>pull-iso.py</code>) — the <code>rclone-mount-rsync/</code>
+alternative differs only in the pull mechanism, writing into the same
+Nextcloud folders the same way.</p>
+<pre><code>ATEM (192.168.X.2, FTP) --[Tailscale subnet route]--&gt; Unraid: atem-iso-ingest container
+                                                              |
+                                                     incremental REST-resume pull
+                                                              |
+                                                              v
+                                            local mirror file, growing in lockstep
+                                            (written directly into the folder Nextcloud
+                                             has mounted as External Storage — Local)
+                                                              |
+                                                   targeted `occ files:scan` (short cycle)
+                                                              |
+                                                              v
+                                                     visible in Nextcloud, growing</code></pre>
+<ol type="1">
+<li><strong>Pull step</strong> (<code>atem-iso-ingest</code> container,
+new — see <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>):
+for each theatre, on a schedule (e.g. every 60–120s), list the ATEM's
+FTP directory, and for each media file, <code>REST</code>-resume from
+the last recorded byte offset and append the new bytes to a local mirror
+file. A small state file tracks per-file offsets so a restart doesn't
+re-pull from scratch.</li>
+<li><strong>No separate upload/chunking step.</strong> The pull step
+writes directly into
+<code>/mnt/user/nextcloud-external/TheatreN/ISO/</code> — the same path
+mounted into Nextcloud as an External Storage (Local) folder for that
+theatre. There's no WebDAV re-upload of the growing file at all, so the
+"whole-file re-sync is too slow" problem simply doesn't apply on this
+side — it's a same-host filesystem write, not a WAN transfer.</li>
+<li><strong>Nextcloud awareness</strong>: a short-interval,
+<em>targeted</em> <code>occ files:scan --path=...</code> (not
+<code>--all</code>) picks up the new file size on Nextcloud's side.
+Because this only touches one theatre's folder and runs locally on the
+same box, it's cheap even at a 1-2 minute cadence — unlike scanning the
+whole Nextcloud tree, which would not be.</li>
+<li><strong>On session end</strong>, a final pull + final targeted scan
+catches the last bytes and whatever moov/index finalization happens when
+the ATEM's recording actually stops.</li>
+</ol>
+<p><strong>Second write destination for live editing.</strong> The pull
+step also writes the same growing mirror file to a second mount — the
+edit suite's dedicated NAS (<code>192.168.22.x</code>), not just
+Nextcloud's External Storage. One read off the ATEM, two writes, not a
+separate re-sync reading Nextcloud's copy back out. See <a
+href="live-editing.html"><code>docs/live-editing.md</code></a> for the
+full editing subsystem this feeds — not yet reflected in <a
+href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/pull-iso.py"><code>config/atem-iso-ingest/pull-iso.py</code></a>
+itself, which currently only writes the one Nextcloud destination;
+adding the second write path is a real code change, tracked in <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>.</p>
+<h2 id="bandwidth">Bandwidth</h2>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Aggregate</th>
+<th>vs. A-1300 ceiling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Worst case, all 9 streams active</td>
+<td>90 Mbps</td>
+<td>tight but under ~170 Mbps</td>
+</tr>
+<tr>
+<td>Realistic, 4 cams + program</td>
+<td>50 Mbps</td>
+<td>comfortable headroom</td>
+</tr>
+<tr>
+<td>Realistic, 6 cams + program</td>
+<td>70 Mbps</td>
+<td>comfortable headroom</td>
+</tr>
+</tbody>
+</table>
+<p>This rides the theatre's uplink in the <em>opposite direction</em>
+from the incoming SRT feed (~8–50 Mbps, see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>) — if
+the link is genuinely full-duplex-capable at its rated throughput, those
+two shouldn't compete much. But the ingest does <strong>not</strong>
+have the upstream direction to itself: the theatre's ATEM Overseer
+monitoring stream and Flock SRT preview (~10.4 Mbps each) run theatre →
+mothership alongside it, plus bursty rclone. The authoritative
+per-router upstream model — ~129 Mbps worst case against the A-1300's
+~170 Mbps ceiling — is in <a
+href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>;
+the table above covers the ingest in isolation only. Worth validating
+the full-duplex assumption in practice rather than assuming it, since
+the ~170 Mbps A-1300 figure was a single-direction benchmark, not a
+confirmed simultaneous-bidirectional rating.</p>
+<h2 id="master-vs-mirror">Master vs. mirror</h2>
+<p>Frame this as: <strong>the ATEM's own SSD remains the authoritative
+final master</strong> (complete, guaranteed-valid once recording stops)
+— pulled in full at the end of each session/day regardless.
+<strong>Nextcloud holds a near-real-time, continuously-updated
+mirror</strong> for early review/rough-cut purposes during the event.
+That framing resolves the tension between "want it fast" and "want it
+guaranteed correct": you get both, from two different consumers of the
+same underlying data.</p>
+<h2 id="nextcloud-versioning-caveat">Nextcloud versioning caveat</h2>
+<p>Nextcloud's versioning app may retain snapshots on repeated changes
+to the same file path. Configure version retention/expiry for the ISO
+folders (or disable versioning there specifically) so a multi-hour
+growing recording doesn't accumulate many near-duplicate historical
+versions before Nextcloud's own expiry curve catches up. Not a blocker,
+just worth tuning once this is running for real.</p>
+<h2 id="open-items">Open items</h2>
+<ul>
+<li><strong>Confirm the 10 Mbps/stream figure and actual active-channel
+count</strong> against the real ATEM recording settings, rather than
+relying on the estimate used for the bandwidth math above.</li>
+<li><strong>Confirm partial-file playability empirically</strong> — copy
+a file mid-recording, check it opens/scrubs correctly, before treating
+the "safe to read mid-write" assumption as settled rather than "very
+likely."</li>
+<li><strong>Tune the scan interval and pull interval</strong> against
+real session lengths and available Unraid CPU/disk headroom, once the
+server's full spec is known (see <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>).</li>
+<li><strong>Confirm the ATEM's actual FTP file/folder naming</strong>
+(not assumed here — the ingest script lists whatever's present rather
+than hardcoding filenames, precisely because this wasn't confirmed
+against a real unit).</li>
+<li><strong>If using the <code>rclone-mount-rsync/</code>
+alternative</strong>, test <code>rsync --append</code> against a
+genuinely growing file on a real ATEM before trusting it operationally —
+confirm it only transfers the new tail each pass (e.g. watch network
+throughput or <code>--itemize-changes</code> output), and budget for
+supervising 12 persistent FUSE mounts (auto-remount on failure), which
+<code>pull-iso.py</code> doesn't need at all.</li>
+</ul>
+</body></html>
