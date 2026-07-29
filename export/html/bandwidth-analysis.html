@@ -328,6 +328,19 @@ side), but <strong>upstream drops to just 310-430 Mbps</strong> — the
 mitigation's biggest payoff shows up here, not at the single-router
 level</td>
 </tr>
+<tr>
+<td><strong>Central's own NDI feed in</strong> (the source VMix node's
+program arriving for redistribution — see <a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>)</td>
+<td>+130 Mbps inbound per active node program (max +260 if both nodes'
+programs are being redistributed) — rides the node's uplink, then the
+mothership NIC inbound</td>
+<td>Same +130-260 Mbps — this feed is what's being redistributed, so it
+persists through the mitigation; even stacked on the
+<em>unmitigated</em> worst-case inbound (~1,553 + 260 ≈ 1,813 Mbps) it
+stays under the bond's ~2,000 Mbps aggregate, and with ATEM paused it's
+trivial</td>
+</tr>
 </tbody>
 </table>
 <p><strong>The one number worth remembering from this table: 97% at
@@ -605,10 +618,17 @@ open items), but even at a generous assumed 20-30 Mbps/PC (comparable to
 a single ATEM channel), adding 2 PCs' worth of traffic to a 6-theatre
 VLAN group (529 Mbps realistic) still leaves room, if less than it used
 to — worth re-checking against the 2-VLAN group's now-thinner margin
-above once VMix's real bitrate is confirmed. The same per-router
-NDI-fallback caveat above would apply to the VMix node's own A-1300 too,
-if its record ingest and an NDI fallback ever coincide on that same
-router.</p>
+above once VMix's real bitrate is confirmed. The per-router NDI-fallback
+caveat bites <em>harder</em> here than at the theatres: during any NDI
+fallback, the source node's own uplink carries the ~130 Mbps NDI program
+feed up to BirdDog Central for redistribution (<a
+href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>) — on
+its own that's 76% of the node's ~170 Mbps ceiling, so it only fits if
+that node's VMix record ingest is paused for the duration (130 + the
+~10-21 Mbps SRT program contribution ≈ 140-151 Mbps, ~82-89%, tight but
+under). Record ingest running alongside it does not fit. Same
+pause-the-ingest lever as the theatre-side mitigation, applied at the
+node.</p>
 <h2 id="recommendation">Recommendation</h2>
 <ul>
 <li><strong>Confirm the full-duplex assumption with the venue</strong>

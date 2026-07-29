@@ -112,6 +112,7 @@ story on its own:
 | **Single theatre's own A-1300** (upstream + downstream combined, vs. 170 Mbps) | 218.2 Mbps — **128%, exceeds the ceiling** | 155.8 Mbps realistic (**92%**) / **165.8 Mbps worst case (97%)** — both under, but worst case leaves only ~7 Mbps of headroom |
 | **That theatre's VLAN group, upstream side only** (NDI itself doesn't touch upstream — full-duplex, separate capacity) | n/a — this is exactly what the mitigation removes | Drops to just rclone + Overseer + Flock per theatre (25.8-35.8 Mbps) — even a fully-loaded 6-theatre group sits at 15.5-21.5% upstream, nowhere near a concern |
 | **Mothership's own bonded NIC, mass-fallback disaster case** (all 12 theatres on NDI at once) | Downstream 1,560 Mbps + upstream ~1,553 Mbps worst case — both sides genuinely loaded | Downstream unchanged at 1,560 Mbps (NDI doesn't care about the ATEM side), but **upstream drops to just 310-430 Mbps** — the mitigation's biggest payoff shows up here, not at the single-router level |
+| **Central's own NDI feed in** (the source VMix node's program arriving for redistribution — see [`docs/streaming-flow.md`](streaming-flow.md)) | +130 Mbps inbound per active node program (max +260 if both nodes' programs are being redistributed) — rides the node's uplink, then the mothership NIC inbound | Same +130-260 Mbps — this feed is what's being redistributed, so it persists through the mitigation; even stacked on the *unmitigated* worst-case inbound (~1,553 + 260 ≈ 1,813 Mbps) it stays under the bond's ~2,000 Mbps aggregate, and with ATEM paused it's trivial |
 
 **The one number worth remembering from this table: 97% at worst case, single theatre.**
 The mitigation reliably resolves the per-router ceiling problem (128% → under 100%
@@ -260,9 +261,14 @@ Theatre 4's group). VMix record-ingest bitrate is unconfirmed (see
 assumed 20-30 Mbps/PC (comparable to a single ATEM channel), adding 2 PCs' worth of
 traffic to a 6-theatre VLAN group (529 Mbps realistic) still leaves room, if less than it
 used to — worth re-checking against the 2-VLAN group's now-thinner margin above once
-VMix's real bitrate is confirmed. The same per-router
-NDI-fallback caveat above would apply to the VMix node's own A-1300 too, if its record
-ingest and an NDI fallback ever coincide on that same router.
+VMix's real bitrate is confirmed. The per-router NDI-fallback caveat bites *harder* here
+than at the theatres: during any NDI fallback, the source node's own uplink carries the
+~130 Mbps NDI program feed up to BirdDog Central for redistribution
+([`docs/streaming-flow.md`](streaming-flow.md)) — on its own that's 76% of the node's
+~170 Mbps ceiling, so it only fits if that node's VMix record ingest is paused for the
+duration (130 + the ~10-21 Mbps SRT program contribution ≈ 140-151 Mbps, ~82-89%,
+tight but under). Record ingest running alongside it does not fit. Same
+pause-the-ingest lever as the theatre-side mitigation, applied at the node.
 
 ## Recommendation
 

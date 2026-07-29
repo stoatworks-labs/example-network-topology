@@ -15,13 +15,24 @@ over the tailnet.
 BirdDog Central (mothership) --NDI--> BirdDog Play ×12 (one per theatre)
 ```
 
-**Open input question on this path**: what feeds BirdDog Central the *program* it would
-send during a fallback is currently unresolved — the mothership VMix VM that an earlier
-revision could have used as a local source was removed from the design
-([`docs/open-questions.md`](open-questions.md) #10). The likely answer is the VMix node
-PCs' native NDI output arriving at Central over each node's own uplink (~130 Mbps of
-that node's ~170 Mbps ceiling while active — significant, but a fallback-only load), but
-this hasn't been designed through or verified. Tracked as
+**How Central gets the program — NDI redistribution (settled).** Central works as an
+NDI *redistributor*: the source VMix node PC's native NDI output registers with the NDI
+Discovery Server, Central receives it over that node's own uplink (~130 Mbps of the
+node's ~170 Mbps ceiling, a **fallback-only** load — pausing that node's VMix record
+ingest for the duration keeps it under the ceiling, the same lever the theatre side
+already uses), and Central re-sends it to the theatre PLAYs. Two researched facts pin
+this shape:
+
+- **BirdDog Central is NDI-only on the input side** — its own user guide lists NDI
+  sources, an NDI file-player, and an NDI re-transmitter; there is no SRT/RTMP ingest
+  anywhere in it ([Central 2.0 User Guide](https://birddog.tv/wp-content/uploads/2022/09/BirdDog-Central-2.0_User-Guide.pdf)).
+  So the feed into Central must already be NDI — it can't terminate the SRT program.
+- **Restreamer can't be the NDI sender instead** — upstream FFmpeg removed NDI support
+  in 2019 over a NewTek GPL violation and never reinstated it; datarhei's own FFmpeg
+  build contains no NDI library and the maintainers have declined to ship it for
+  licensing reasons ([datarhei/restreamer discussion #391](https://github.com/datarhei/restreamer/discussions/391)).
+
+Remaining verification items (not design questions) are tracked as
 [`docs/open-questions.md`](open-questions.md) #16. BirdDog Central was deliberately
 retained for this sender role when its fleet-management duties moved to Flock — see
 [`docs/birddog-play-rationale.md`](birddog-play-rationale.md).
@@ -46,9 +57,11 @@ for WAN/VPN scenarios — it's unicast TCP (default port **5959**), so it works 
 the tailnet with no multicast involved:
 
 - Run the discovery server as a small service on the mothership, alongside BirdDog Central.
-- Point BirdDog Central (sender) and all 12 BirdDog Play units (receivers) at that
-  server's IP. On Windows/macOS this is the NDI Tools Access Manager "Advanced" tab; on
-  Linux it's `~/.ndi/ndi-config.v1.json`.
+- Point every NDI participant at that server's IP: the VMix node PCs (senders of the
+  program feed Central redistributes), BirdDog Central (receiver of that feed *and*
+  sender toward the theatres), and all 12 BirdDog Play units (receivers). On
+  Windows/macOS this is the NDI Tools Access Manager "Advanced" tab; on Linux it's
+  `~/.ndi/ndi-config.v1.json`.
 - Once a sender has a discovery server configured, it stops using mDNS entirely — it's
   visible only to finders pointed at the same server.
 - Tailscale MagicDNS can supply a stable hostname for the discovery server's address

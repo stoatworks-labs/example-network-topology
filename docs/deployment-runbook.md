@@ -86,8 +86,9 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 ## Phase 5 — BirdDog Play + NDI discovery
 
 1. Change the default `birddog` admin password on all 12 PLAY units.
-2. Point BirdDog Central and all 12 PLAY units at the NDI Discovery Server
-   (`192.168.1.15:5959`) via BirdUI's Network panel — [`docs/streaming-flow.md`](streaming-flow.md).
+2. Point BirdDog Central, all 12 PLAY units, *and both VMix node PCs' NDI config* at the
+   NDI Discovery Server (`192.168.1.15:5959`) — BirdUI's Network panel on the PLAYs,
+   NDI Access Manager on the Windows machines — [`docs/streaming-flow.md`](streaming-flow.md).
 
 ## Phase 6 — Nextcloud external storage + ingest pipelines
 
@@ -149,3 +150,10 @@ pipelines (Phase 6) for its footage feed:
       shared show project simultaneously, the smart bins auto-fill as clips arrive, and
       a test export dispatched to the Mac mini via Remote Render completes —
       [`docs/live-editing.md`](live-editing.md)
+- [ ] Rehearse an NDI fallback end-to-end: pause the source node's VMix record ingest,
+      confirm the node's VMix NDI output appears via the Discovery Server, confirm
+      BirdDog Central picks it up and **re-originates** it (the PLAY must connect to
+      Central, not directly to the node — direct would bypass the ACL model and the
+      bandwidth math), switch one theatre's PLAY over via Flock, and measure the node
+      uplink against the modelled ~130 Mbps —
+      [`docs/streaming-flow.md`](streaming-flow.md), [`docs/open-questions.md`](open-questions.md) #16

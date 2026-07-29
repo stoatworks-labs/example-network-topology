@@ -333,14 +333,20 @@
     [`config/vmix-record-ingest/mount-and-sync.sh`](../config/vmix-record-ingest/mount-and-sync.sh)
     currently write one destination each). Not done as part of documenting the design.
 
-16. **Design the program feed INTO BirdDog Central for the NDI backup path.** Central is
-    the backup path's sender ([`docs/streaming-flow.md`](streaming-flow.md)) and was
-    deliberately retained for that role when its fleet-management duties moved to Flock —
-    but with the mothership VMix VM removed (#10), nothing documented actually delivers
-    the event program to Central for it to send. The likely mechanism is the VMix node
-    PCs' native NDI output registered with the NDI Discovery Server and received by
-    Central over each node's own uplink — a fallback-only ~130 Mbps load against that
-    node's ~170 Mbps ceiling, which would also mean pausing that node's record ingest
-    for the duration (same lever as the theatre-side mitigation in
-    [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)). Needs designing through and
-    folding into the bandwidth model before the backup path can be considered real.
+16. **Verify the settled NDI-redistribution feed into BirdDog Central.** The mechanism
+    is decided ([`docs/streaming-flow.md`](streaming-flow.md)): the source VMix node
+    PC's native NDI output → NDI Discovery Server registration → Central receives over
+    that node's uplink (fallback-only ~130 Mbps against the ~170 Mbps ceiling, with
+    that node's record ingest paused for the duration) → Central re-sends to the
+    theatre PLAYs. The alternatives were researched and ruled out: Restreamer cannot
+    emit NDI (upstream FFmpeg removed NDI in 2019 over a NewTek GPL violation; datarhei
+    confirmed no NDI in their build and declined on licensing grounds —
+    [discussion #391](https://github.com/datarhei/restreamer/discussions/391)), and
+    Central cannot ingest SRT (NDI-only per its
+    [own user guide](https://birddog.tv/wp-content/uploads/2022/09/BirdDog-Central-2.0_User-Guide.pdf)).
+    What remains is verification, not design: confirm VMix's NDI output registers with
+    the discovery server and Central picks it up across the tailnet; confirm Central's
+    re-transmit actually re-originates the stream (rather than pointing receivers at
+    the original source, which would bypass the mothership and break both the ACL model
+    and the bandwidth math); and measure the node uplink during a rehearsed fallback
+    against the modelled ~130 Mbps.
