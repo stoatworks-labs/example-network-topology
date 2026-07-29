@@ -332,3 +332,15 @@
     ([`config/atem-iso-ingest/pull-iso.py`](../config/atem-iso-ingest/pull-iso.py),
     [`config/vmix-record-ingest/mount-and-sync.sh`](../config/vmix-record-ingest/mount-and-sync.sh)
     currently write one destination each). Not done as part of documenting the design.
+
+16. **Design the program feed INTO BirdDog Central for the NDI backup path.** Central is
+    the backup path's sender ([`docs/streaming-flow.md`](streaming-flow.md)) and was
+    deliberately retained for that role when its fleet-management duties moved to Flock —
+    but with the mothership VMix VM removed (#10), nothing documented actually delivers
+    the event program to Central for it to send. The likely mechanism is the VMix node
+    PCs' native NDI output registered with the NDI Discovery Server and received by
+    Central over each node's own uplink — a fallback-only ~130 Mbps load against that
+    node's ~170 Mbps ceiling, which would also mean pausing that node's record ingest
+    for the duration (same lever as the theatre-side mitigation in
+    [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)). Needs designing through and
+    folding into the bandwidth model before the backup path can be considered real.

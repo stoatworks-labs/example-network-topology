@@ -28,18 +28,21 @@ a cable. That matters at this scale — 12 theatres, unattended for most of a li
 
 ## Remote control from the mothership
 
-Three ways to manage all 12 units centrally, none of which require physically visiting a
-theatre:
+None of these require physically visiting a theatre — and the division of labour is
+deliberate, not three redundant tools:
 
-- **BirdUI** — each unit's own web admin, reachable directly (already the mechanism used to
-  configure the NDI Discovery Server setting — [`docs/streaming-flow.md`](streaming-flow.md)).
-- **BirdDog Central** — already part of this design as a mothership VM
-  ([`docs/topology.md`](topology.md)) — centralized routing/control across the fleet.
-- **[Flock](https://github.com/allansargeant/flock)** — a fleet-management tool for exactly
-  this device: LAN discovery, tag-based grouping, full BirdUI-parity settings per device,
-  and batch edits across a group (Rust + Docker). Purpose-built for managing many BirdDog
-  Play units as one fleet rather than 12 individual devices, which is precisely this
-  deployment's shape.
+- **[Flock](https://github.com/allansargeant/flock)** — **the fleet-management tool in
+  this design**: LAN discovery, tag-based grouping, full BirdUI-parity settings per
+  device, and batch edits across a group (Rust + Docker). Purpose-built for managing many
+  BirdDog Play units as one fleet rather than 12 individual devices, which is precisely
+  this deployment's shape.
+- **BirdUI** — each unit's own web admin, reachable directly, as the per-unit fallback
+  (already the mechanism used to configure the NDI Discovery Server setting —
+  [`docs/streaming-flow.md`](streaming-flow.md)).
+- **BirdDog Central** — retained in the design as a mothership VM
+  ([`docs/topology.md`](topology.md)) **for the NDI backup path's sender side, not as a
+  management layer** — Flock covers the management job on its own. Central's
+  routing/control console exists as a bonus, not a dependency.
 
 ## Comparison: BirdDog Play vs. laptop + VLC
 
@@ -51,7 +54,7 @@ NDI sources.
 | Setup | Plug in, done | Install/patch OS, install VLC, configure stream URL per source |
 | SRT | Native, purpose-built decode | Native from VLC 3+ ([SRT CookBook](https://srtlab.github.io/srt-cookbook/apps/vlc-media-player.html)) — the one protocol VLC handles cleanly |
 | NDI | Native, purpose-built decode | Requires a separate third-party plugin ([NDI for VLC](https://docs.ndi.video/all/using-ndi/ndi-tools/plugins/ndi-for-vlc)); reliably *outputting* VLC's playback as NDI is well-documented, but consistently *receiving and playing* an NDI source as input is far less so |
-| Remote management | BirdUI, BirdDog Central, or Flock — purpose-built for this device | Nothing built in — would need RDP/VNC/TeamViewer bolted on, none of it purpose-built for stream monitoring/control |
+| Remote management | Flock (fleet-wide) with per-unit BirdUI — purpose-built for this device | Nothing built in — would need RDP/VNC/TeamViewer bolted on, none of it purpose-built for stream monitoring/control |
 | Unattended reliability | Broadcast-grade embedded device, designed to run 24/7 unattended | General-purpose OS: updates, driver issues, VLC hangs on a dropped stream sometimes need a manual restart |
 | Recovery from a dropped stream | Automatic reconnect | Not guaranteed — depends on VLC settings, may need manual intervention |
 | Footprint/power | Small, low power, unobtrusive | Full laptop: bigger, hotter, more power, another thing that can be bumped/closed/updated mid-show |
@@ -63,5 +66,5 @@ NDI sources.
 BirdDog Play, as already implemented throughout this design. The laptop + VLC path is
 real and technically works for SRT specifically, but loses on every axis that matters for
 12 unattended theatres running for the duration of a live event: zero-config deployment,
-clean NDI support, purpose-built fleet management (BirdUI/BirdDog Central/Flock), and
+clean NDI support, purpose-built fleet management (Flock, with per-unit BirdUI), and
 broadcast-grade reliability without needing on-site intervention when something drops.

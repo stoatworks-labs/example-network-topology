@@ -55,10 +55,11 @@ Each theatre's **BirdDog Play** receives the event's program feed two ways:
   (BirdUI's Network panel has a Discovery Server field built in).
 
 **Why BirdDog Play at all, rather than a laptop running VLC?** Zero on-site config, native
-dual-protocol support, broadcast-grade unattended reliability, and three ways to manage
-all 12 units centrally from the mothership — BirdUI, BirdDog Central, and
-[Flock](https://github.com/allansargeant/flock) (a purpose-built fleet manager for exactly
-this device). Full comparison in
+dual-protocol support, broadcast-grade unattended reliability, and central management from
+the mothership — [Flock](https://github.com/allansargeant/flock) (a purpose-built fleet
+manager for exactly this device) is the fleet-management tool, with per-unit BirdUI as
+the fallback. BirdDog Central is retained too, but for a different job: it's the sender
+side of the NDI backup path above, not a management requirement. Full comparison in
 [`docs/birddog-play-rationale.md`](docs/birddog-play-rationale.md).
 
 ## File sync: rclone up, WebDAV local
@@ -287,6 +288,7 @@ Design is finalized; these are the headline items still needing real-world input
 - [ ] Add the `kvm.example.net` DNS record and confirm `GLKVM_ACCESS_IP`'s exact format for the WAN-remapped GLKVM-Cloud ports — [`docs/glkvm-cloud.md`](docs/glkvm-cloud.md).
 - [ ] Confirm ATEM Overseer's, ATEM Fleet Admin's, and Flock's real container images, and whether the ATEM/BirdDog Play can actually originate their monitoring/preview streams alongside their primary feeds — [`docs/open-questions.md`](docs/open-questions.md) #11.
 - [ ] Implement the second write destination (the edit-suite NAS) in the actual ingest scripts — documented in [`docs/live-editing.md`](docs/live-editing.md) but not yet a code change — [`docs/open-questions.md`](docs/open-questions.md) #15.
+- [ ] Design the program feed into BirdDog Central for the NDI backup path — with the mothership VMix VM gone, nothing documented currently delivers Central the program it would send during a fallback — [`docs/open-questions.md`](docs/open-questions.md) #16.
 - [ ] Decide how much footage the live-editing subsystem needs access to, confirm the Mac mini's combined Project Server + Remote Render role holds up under real load, and whether any standalone cameras are in scope — [`docs/live-editing.md`](docs/live-editing.md), [`docs/open-questions.md`](docs/open-questions.md) #12-14.
 
 ## Everything in this repo

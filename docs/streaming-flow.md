@@ -15,6 +15,17 @@ over the tailnet.
 BirdDog Central (mothership) --NDI--> BirdDog Play ×12 (one per theatre)
 ```
 
+**Open input question on this path**: what feeds BirdDog Central the *program* it would
+send during a fallback is currently unresolved — the mothership VMix VM that an earlier
+revision could have used as a local source was removed from the design
+([`docs/open-questions.md`](open-questions.md) #10). The likely answer is the VMix node
+PCs' native NDI output arriving at Central over each node's own uplink (~130 Mbps of
+that node's ~170 Mbps ceiling while active — significant, but a fallback-only load), but
+this hasn't been designed through or verified. Tracked as
+[`docs/open-questions.md`](open-questions.md) #16. BirdDog Central was deliberately
+retained for this sender role when its fleet-management duties moved to Flock — see
+[`docs/birddog-play-rationale.md`](birddog-play-rationale.md).
+
 **Bandwidth note:** full NDI (not HX) at 1080p50 is ~125 Mbps per stream, roughly constant
 regardless of content — 12-22x SRT's figures, and without SRT's "static content is cheap"
 discount. Fine for a single theatre falling back — *provided that theatre's ATEM ISO

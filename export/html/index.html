@@ -553,10 +553,13 @@ built in).</li>
 </ul>
 <p><strong>Why BirdDog Play at all, rather than a laptop running
 VLC?</strong> Zero on-site config, native dual-protocol support,
-broadcast-grade unattended reliability, and three ways to manage all 12
-units centrally from the mothership — BirdUI, BirdDog Central, and <a
-href="https://github.com/allansargeant/flock">Flock</a> (a purpose-built
-fleet manager for exactly this device). Full comparison in <a
+broadcast-grade unattended reliability, and central management from the
+mothership — <a href="https://github.com/allansargeant/flock">Flock</a>
+(a purpose-built fleet manager for exactly this device) is the
+fleet-management tool, with per-unit BirdUI as the fallback. BirdDog
+Central is retained too, but for a different job: it's the sender side
+of the NDI backup path above, not a management requirement. Full
+comparison in <a
 href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>.</p>
 <h2 id="file-sync-rclone-up-webdav-local">File sync: rclone up, WebDAV
 local</h2>
@@ -1016,6 +1019,12 @@ href="live-editing.html"><code>docs/live-editing.md</code></a> but not
 yet a code change — <a
 href="open-questions.html"><code>docs/open-questions.md</code></a>
 #15.</label></li>
+<li><label><input type="checkbox" />Design the program feed into BirdDog
+Central for the NDI backup path — with the mothership VMix VM gone,
+nothing documented currently delivers Central the program it would send
+during a fallback — <a
+href="open-questions.html"><code>docs/open-questions.md</code></a>
+#16.</label></li>
 <li><label><input type="checkbox" />Decide how much footage the
 live-editing subsystem needs access to, confirm the Mac mini's combined
 Project Server + Remote Render role holds up under real load, and

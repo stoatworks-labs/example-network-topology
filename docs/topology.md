@@ -86,7 +86,7 @@ see the GPU section of `docs/server-specification.md`). Full spec (CPU/motherboa
 
 | Workload | Runs as | Notes |
 |---|---|---|
-| BirdDog Central | Windows VM | Windows-only ([tech specs](https://birddog.tv/central-techspecs/)); the design's only VM |
+| BirdDog Central | Windows VM | Windows-only ([tech specs](https://birddog.tv/central-techspecs/)); the design's only VM — retained for the NDI backup path's sender side ([`docs/streaming-flow.md`](streaming-flow.md)), not for fleet management (that's Flock's job) |
 | Nextcloud | Docker container | official image + MariaDB + Redis (see [`config/docker-compose.yml`](../config/docker-compose.yml)) |
 | Restreamer | Docker container | official `datarhei/restreamer` image |
 | NDI Discovery Server | Docker container | see [`docs/streaming-flow.md`](streaming-flow.md) |
