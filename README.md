@@ -33,7 +33,7 @@ and its own place on the tailnet.
 
 ![Full network topology, showing the mothership, all 12 theatres with every internal device and IP, and both VMix nodes](diagrams/topology.svg)
 
-Every box in that diagram is a real device with a real address — 134 of them in total,
+Every box in that diagram is a real device with a real address — 133 of them in total,
 counting the live-editing suite's own four.
 [`docs/ip-address-map.md`](docs/ip-address-map.md) has the same inventory as a plain text
 table, if that's easier to search or paste from.
@@ -185,7 +185,7 @@ actually leaves the venue. Full reasoning in [`docs/tailscale.md`](docs/tailscal
 | Role | Hardware | Why |
 |---|---|---|
 | Mothership router | Ubiquiti **Cloud Gateway** | Can't run Tailscale natively — that role moves to a container on the services server instead |
-| Consolidated services server | **Unraid**, single physical box (already on hand) | Hosts VMix + BirdDog Central as separate Windows VMs (only VMix gets GPU passthrough), plus Nextcloud/Restreamer/NDI Discovery Server/DERP/ATEM ISO Ingest/VMix Record Ingest/UniFi Controller/GLKVM-Cloud/ATEM Overseer/ATEM Fleet Admin/Flock as Docker containers. Chosen over TrueNAS SCALE for its more mature GPU-passthrough track record. Calculated target spec (storage pools, RAM, CPU, GPU tier, NIC validation) in [`docs/server-specification.md`](docs/server-specification.md) |
+| Consolidated services server | **Unraid**, single physical box (already on hand) | Hosts BirdDog Central as the design's only Windows VM (no GPU passthrough anywhere — the mothership VMix VM was removed, its role never established; theatre program feeds originate from the VMix node PCs), plus Nextcloud/Restreamer/NDI Discovery Server/DERP/ATEM ISO Ingest/VMix Record Ingest/UniFi Controller/GLKVM-Cloud/ATEM Overseer/ATEM Fleet Admin/Flock as Docker containers. Chosen over TrueNAS SCALE for its polished container UX (Community Applications). Calculated target spec (storage pools, RAM, CPU, NIC validation — no GPU required) in [`docs/server-specification.md`](docs/server-specification.md) |
 | Theatre + VMix node routers | GL-iNet **A-1300** (Slate Plus) ×14 | 12 theatre routers + both VMix node routers, same model throughout. ~170 Mbps WireGuard, comfortable headroom for normal operation (~55% combined); 2 LAN ports let the ATEM Mini Extreme ISO sit on its own dedicated port, away from the rest of the room's traffic — it carries the heaviest sustained load (near-real-time ISO ingest). Its own ceiling is the tighter constraint during an NDI fallback though (128% combined with ATEM ingest, resolved by pausing that theatre's ingest during the fallback) — margin worth watching if any further theatre-to-mothership stream ever gets added, see [`docs/bandwidth-analysis.md`](docs/bandwidth-analysis.md). Full case for GL-iNet + Tailscale specifically — segmentation, multi-WAN, pay-per-device WiFi economics, other uses beyond this event, and the same ceiling reasoning — in [`docs/gl-inet-rationale.md`](docs/gl-inet-rationale.md) |
 | Theatre playback | **BirdDog Play** ×12 | Zero-config, native SRT+NDI, centrally fleet-managed — see above |
 | Server NICs | **Bonded**, 802.3ad/LACP | SRT bandwidth isn't constant — LACP spreads the many simultaneous flows this box handles (12 theatres' SRT fan-out, rclone, Nextcloud, DERP) across both links for real aggregate headroom |
@@ -278,7 +278,7 @@ Three docs turn the design into something an on-site crew can actually execute:
 
 Design is finalized; these are the headline items still needing real-world input before the config in this repo gets applied (the complete list, including a few smaller ones, lives in [`docs/open-questions.md`](docs/open-questions.md); the ordered build sequence is [`docs/deployment-runbook.md`](docs/deployment-runbook.md)).
 
-- [ ] Check the existing consolidated services server against the calculated target spec in [`docs/server-specification.md`](docs/server-specification.md) (CPU/RAM/GPU headroom, storage pool layout).
+- [ ] Check the existing consolidated services server against the calculated target spec in [`docs/server-specification.md`](docs/server-specification.md) (CPU/RAM headroom, storage pool layout — no GPU requirement any more).
 - [ ] Add the `derp.example.net` DNS record for the self-hosted DERP server.
 - [ ] Verify the DERP hairpin isn't caught by the uplink-VLAN firewall block before relying on it.
 - [ ] Confirm the real ATEM ISO bitrate/active-channel count and empirically verify partial-file playability.
@@ -293,8 +293,8 @@ Design is finalized; these are the headline items still needing real-world input
 
 **Design docs**
 - [`docs/topology.md`](docs/topology.md) — full network layout: subnets, VLAN grouping, mothership, VMix nodes, theatre wiring
-- [`docs/server-specification.md`](docs/server-specification.md) — calculated minimum spec for the consolidated server (storage pools, RAM, CPU, GPU tier, NIC validation)
-- [`docs/ip-address-map.md`](docs/ip-address-map.md) — every device on the network, with its real IP (134 devices, including the live-editing subsystem's NAS, 2 MacBook Pros, and Project Server/Remote Render Mac mini)
+- [`docs/server-specification.md`](docs/server-specification.md) — calculated minimum spec for the consolidated server (storage pools, RAM, CPU, NIC validation; GPU no longer required)
+- [`docs/ip-address-map.md`](docs/ip-address-map.md) — every device on the network, with its real IP (133 devices, including the live-editing subsystem's NAS, 2 MacBook Pros, and Project Server/Remote Render Mac mini)
 - [`docs/streaming-flow.md`](docs/streaming-flow.md) — SRT/NDI streaming path, the NDI Discovery Server plan
 - [`docs/birddog-play-rationale.md`](docs/birddog-play-rationale.md) — why BirdDog Play over a laptop + VLC for theatre playback
 - [`docs/gl-inet-rationale.md`](docs/gl-inet-rationale.md) — why GL-iNet + Tailscale for segmentation/routing, multi-WAN/pay-per-device WiFi economics, and other uses (LED processors, mixing desks, mesh) beyond this event

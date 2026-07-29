@@ -16,10 +16,9 @@
     <text x="305" y="83" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Consolidated services server — 1 physical box (Unraid) — 192.168.1.2</text>
     <text x="305" y="99" text-anchor="middle" font-size="10" fill="#4a5a8a">Router + ready-room PCs stay physical; everything else below is virtualized here</text>
     <line x1="40" y1="109" x2="570" y2="109" stroke="#c3cbe0"/>
-    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VMs (Windows)</text>
-    <text x="50" y="145" font-size="11" fill="#333">VMix instance — 192.168.1.11 (GPU passthrough)</text>
-    <text x="50" y="163" font-size="11" fill="#333">BirdDog Central — 192.168.1.12 (separate VM)</text>
-    <text x="40" y="181" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
+    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VM (Windows)</text>
+    <text x="50" y="145" font-size="11" fill="#333">BirdDog Central — 192.168.1.12</text>
+    <text x="40" y="163" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
     <line x1="315" y1="115" x2="315" y2="333" stroke="#c3cbe0"/>
     <text x="335" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">Docker containers</text>
     <text x="345" y="145" font-size="11" fill="#333">Nextcloud — 192.168.1.13</text>
@@ -34,7 +33,7 @@
     <text x="345" y="307" font-size="11" fill="#333">ATEM Fleet Admin — 192.168.1.23</text>
     <text x="345" y="325" font-size="11" fill="#333">Flock — 192.168.1.24</text>
     <line x1="40" y1="343" x2="570" y2="343" stroke="#c3cbe0"/>
-    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) + GPU confirmed, full spec TBD</text>
+    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) confirmed, full spec TBD (GPU on hand, no longer required)</text>
   </g>
   <!-- VLAN trunk lines — squared-off elbows, staggered so 1/4 and 2/3 don't overlap -->
   <polyline points="700,210 700,416 190,416" fill="none" stroke="#3a3a5a" stroke-width="2"/>

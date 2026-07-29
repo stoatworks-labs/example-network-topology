@@ -5,8 +5,9 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 
 ## Phase 0 — Before touching anything
 
-- [ ] Confirm the consolidated server's full spec (CPU/motherboard IOMMU support, GPU
-      passthrough compatibility, RAM/cores) — [`docs/open-questions.md`](open-questions.md) #1
+- [ ] Confirm the consolidated server's full spec (validated ECC, PCIe lanes for the
+      NVMe pools, RAM/cores — no GPU/IOMMU checks needed any more) —
+      [`docs/open-questions.md`](open-questions.md) #1
 - [ ] Confirm the Cloud Gateway model (LAG support assumed, not confirmed) —
       [`docs/open-questions.md`](open-questions.md) resolved-items section
 - [ ] Decide a real hostname/DDNS for the DERP server and confirm you can port-forward on
@@ -36,9 +37,9 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 
 ## Phase 2 — Consolidated services server (Unraid)
 
-1. Install Unraid, confirm IOMMU/passthrough works for the GPU.
-2. Create the VMix instance and BirdDog Central Windows VMs (separate VMs; only VMix gets
-   GPU passthrough) — [`docs/topology.md`](topology.md).
+1. Install Unraid.
+2. Create the BirdDog Central Windows VM — the design's only VM, no GPU passthrough
+   needed — [`docs/topology.md`](topology.md).
 3. Bring up every Docker container in one shot with
    [`config/docker-compose.yml`](../config/docker-compose.yml) — Nextcloud, Restreamer,
    NDI Discovery Server, DERP, ATEM ISO Ingest, VMix Record Ingest, UniFi Controller,

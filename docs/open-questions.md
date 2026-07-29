@@ -13,14 +13,16 @@
   see [`docs/topology.md`](topology.md).
 
 - **Mothership service consolidation: single physical server running Unraid.** Nextcloud,
-  Restreamer, the VMix instance, BirdDog Central, and the NDI Discovery Server all move
+  Restreamer, BirdDog Central, and the NDI Discovery Server all move
   onto one box instead of being separate machines — the router and the 4 ready-room
-  PCs stay physical. VMix and BirdDog Central are both Windows-only, so each runs as
-  its own Windows VM (kept separate so one hanging doesn't risk the other); only the VMix
-  VM needs GPU passthrough (hardware encode) — BirdDog Central is routing/control, not
-  encode. Everything else (Nextcloud, Restreamer, NDI Discovery Server, Tailscale subnet
-  router) runs as Docker containers. Chose **Unraid over TrueNAS SCALE** for its more
-  mature GPU-passthrough track record and more polished one-click container experience,
+  PCs stay physical. BirdDog Central is Windows-only, so it runs as
+  the design's one Windows VM — routing/control, not encode, no GPU needed. (An earlier
+  revision also carried a mothership VMix instance VM with a passthrough GPU; it was
+  removed — see #10 below.) Everything else (Nextcloud, Restreamer, NDI Discovery
+  Server, Tailscale subnet
+  router) runs as Docker containers. Chose **Unraid over TrueNAS SCALE** for its
+  polished one-click container experience (the original GPU-passthrough-maturity
+  tiebreaker no longer applies with the VMix VM gone),
   accepting the $129 one-time Lifetime license cost that TrueNAS (free) doesn't have. See
   [`docs/topology.md`](topology.md) for the full breakdown.
 
@@ -69,7 +71,7 @@
   [`docs/server-specification.md`](server-specification.md).
 
 - **Full device inventory + configs generated.** Every device on the network now has a
-  concrete IP — see [`docs/ip-address-map.md`](ip-address-map.md) (134 devices total) and
+  concrete IP — see [`docs/ip-address-map.md`](ip-address-map.md) (133 devices total) and
   the redrawn [`diagrams/topology.svg`](../diagrams/topology.svg). Configs generated to
   match: [`config/gl-inet/`](../config/gl-inet/) (UCI network config for all 14 routers —
   12 theatres + 2 VMix nodes), [`config/tailscale-up-all-devices.sh`](../config/tailscale-up-all-devices.sh)
@@ -217,12 +219,12 @@
 ## Still open — verify before building
 
 1. **Check the existing server's real spec against the calculated target in
-   [`docs/server-specification.md`](server-specification.md).** In particular: does the
-   CPU/motherboard support IOMMU (Intel VT-d or AMD-Vi) for GPU passthrough, is the GPU
-   model VFIO-passthrough-compatible and which vMix camera-count tier does it actually
-   meet, and is there enough RAM/cores (target: 16 cores/32 threads, 96-128 GB RAM) to
-   run 2 Windows VMs (VMix + BirdDog Central) plus 12 Docker containers concurrently
-   without contention during a live event.
+   [`docs/server-specification.md`](server-specification.md).** In particular: does it
+   have validated (not merely tolerated) ECC support, enough PCIe lanes for the three
+   NVMe pools, and enough RAM/cores (target: 12 cores/24 threads, 64-96 GB RAM) to
+   run the BirdDog Central Windows VM plus 12 Docker containers concurrently
+   without contention during a live event. (GPU passthrough/IOMMU checks dropped from
+   this list — nothing needs them since the VMix VM was removed, see #10.)
 
 2. **Actually register/point `derp.example.net`** (or substitute whatever domain/DDNS host
    you end up controlling) at the mothership's public IP, and confirm the WAN port forward
@@ -285,10 +287,15 @@
    length anywhere. If it runs longer without a periodic archive-off step, either the
    pool needs to grow or an offload step needs adding to the ingest design.
 
-10. **Confirm what the mothership's own VMix instance VM actually does** — how many
-    camera/input channels, what resolution — before treating the GPU tier in
-    `docs/server-specification.md` as settled. The 2 VMix *nodes* (physical PCs at the
-    theatres) are well-documented (`docs/topology.md`); this separate VM's role isn't.
+10. **Resolved — by removal.** This slot used to ask what the mothership's own VMix
+    instance VM actually did (its role was never established anywhere in this repo,
+    unlike the well-documented VMix *node* PCs). The answer arrived as a design change:
+    **the mothership VMix VM was removed entirely.** The theatre program feeds originate
+    from the VMix node PCs via Restreamer (`docs/streaming-flow.md`), which never
+    depended on it. Knock-ons all applied: no GPU/passthrough/IOMMU requirement remains
+    anywhere in the spec, RAM/CPU budgets dropped (see
+    `docs/server-specification.md`), BirdDog Central is now the design's only VM, and
+    the device count is 133. (Number kept so cross-references to #11-#15 stay stable.)
 
 11. **Confirm ATEM Overseer's, ATEM Fleet Admin's, and Flock's actual published container
     images** (or that they need to be built from source instead) before deploying

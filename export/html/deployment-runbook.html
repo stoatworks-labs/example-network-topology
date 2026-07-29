@@ -52,8 +52,8 @@ this is a map, not a duplicate.</p>
 anything</h2>
 <ul class="task-list">
 <li><label><input type="checkbox" />Confirm the consolidated server's
-full spec (CPU/motherboard IOMMU support, GPU passthrough compatibility,
-RAM/cores) — <a
+full spec (validated ECC, PCIe lanes for the NVMe pools, RAM/cores — no
+GPU/IOMMU checks needed any more) — <a
 href="open-questions.html"><code>docs/open-questions.md</code></a>
 #1</label></li>
 <li><label><input type="checkbox" />Confirm the Cloud Gateway model (LAG
@@ -103,9 +103,9 @@ rate/hash-policy gotcha with Ubiquiti gear.</li>
 <h2 id="phase-2--consolidated-services-server-unraid">Phase 2 —
 Consolidated services server (Unraid)</h2>
 <ol type="1">
-<li>Install Unraid, confirm IOMMU/passthrough works for the GPU.</li>
-<li>Create the VMix instance and BirdDog Central Windows VMs (separate
-VMs; only VMix gets GPU passthrough) — <a
+<li>Install Unraid.</li>
+<li>Create the BirdDog Central Windows VM — the design's only VM, no GPU
+passthrough needed — <a
 href="topology.html"><code>docs/topology.md</code></a>.</li>
 <li>Bring up every Docker container in one shot with <a
 href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>

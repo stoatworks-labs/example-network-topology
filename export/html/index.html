@@ -95,10 +95,9 @@ place on the tailnet.</p>
     <text x="305" y="83" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Consolidated services server — 1 physical box (Unraid) — 192.168.1.2</text>
     <text x="305" y="99" text-anchor="middle" font-size="10" fill="#4a5a8a">Router + ready-room PCs stay physical; everything else below is virtualized here</text>
     <line x1="40" y1="109" x2="570" y2="109" stroke="#c3cbe0"/>
-    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VMs (Windows)</text>
-    <text x="50" y="145" font-size="11" fill="#333">VMix instance — 192.168.1.11 (GPU passthrough)</text>
-    <text x="50" y="163" font-size="11" fill="#333">BirdDog Central — 192.168.1.12 (separate VM)</text>
-    <text x="40" y="181" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
+    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VM (Windows)</text>
+    <text x="50" y="145" font-size="11" fill="#333">BirdDog Central — 192.168.1.12</text>
+    <text x="40" y="163" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
     <line x1="315" y1="115" x2="315" y2="333" stroke="#c3cbe0"/>
     <text x="335" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">Docker containers</text>
     <text x="345" y="145" font-size="11" fill="#333">Nextcloud — 192.168.1.13</text>
@@ -113,7 +112,7 @@ place on the tailnet.</p>
     <text x="345" y="307" font-size="11" fill="#333">ATEM Fleet Admin — 192.168.1.23</text>
     <text x="345" y="325" font-size="11" fill="#333">Flock — 192.168.1.24</text>
     <line x1="40" y1="343" x2="570" y2="343" stroke="#c3cbe0"/>
-    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) + GPU confirmed, full spec TBD</text>
+    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) confirmed, full spec TBD (GPU on hand, no longer required)</text>
   </g>
   <!-- VLAN trunk lines — squared-off elbows, staggered so 1/4 and 2/3 don't overlap -->
   <polyline points="700,210 700,416 190,416" fill="none" stroke="#3a3a5a" stroke-width="2"/>
@@ -436,7 +435,7 @@ place on the tailnet.</p>
   <text x="800" y="1413" text-anchor="middle" font-size="11" fill="#888">Uplink VLAN transit addressing (10.10.1-4.0/24) omitted here for space — see docs/ip-address-map.md and config/unifi/network-config.yaml.</text>
 </svg>
 </div></p>
-<p>Every box in that diagram is a real device with a real address — 134
+<p>Every box in that diagram is a real device with a real address — 133
 of them in total, counting the live-editing suite's own four. <a
 href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> has
 the same inventory as a plain text table, if that's easier to search or
@@ -772,13 +771,15 @@ services server instead</td>
 <tr>
 <td>Consolidated services server</td>
 <td><strong>Unraid</strong>, single physical box (already on hand)</td>
-<td>Hosts VMix + BirdDog Central as separate Windows VMs (only VMix gets
-GPU passthrough), plus Nextcloud/Restreamer/NDI Discovery
-Server/DERP/ATEM ISO Ingest/VMix Record Ingest/UniFi
-Controller/GLKVM-Cloud/ATEM Overseer/ATEM Fleet Admin/Flock as Docker
-containers. Chosen over TrueNAS SCALE for its more mature
-GPU-passthrough track record. Calculated target spec (storage pools,
-RAM, CPU, GPU tier, NIC validation) in <a
+<td>Hosts BirdDog Central as the design's only Windows VM (no GPU
+passthrough anywhere — the mothership VMix VM was removed, its role
+never established; theatre program feeds originate from the VMix node
+PCs), plus Nextcloud/Restreamer/NDI Discovery Server/DERP/ATEM ISO
+Ingest/VMix Record Ingest/UniFi Controller/GLKVM-Cloud/ATEM
+Overseer/ATEM Fleet Admin/Flock as Docker containers. Chosen over
+TrueNAS SCALE for its polished container UX (Community Applications).
+Calculated target spec (storage pools, RAM, CPU, NIC validation — no GPU
+required) in <a
 href="server-specification.html"><code>docs/server-specification.md</code></a></td>
 </tr>
 <tr>
@@ -981,7 +982,8 @@ href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a>).</p>
 <li><label><input type="checkbox" />Check the existing consolidated
 services server against the calculated target spec in <a
 href="server-specification.html"><code>docs/server-specification.md</code></a>
-(CPU/RAM/GPU headroom, storage pool layout).</label></li>
+(CPU/RAM headroom, storage pool layout — no GPU requirement any
+more).</label></li>
 <li><label><input type="checkbox" />Add the
 <code>derp.example.net</code> DNS record for the self-hosted DERP
 server.</label></li>
@@ -1031,10 +1033,10 @@ wiring</li>
 <li><a
 href="server-specification.html"><code>docs/server-specification.md</code></a>
 — calculated minimum spec for the consolidated server (storage pools,
-RAM, CPU, GPU tier, NIC validation)</li>
+RAM, CPU, NIC validation; GPU no longer required)</li>
 <li><a
 href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> —
-every device on the network, with its real IP (134 devices, including
+every device on the network, with its real IP (133 devices, including
 the live-editing subsystem's NAS, 2 MacBook Pros, and Project
 Server/Remote Render Mac mini)</li>
 <li><a

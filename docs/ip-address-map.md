@@ -24,8 +24,7 @@ Tailscale rides over whatever address they get.
 |---|---|---|
 | Cloud Gateway (LAN gateway) | 192.168.1.1 | |
 | Unraid server (host management IP) | 192.168.1.2 | Tailscale subnet router container shares this IP (host networking) |
-| VMix instance | 192.168.1.11 | Windows VM, GPU passthrough |
-| BirdDog Central | 192.168.1.12 | Windows VM, separate from VMix VM |
+| BirdDog Central | 192.168.1.12 | Windows VM — the design's only VM (the mothership VMix instance VM at `.11` was removed, see `docs/open-questions.md` #10; `.11` is left unassigned) |
 | Nextcloud | 192.168.1.13 | Docker container, macvlan |
 | Restreamer | 192.168.1.14 | Docker container, macvlan |
 | NDI Discovery Server | 192.168.1.15 | Docker container, macvlan, port 5959 |
@@ -250,8 +249,8 @@ See [`docs/live-editing.md`](live-editing.md) for the full design.
 
 ## Device count
 
-- Mothership: 20 devices (1 gateway + 1 server host + 2 VMs + 12 containers + 4 ready-room PCs)
+- Mothership: 19 devices (1 gateway + 1 server host + 1 VM + 12 containers + 4 ready-room PCs)
 - Theatres: 12 × 8 devices = 96
 - VMix nodes: 2 × 7 devices = 14
 - Edit suite: 4 devices (NAS + 2 MacBook Pros + Mac mini Project Server/Remote Render node), see [`docs/live-editing.md`](live-editing.md) Decision 2
-- **Total: 134 devices** across the network (excluding the 4 uplink VLAN transit addresses, which aren't per-device).
+- **Total: 133 devices** across the network (excluding the 4 uplink VLAN transit addresses, which aren't per-device).

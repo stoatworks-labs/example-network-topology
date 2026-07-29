@@ -68,22 +68,25 @@ Ubiquiti **Cloud Gateway**; all 4 VLANs terminate here via separate links. Also 
 4× "ready room" computers (physical, untouched) and the hardwired WAN.
 
 **Consolidated services server (Unraid).** Everything else that used to be described as
-separate mothership boxes — Nextcloud, Restreamer, the VMix instance, BirdDog Central, the
+separate mothership boxes — Nextcloud, Restreamer, BirdDog Central, the
 NDI Discovery Server, a self-hosted DERP server, the ATEM ISO ingest pipeline, the VMix
 record ingest pipeline, a self-hosted UniFi Controller, self-hosted GLKVM-Cloud, ATEM
 Overseer + ATEM Fleet Admin (fleet monitoring and provisioning for the 12 theatre ATEMs),
 and now Flock (BirdDog Play fleet manager) — runs on a single physical server instead,
-virtualized with Unraid. The server already
+virtualized with Unraid. (An earlier revision also carried a mothership-local VMix
+instance VM; it was removed from the design — the theatre program feeds originate from
+the VMix *node* PCs, and no mothership role for a local VMix instance was ever
+established, see [`docs/open-questions.md`](open-questions.md) #10.) The server already
 exists (no procurement needed) — known so far: **2× gigabit NICs (bonded — see below), a
-"decent" discrete GPU.** Full spec (CPU/motherboard, RAM, exact GPU model) is TBD — see
+"decent" discrete GPU** (on hand, though nothing in the design requires it any more —
+see the GPU section of `docs/server-specification.md`). Full spec (CPU/motherboard, RAM) is TBD — see
 [`docs/open-questions.md`](open-questions.md) and the calculated target minimum spec
 (storage pool layout, RAM, CPU, GPU tier, all worked from this box's actual workload) in
 [`docs/server-specification.md`](server-specification.md).
 
 | Workload | Runs as | Notes |
 |---|---|---|
-| VMix instance | Windows VM, GPU passthrough | Windows-only; benefits from hardware encode |
-| BirdDog Central | Windows VM (separate from the VMix VM) | Windows-only ([tech specs](https://birddog.tv/central-techspecs/)); kept on its own VM so it can't take down the live VMix instance if it hangs |
+| BirdDog Central | Windows VM | Windows-only ([tech specs](https://birddog.tv/central-techspecs/)); the design's only VM |
 | Nextcloud | Docker container | official image + MariaDB + Redis (see [`config/docker-compose.yml`](../config/docker-compose.yml)) |
 | Restreamer | Docker container | official `datarhei/restreamer` image |
 | NDI Discovery Server | Docker container | see [`docs/streaming-flow.md`](streaming-flow.md) |
@@ -118,13 +121,14 @@ rate/hash policy must match on both ends.** Ubiquiti gear hardcodes LACP rate `f
 hash policy `layer3+4`; Unraid's bonding defaults differ (`slow` rate, layer2 hash) and
 need to be set to match, or the bond won't form correctly.
 
-**Why Unraid over TrueNAS SCALE:** both now support Docker and GPU-passthrough VMs, but
-this box needs two GPU/Windows-adjacent VMs alongside several containers, and Unraid has
-the more mature, better-documented GPU passthrough workflow plus a more polished one-click
-container experience (Community Applications) — useful since this may be maintained on-site
-by AV staff rather than a Linux admin. Trade-off: Unraid requires a paid license (Lifetime
-tier is a $129 one-time cost); TrueNAS SCALE is free. Only VMix needs the passthrough GPU —
-BirdDog Central is NDI routing/control, not video encode, so it runs as a plain VM.
+**Why Unraid over TrueNAS SCALE:** both support Docker and Windows VMs, and Unraid has
+the more polished one-click container experience (Community Applications) — useful since
+this may be maintained on-site by AV staff rather than a Linux admin. Trade-off: Unraid
+requires a paid license (Lifetime tier is a $129 one-time cost); TrueNAS SCALE is free.
+(The original tiebreaker — Unraid's more mature GPU-passthrough workflow — no longer
+applies now that the VMix VM is gone: nothing on this box needs GPU passthrough. BirdDog
+Central is NDI routing/control, not video encode, and runs as a plain VM. The choice
+stands on the container/UX grounds alone.)
 
 **Tailscale note:** Cloud Gateway (UniFi-OS-based) generally can't run Tailscale natively
 without an unofficial container hack, so the mothership subnet-router role runs as a

@@ -1,6 +1,6 @@
 # Full container stack for the consolidated services server (Unraid) — everything in
-# docs/topology.md's "Workload / Runs as" table except the two Windows VMs (VMix
-# instance, BirdDog Central — not Docker, not this file's concern).
+# docs/topology.md's "Workload / Runs as" table except the BirdDog Central Windows VM
+# (not Docker, not this file's concern).
 #
 # Brings up: Nextcloud (+ its DB/cache), Restreamer, NDI Discovery Server, the DERP
 # server, ATEM ISO Ingest, VMix Record Ingest, the UniFi Controller (+ its DB),

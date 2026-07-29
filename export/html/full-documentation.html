@@ -95,10 +95,9 @@ place on the tailnet.</p>
     <text x="305" y="83" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Consolidated services server — 1 physical box (Unraid) — 192.168.1.2</text>
     <text x="305" y="99" text-anchor="middle" font-size="10" fill="#4a5a8a">Router + ready-room PCs stay physical; everything else below is virtualized here</text>
     <line x1="40" y1="109" x2="570" y2="109" stroke="#c3cbe0"/>
-    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VMs (Windows)</text>
-    <text x="50" y="145" font-size="11" fill="#333">VMix instance — 192.168.1.11 (GPU passthrough)</text>
-    <text x="50" y="163" font-size="11" fill="#333">BirdDog Central — 192.168.1.12 (separate VM)</text>
-    <text x="40" y="181" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
+    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VM (Windows)</text>
+    <text x="50" y="145" font-size="11" fill="#333">BirdDog Central — 192.168.1.12</text>
+    <text x="40" y="163" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
     <line x1="315" y1="115" x2="315" y2="333" stroke="#c3cbe0"/>
     <text x="335" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">Docker containers</text>
     <text x="345" y="145" font-size="11" fill="#333">Nextcloud — 192.168.1.13</text>
@@ -113,7 +112,7 @@ place on the tailnet.</p>
     <text x="345" y="307" font-size="11" fill="#333">ATEM Fleet Admin — 192.168.1.23</text>
     <text x="345" y="325" font-size="11" fill="#333">Flock — 192.168.1.24</text>
     <line x1="40" y1="343" x2="570" y2="343" stroke="#c3cbe0"/>
-    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) + GPU confirmed, full spec TBD</text>
+    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) confirmed, full spec TBD (GPU on hand, no longer required)</text>
   </g>
   <!-- VLAN trunk lines — squared-off elbows, staggered so 1/4 and 2/3 don't overlap -->
   <polyline points="700,210 700,416 190,416" fill="none" stroke="#3a3a5a" stroke-width="2"/>
@@ -436,7 +435,7 @@ place on the tailnet.</p>
   <text x="800" y="1413" text-anchor="middle" font-size="11" fill="#888">Uplink VLAN transit addressing (10.10.1-4.0/24) omitted here for space — see docs/ip-address-map.md and config/unifi/network-config.yaml.</text>
 </svg>
 </div></p>
-<p>Every box in that diagram is a real device with a real address — 134
+<p>Every box in that diagram is a real device with a real address — 133
 of them in total, counting the live-editing suite's own four. <a
 href="#doc-ip-address-map"><code>docs/ip-address-map.md</code></a> has
 the same inventory as a plain text table, if that's easier to search or
@@ -772,13 +771,15 @@ services server instead</td>
 <tr>
 <td>Consolidated services server</td>
 <td><strong>Unraid</strong>, single physical box (already on hand)</td>
-<td>Hosts VMix + BirdDog Central as separate Windows VMs (only VMix gets
-GPU passthrough), plus Nextcloud/Restreamer/NDI Discovery
-Server/DERP/ATEM ISO Ingest/VMix Record Ingest/UniFi
-Controller/GLKVM-Cloud/ATEM Overseer/ATEM Fleet Admin/Flock as Docker
-containers. Chosen over TrueNAS SCALE for its more mature
-GPU-passthrough track record. Calculated target spec (storage pools,
-RAM, CPU, GPU tier, NIC validation) in <a
+<td>Hosts BirdDog Central as the design's only Windows VM (no GPU
+passthrough anywhere — the mothership VMix VM was removed, its role
+never established; theatre program feeds originate from the VMix node
+PCs), plus Nextcloud/Restreamer/NDI Discovery Server/DERP/ATEM ISO
+Ingest/VMix Record Ingest/UniFi Controller/GLKVM-Cloud/ATEM
+Overseer/ATEM Fleet Admin/Flock as Docker containers. Chosen over
+TrueNAS SCALE for its polished container UX (Community Applications).
+Calculated target spec (storage pools, RAM, CPU, NIC validation — no GPU
+required) in <a
 href="#doc-server-specification"><code>docs/server-specification.md</code></a></td>
 </tr>
 <tr>
@@ -981,7 +982,8 @@ href="#doc-deployment-runbook"><code>docs/deployment-runbook.md</code></a>).</p>
 <li><label><input type="checkbox" />Check the existing consolidated
 services server against the calculated target spec in <a
 href="#doc-server-specification"><code>docs/server-specification.md</code></a>
-(CPU/RAM/GPU headroom, storage pool layout).</label></li>
+(CPU/RAM headroom, storage pool layout — no GPU requirement any
+more).</label></li>
 <li><label><input type="checkbox" />Add the
 <code>derp.example.net</code> DNS record for the self-hosted DERP
 server.</label></li>
@@ -1031,10 +1033,10 @@ wiring</li>
 <li><a
 href="#doc-server-specification"><code>docs/server-specification.md</code></a>
 — calculated minimum spec for the consolidated server (storage pools,
-RAM, CPU, GPU tier, NIC validation)</li>
+RAM, CPU, NIC validation; GPU no longer required)</li>
 <li><a
 href="#doc-ip-address-map"><code>docs/ip-address-map.md</code></a> —
-every device on the network, with its real IP (134 devices, including
+every device on the network, with its real IP (133 devices, including
 the live-editing subsystem's NAS, 2 MacBook Pros, and Project
 Server/Remote Render Mac mini)</li>
 <li><a
@@ -1273,16 +1275,22 @@ via separate links. Also hosts the 4× "ready room" computers (physical,
 untouched) and the hardwired WAN.</p>
 <p><strong>Consolidated services server (Unraid).</strong> Everything
 else that used to be described as separate mothership boxes — Nextcloud,
-Restreamer, the VMix instance, BirdDog Central, the NDI Discovery
-Server, a self-hosted DERP server, the ATEM ISO ingest pipeline, the
-VMix record ingest pipeline, a self-hosted UniFi Controller, self-hosted
-GLKVM-Cloud, ATEM Overseer + ATEM Fleet Admin (fleet monitoring and
-provisioning for the 12 theatre ATEMs), and now Flock (BirdDog Play
-fleet manager) — runs on a single physical server instead, virtualized
-with Unraid. The server already exists (no procurement needed) — known
-so far: <strong>2× gigabit NICs (bonded — see below), a "decent"
-discrete GPU.</strong> Full spec (CPU/motherboard, RAM, exact GPU model)
-is TBD — see <a
+Restreamer, BirdDog Central, the NDI Discovery Server, a self-hosted
+DERP server, the ATEM ISO ingest pipeline, the VMix record ingest
+pipeline, a self-hosted UniFi Controller, self-hosted GLKVM-Cloud, ATEM
+Overseer + ATEM Fleet Admin (fleet monitoring and provisioning for the
+12 theatre ATEMs), and now Flock (BirdDog Play fleet manager) — runs on
+a single physical server instead, virtualized with Unraid. (An earlier
+revision also carried a mothership-local VMix instance VM; it was
+removed from the design — the theatre program feeds originate from the
+VMix <em>node</em> PCs, and no mothership role for a local VMix instance
+was ever established, see <a
+href="#doc-open-questions"><code>docs/open-questions.md</code></a> #10.)
+The server already exists (no procurement needed) — known so far:
+<strong>2× gigabit NICs (bonded — see below), a "decent" discrete
+GPU</strong> (on hand, though nothing in the design requires it any more
+— see the GPU section of <code>docs/server-specification.md</code>).
+Full spec (CPU/motherboard, RAM) is TBD — see <a
 href="#doc-open-questions"><code>docs/open-questions.md</code></a> and
 the calculated target minimum spec (storage pool layout, RAM, CPU, GPU
 tier, all worked from this box's actual workload) in <a
@@ -1297,16 +1305,10 @@ href="#doc-server-specification"><code>docs/server-specification.md</code></a>.<
 </thead>
 <tbody>
 <tr>
-<td>VMix instance</td>
-<td>Windows VM, GPU passthrough</td>
-<td>Windows-only; benefits from hardware encode</td>
-</tr>
-<tr>
 <td>BirdDog Central</td>
-<td>Windows VM (separate from the VMix VM)</td>
+<td>Windows VM</td>
 <td>Windows-only (<a href="https://birddog.tv/central-techspecs/">tech
-specs</a>); kept on its own VM so it can't take down the live VMix
-instance if it hangs</td>
+specs</a>); the design's only VM</td>
 </tr>
 <tr>
 <td>Nextcloud</td>
@@ -1415,16 +1417,16 @@ ends.</strong> Ubiquiti gear hardcodes LACP rate <code>fast</code> and
 hash policy <code>layer3+4</code>; Unraid's bonding defaults differ
 (<code>slow</code> rate, layer2 hash) and need to be set to match, or
 the bond won't form correctly.</p>
-<p><strong>Why Unraid over TrueNAS SCALE:</strong> both now support
-Docker and GPU-passthrough VMs, but this box needs two
-GPU/Windows-adjacent VMs alongside several containers, and Unraid has
-the more mature, better-documented GPU passthrough workflow plus a more
-polished one-click container experience (Community Applications) —
-useful since this may be maintained on-site by AV staff rather than a
-Linux admin. Trade-off: Unraid requires a paid license (Lifetime tier is
-a $129 one-time cost); TrueNAS SCALE is free. Only VMix needs the
-passthrough GPU — BirdDog Central is NDI routing/control, not video
-encode, so it runs as a plain VM.</p>
+<p><strong>Why Unraid over TrueNAS SCALE:</strong> both support Docker
+and Windows VMs, and Unraid has the more polished one-click container
+experience (Community Applications) — useful since this may be
+maintained on-site by AV staff rather than a Linux admin. Trade-off:
+Unraid requires a paid license (Lifetime tier is a $129 one-time cost);
+TrueNAS SCALE is free. (The original tiebreaker — Unraid's more mature
+GPU-passthrough workflow — no longer applies now that the VMix VM is
+gone: nothing on this box needs GPU passthrough. BirdDog Central is NDI
+routing/control, not video encode, and runs as a plain VM. The choice
+stands on the container/UX grounds alone.)</p>
 <p><strong>Tailscale note:</strong> Cloud Gateway (UniFi-OS-based)
 generally can't run Tailscale natively without an unofficial container
 hack, so the mothership subnet-router role runs as a container on the
@@ -1502,8 +1504,7 @@ calculates the <strong>target minimum spec</strong> to check that
 hardware against, working forward from the actual workload this box runs
 (<a href="#doc-topology"><code>docs/topology.md</code></a>'s
 VM/container table) rather than a generic "decent server" guess. Where a
-figure depends on something this repo hasn't pinned down (the
-mothership's own VMix instance's camera/channel count, the event's
+figure depends on something this repo hasn't pinned down (the event's
 actual day count/hours), that's flagged explicitly rather than assumed —
 see <a
 href="#doc-open-questions"><code>docs/open-questions.md</code></a> for
@@ -1521,7 +1522,8 @@ actually holds.</p>
 <h3 id="containervm-pool">Container/VM pool</h3>
 <p>Holds <code>docker.img</code>, all container <code>appdata</code>
 (including the three databases — MariaDB, MongoDB, Redis — that want
-fast, low-latency small-I/O access), and both Windows VM vdisks.</p>
+fast, low-latency small-I/O access), and the BirdDog Central VM's
+vdisk.</p>
 <table>
 <thead>
 <tr>
@@ -1530,10 +1532,6 @@ fast, low-latency small-I/O access), and both Windows VM vdisks.</p>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>VMix instance vdisk</td>
-<td>~100 GB (OS + app + local scratch)</td>
-</tr>
 <tr>
 <td>BirdDog Central vdisk</td>
 <td>~80 GB (OS + app)</td>
@@ -1549,16 +1547,15 @@ router + 3 DBs)</td>
 </tr>
 <tr>
 <td><strong>Total</strong></td>
-<td><strong>~288 GB</strong></td>
+<td><strong>~188 GB</strong></td>
 </tr>
 </tbody>
 </table>
 <p><strong>Minimum: 500 GB usable, mirrored NVMe</strong> (2× ~512GB+
-NVMe) — comfortable headroom over the ~288 GB estimate, and mirrored
-because rebuilding two Windows VMs from scratch mid-event is real
-downtime, not just an inconvenience. NVMe specifically (not SATA SSD)
-because VM and database performance is latency-sensitive, not
-throughput-bound.</p>
+NVMe) — comfortable headroom over the ~188 GB estimate, and mirrored
+because rebuilding a Windows VM from scratch mid-event is real downtime,
+not just an inconvenience. NVMe specifically (not SATA SSD) because VM
+and database performance is latency-sensitive, not throughput-bound.</p>
 <p><strong>Drive class: mainstream consumer NVMe with onboard DRAM
 cache</strong> (not a DRAM-less budget drive) is genuinely sufficient
 here — no need for the enterprise tier the recording pool below needs.
@@ -1870,17 +1867,9 @@ insurance if it's already sitting on the board.</p>
 </thead>
 <tbody>
 <tr>
-<td>VMix instance VM</td>
-<td>32 GB</td>
-<td><a
-href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">vMix's
-own "Mid" tier guidance</a> (4-6 cameras, HD multi-cam) — see GPU
-section for the caveat on which tier actually fits</td>
-</tr>
-<tr>
 <td>BirdDog Central VM</td>
 <td>8 GB</td>
-<td>Routing/control app, not encode — lighter than VMix</td>
+<td>Routing/control app, not encode</td>
 </tr>
 <tr>
 <td>Nextcloud + MariaDB + Redis</td>
@@ -1917,22 +1906,23 @@ hit rate — this is a floor, not a hard requirement, ZFS is adaptive</td>
 </tr>
 <tr>
 <td><strong>Subtotal</strong></td>
-<td><strong>~71 GB</strong></td>
-<td></td>
+<td><strong>~39 GB</strong></td>
+<td>Down from ~71 GB before the VMix instance VM (32 GB on its own) was
+removed from the design</td>
 </tr>
 <tr>
 <td><strong>Minimum, with headroom</strong></td>
-<td><strong>96 GB</strong></td>
-<td>71 GB doesn't map to a clean DIMM configuration on an 8-channel
-platform (see CPU section) — 96 GB is the next practical capacity above
-it with real margin, not just rounding up to the subtotal</td>
+<td><strong>64 GB</strong></td>
+<td>39 GB doesn't map to a clean multi-channel ECC DIMM configuration —
+64 GB is the next practical capacity above it with real margin, not just
+rounding up to the subtotal</td>
 </tr>
 <tr>
 <td><strong>Recommended</strong></td>
-<td><strong>128 GB</strong></td>
-<td>Matches vMix's own "64 GB for heavy Instant Replay" guidance with
-room to spare, and gives ZFS ARC meaningfully more room across all three
-pools</td>
+<td><strong>96 GB</strong></td>
+<td>Gives ZFS ARC meaningfully more room across all three pools, and
+covers any future container additions without revisiting the DIMM
+population</td>
 </tr>
 </tbody>
 </table>
@@ -1958,14 +1948,6 @@ electrically.</p>
 </thead>
 <tbody>
 <tr>
-<td>VMix instance</td>
-<td>8 cores dedicated</td>
-<td><a
-href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">vMix's
-official "Mid" tier</a>: "Core i7 / Core Ultra 7, 3.5-4.5 GHz, 8+ cores"
-for 4-6 camera HD multi-cam</td>
-</tr>
-<tr>
 <td>BirdDog Central</td>
 <td>2 cores</td>
 <td>Routing/control, not encode</td>
@@ -1977,7 +1959,7 @@ DBs)</td>
 <td>Mostly I/O-bound; Restreamer's SRT relay (remux, not transcode, per
 this design's primary path) and ATEM Overseer + Flock (each decoding up
 to 12 concurrent monitoring streams) are the heaviest individual
-containers, still light relative to VMix's own budget</td>
+containers</td>
 </tr>
 <tr>
 <td>Unraid OS/array overhead</td>
@@ -1986,16 +1968,16 @@ containers, still light relative to VMix's own budget</td>
 </tr>
 <tr>
 <td><strong>Subtotal</strong></td>
-<td><strong>17-19 cores</strong></td>
-<td></td>
+<td><strong>9-11 cores</strong></td>
+<td>Down from 17-19 before the VMix instance VM (8 dedicated cores on
+its own) was removed from the design</td>
 </tr>
 <tr>
 <td><strong>Minimum</strong></td>
-<td><strong>16 cores / 32 threads, high sustained (not just boost)
+<td><strong>12 cores / 24 threads, high sustained (not just boost)
 clock</strong></td>
-<td>Rounds slightly below the subtotal's high end — see platform-class
-discussion below, which matters more than squeezing out the last 1-3
-cores</td>
+<td>Rounds above the subtotal's high end — see platform-class discussion
+below, which matters more than squeezing out the last core or two</td>
 </tr>
 </tbody>
 </table>
@@ -2004,135 +1986,69 @@ is worth spelling out rather than just naming a chip.</strong> A 16-core
 desktop CPU is easy to find — the actual constraint is everything
 <em>around</em> it:</p>
 <ul>
-<li><strong>PCIe lanes.</strong> Between the GPU and up to 8 NVMe drives
-spread across the three pools above, this box realistically wants 24-40+
-usable PCIe lanes. Mainstream consumer desktop platforms (the socket a
-typical Ryzen 9 or Core i9/Ultra 9 sits in) top out around half that
-once you account for the GPU slot, chipset-shared bandwidth, and onboard
-I/O all competing for the same limited lane budget — workable if you're
-willing to compromise the number of drives or share lanes through
-bifurcation, tight otherwise. A <strong>workstation/HEDT-class
-platform</strong> (Threadripper PRO or a high-end Xeon W, not a consumer
-desktop chip) is the category that actually clears this without
-compromise — this is the same reason HEDT platforms exist at all, not a
-preference.</li>
+<li><strong>PCIe lanes.</strong> With up to 6 NVMe drives spread across
+the three pools above, this box still wants 20-30+ usable PCIe lanes —
+though the pressure has eased since the VMix VM (and with it a mandatory
+×16 GPU slot) left the design. Mainstream consumer desktop platforms
+(the socket a typical Ryzen 9 or Core i9/Ultra 9 sits in) are now
+workable with careful drive placement and bifurcation; a
+<strong>workstation/HEDT-class platform</strong> (Threadripper PRO or a
+high-end Xeon W) still clears it without any compromise, and remains the
+safer choice — but it's now a preference with a real mainstream
+alternative, no longer the only category that fits.</li>
 <li><strong>Validated ECC.</strong> Some mainstream consumer boards
 technically accept ECC memory electrically, but whether ECC actually
 <em>functions</em> — gets detected, enabled, and does correction —
 varies board-to-board and isn't something to gamble on for the pool
 holding irreplaceable footage. Workstation platforms build ECC support
 into the platform itself, officially validated, not a maybe.</li>
-<li><strong>Sustained clock over peak boost.</strong> vMix is a
-continuously-loaded, real-time workload, not a bursty one — a CPU's
-<em>base</em> clock under sustained all-core load is a better predictor
-of live-production performance than its headline single-core boost
-number. Worth actually comparing base clocks across whichever specific
-chips are shortlisted, not just core count.</li>
+<li><strong>Sustained clock over peak boost.</strong> The heavy loads
+here are continuous, not bursty — ATEM Overseer and Flock each decode up
+to 12 monitoring streams for the whole show, and the ingest pipelines
+run all day — so a CPU's <em>base</em> clock under sustained all-core
+load is a better predictor than its headline single-core boost number.
+Worth actually comparing base clocks across whichever specific chips are
+shortlisted, not just core count.</li>
 </ul>
 <p><strong>Trade-off worth being upfront about</strong>:
 workstation/HEDT platforms cost meaningfully more (CPU + motherboard
 together) than the mainstream desktop alternative, and idle power draw
 for 24/7 operation runs higher too. That's a real cost, not a rounding
-error — but the alternative doesn't actually satisfy this box's lane and
-ECC requirements, so it's not a straightforward "save money" option,
-it's a different, smaller build with real compromises attached.</p>
-<p><strong>Also required, not a separate line item: IOMMU (Intel VT-d)
-or AMD-Vi support</strong> on both the CPU and motherboard, for GPU
-passthrough to the VMix VM — already flagged as unconfirmed in <a
-href="#doc-open-questions"><code>docs/open-questions.md</code></a> #1;
-whatever CPU/board combination is checked against this spec, confirm
-this specifically. Both platform classes above support it; this is
-really only a risk on very old hardware.</p>
-<h2 id="gpu">GPU</h2>
-<p>VMix strongly recommends a dedicated NVIDIA GPU for NVENC hardware
-encode — already the existing design's own reasoning for GPU passthrough
-(<a href="#doc-topology"><code>docs/topology.md</code></a>:
-"Windows-only; benefits from hardware encode"). Current vMix-published
-tiers (<a
-href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">source</a>):</p>
-<table>
-<thead>
-<tr>
-<th>Tier</th>
-<th>GPU</th>
-<th>Use case</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Entry (1-2 cams)</td>
-<td>RTX 5060 Ti (16 GB)</td>
-<td>1080p stream + record</td>
-</tr>
-<tr>
-<td><strong>Mid (4-6 cams)</strong></td>
-<td><strong>RTX 5070 Ti</strong></td>
-<td>HD multi-cam, 1080p replay</td>
-</tr>
-<tr>
-<td>Demanding (8+ cams / 4K)</td>
-<td>RTX 5080+</td>
-<td>4K productions, multicorder</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Genuinely can't pin an exact minimum here</strong>, and worth
-being upfront about why: the 2 VMix <em>nodes</em> clearly handle "4×
-BirdDog P400 cameras, 2× VMix PCs" each (<a
-href="#doc-topology"><code>docs/topology.md</code></a>) — but what the
-mothership's own separate <strong>VMix instance</strong> VM actually
-processes isn't documented anywhere in this repo. Recommend the
-<strong>Mid tier (RTX 5070 Ti-equivalent performance/encode
-class)</strong> as a reasonable working target absent that detail —
-check the existing "decent GPU" already on hand (<a
-href="#doc-topology"><code>docs/topology.md</code></a>/<a
-href="#doc-open-questions"><code>docs/open-questions.md</code></a>)
-against this table once the mothership VMix instance's actual
-role/channel count is confirmed.</p>
-<p><strong>Card class: a workstation/professional-line GPU at that
-performance tier, not the consumer gaming card itself</strong> — this is
-a genuinely different recommendation from just naming a GeForce tier,
-and worth the reasoning:</p>
+error. Since the VMix VM left the design, a high-end mainstream build
+with <em>validated</em> (not merely tolerated) ECC support is a
+legitimate cheaper alternative — the deciding check is the ECC
+validation and having enough lanes for the NVMe pools, not the platform
+label.</p>
+<p>(IOMMU/VT-d support — previously a hard requirement here for GPU
+passthrough to the VMix VM — is no longer required by anything in the
+design. Virtually all current platforms have it anyway; it just no
+longer needs specific confirmation.)</p>
+<h2 id="gpu--no-longer-required">GPU — no longer required</h2>
+<p>An earlier revision of this design carried a mothership VMix instance
+VM with a passthrough GPU, and this section specified a
+workstation-class NVENC card for it. <strong>That VM has been
+removed</strong> (<a
+href="#doc-open-questions"><code>docs/open-questions.md</code></a> #10 —
+its role was never established; the theatre program feeds originate from
+the VMix <em>node</em> PCs, which have their own hardware). With it
+gone, nothing on this box needs a GPU:</p>
 <ul>
-<li><strong>Chassis fit.</strong> Consumer gaming GPUs are built for
-open-air desktop-tower cooling (multiple large fans dumping heat
-sideways into the case, relying on front-to-back case airflow to clear
-it). A server chassis rarely has that airflow profile. Workstation cards
-in this class commonly ship as compact, single-slot, blower-style
-coolers that pull air in and exhaust it straight out the card's own
-bracket — the form factor is built for a server/rack enclosure, not
-retrofitted into one.</li>
-<li><strong>Driver behavior under continuous load.</strong> Consumer GPU
-drivers are tuned for gaming sessions — burst to a high boost clock,
-then throttle. A continuously-loaded encode workload running for a
-multi-day event wants a driver branch built for sustained clocks under
-indefinite load, which is what the workstation/enterprise driver track
-is actually validated for.</li>
-<li><strong>ECC VRAM</strong>, same rationale as ECC system RAM above —
-protects against silent corruption during a multi-day continuous
-run.</li>
-<li><strong>Licensing.</strong> Consumer GPU license terms typically
-carry restrictive language around "datacenter"-style deployment that
-doesn't clearly define whether a single VM on owned hardware counts — a
-real, if loosely-worded and thinly-enforced, gray area for running a
-gaming card inside a server chassis long-term. The
-workstation/professional line's license doesn't carry that ambiguity;
-it's built for exactly this deployment shape. Worth noting this is a
-licensing question, not a technical one — passthrough itself works fine
-on either card class.</li>
-<li>The actual NVENC encode silicon is typically the <strong>same
-generation</strong> across the consumer and workstation lines at a
-comparable performance tier — this isn't a "buy workstation for better
-encoding" argument, the encode quality/capability is essentially
-equivalent. It's specifically about fit for continuous server
-operation.</li>
+<li><strong>Restreamer</strong> relays SRT by remuxing, not transcoding
+— no encode.</li>
+<li><strong>BirdDog Central</strong> is NDI routing/control — no
+encode.</li>
+<li><strong>ATEM Overseer and Flock</strong> decode up to 12
+monitoring/preview streams each, but these are 10 Mbps H.264 previews —
+CPU decode at this scale is already budgeted in the CPU table
+above.</li>
 </ul>
-<p><strong>Worth knowing when pricing this out</strong>: the historical
-cost gap between a workstation-class card and its consumer-tier
-equivalent has narrowed substantially in 2026 amid broader GPU
-memory/component pricing pressure — confirm current pricing before
-assuming the workstation option carries the large multiplier it used
-to.</p>
+<p>The "decent" discrete GPU already in the box (<a
+href="#doc-topology"><code>docs/topology.md</code></a>) can stay as
+spare capacity — potentially useful later for container-level
+decode/encode offload (e.g. if Overseer/Flock support hardware
+acceleration, or a future transcode workload appears) — but the spec no
+longer <em>requires</em> any GPU, and no replacement or upgrade should
+be budgeted for one.</p>
 <h2
 id="summary--minimum-spec-to-check-the-existing-server-against">Summary
 — minimum spec to check the existing server against</h2>
@@ -2147,31 +2063,32 @@ id="summary--minimum-spec-to-check-the-existing-server-against">Summary
 <tbody>
 <tr>
 <td>CPU</td>
-<td>16 cores / 32 threads, workstation/HEDT platform (Threadripper PRO
-or Xeon W class, not a mainstream desktop chip), strong sustained
-clock</td>
-<td>PCIe lane count for GPU + up to 8 NVMe drives, validated ECC
-support</td>
+<td>12 cores / 24 threads, strong sustained clock — workstation/HEDT
+platform preferred, high-end mainstream with validated ECC
+acceptable</td>
+<td>PCIe lane count for up to 6 NVMe drives, validated ECC support; lane
+pressure eased since the VMix VM (and its ×16 GPU slot) left the
+design</td>
 </tr>
 <tr>
 <td>Motherboard</td>
-<td>Workstation/HEDT chipset, IOMMU/AMD-Vi capable, validated ECC
-support, enough PCIe 4.0/5.0 lanes for 3 NVMe pools + GPU</td>
+<td>Validated ECC support, enough PCIe 4.0/5.0 lanes for 3 NVMe
+pools</td>
 <td>Same reasoning as CPU — the two are a package</td>
 </tr>
 <tr>
 <td>RAM</td>
-<td>96 GB minimum, 128 GB recommended, ECC, populate all available
+<td>64 GB minimum, 96 GB recommended, ECC, populate all available
 channels</td>
-<td>ZFS data integrity across all 3 pools; matches vMix's own heavy-use
-guidance</td>
+<td>ZFS data integrity across all 3 pools; subtotal ~39 GB since the
+VMix VM's 32 GB left the budget</td>
 </tr>
 <tr>
 <td>GPU</td>
-<td>NVENC-capable, workstation/professional line at an RTX 5070
-Ti-equivalent tier (unconfirmed exact tier — see above)</td>
-<td>Server-chassis cooling fit, sustained-clock driver, ECC VRAM,
-cleaner passthrough licensing</td>
+<td><strong>None required</strong> — the on-hand GPU stays as spare
+capacity only</td>
+<td>Nothing in the design encodes on this box any more; see the GPU
+section</td>
 </tr>
 <tr>
 <td>Container/VM pool</td>
@@ -2287,14 +2204,11 @@ whatever address they get.</p>
 networking)</td>
 </tr>
 <tr>
-<td>VMix instance</td>
-<td>192.168.1.11</td>
-<td>Windows VM, GPU passthrough</td>
-</tr>
-<tr>
 <td>BirdDog Central</td>
 <td>192.168.1.12</td>
-<td>Windows VM, separate from VMix VM</td>
+<td>Windows VM — the design's only VM (the mothership VMix instance VM
+at <code>.11</code> was removed, see <code>docs/open-questions.md</code>
+#10; <code>.11</code> is left unassigned)</td>
 </tr>
 <tr>
 <td>Nextcloud</td>
@@ -3042,7 +2956,7 @@ full design.</p>
 </table>
 <h2 id="device-count">Device count</h2>
 <ul>
-<li>Mothership: 20 devices (1 gateway + 1 server host + 2 VMs + 12
+<li>Mothership: 19 devices (1 gateway + 1 server host + 1 VM + 12
 containers + 4 ready-room PCs)</li>
 <li>Theatres: 12 × 8 devices = 96</li>
 <li>VMix nodes: 2 × 7 devices = 14</li>
@@ -3050,7 +2964,7 @@ containers + 4 ready-room PCs)</li>
 Server/Remote Render node), see <a
 href="#doc-live-editing"><code>docs/live-editing.md</code></a> Decision
 2</li>
-<li><strong>Total: 134 devices</strong> across the network (excluding
+<li><strong>Total: 133 devices</strong> across the network (excluding
 the 4 uplink VLAN transit addresses, which aren't per-device).</li>
 </ul>
 </section><section class="doc-section" id="doc-streaming-flow"><h1 id="streaming-flow--srt--ndi">Streaming flow — SRT / NDI</h1>
@@ -5797,18 +5711,18 @@ Decision: the mothership subnet-router role runs as a container on the
 consolidated services server instead of the Cloud Gateway itself — see
 <a href="#doc-topology"><code>docs/topology.md</code></a>.</p></li>
 <li><p><strong>Mothership service consolidation: single physical server
-running Unraid.</strong> Nextcloud, Restreamer, the VMix instance,
-BirdDog Central, and the NDI Discovery Server all move onto one box
-instead of being separate machines — the router and the 4 ready-room PCs
-stay physical. VMix and BirdDog Central are both Windows-only, so each
-runs as its own Windows VM (kept separate so one hanging doesn't risk
-the other); only the VMix VM needs GPU passthrough (hardware encode) —
-BirdDog Central is routing/control, not encode. Everything else
-(Nextcloud, Restreamer, NDI Discovery Server, Tailscale subnet router)
-runs as Docker containers. Chose <strong>Unraid over TrueNAS
-SCALE</strong> for its more mature GPU-passthrough track record and more
-polished one-click container experience, accepting the $129 one-time
-Lifetime license cost that TrueNAS (free) doesn't have. See <a
+running Unraid.</strong> Nextcloud, Restreamer, BirdDog Central, and the
+NDI Discovery Server all move onto one box instead of being separate
+machines — the router and the 4 ready-room PCs stay physical. BirdDog
+Central is Windows-only, so it runs as the design's one Windows VM —
+routing/control, not encode, no GPU needed. (An earlier revision also
+carried a mothership VMix instance VM with a passthrough GPU; it was
+removed — see #10 below.) Everything else (Nextcloud, Restreamer, NDI
+Discovery Server, Tailscale subnet router) runs as Docker containers.
+Chose <strong>Unraid over TrueNAS SCALE</strong> for its polished
+one-click container experience (the original GPU-passthrough-maturity
+tiebreaker no longer applies with the VMix VM gone), accepting the $129
+one-time Lifetime license cost that TrueNAS (free) doesn't have. See <a
 href="#doc-topology"><code>docs/topology.md</code></a> for the full
 breakdown.</p></li>
 <li><p><strong>Theatre router: GL-iNet A-1300 (Slate Plus).</strong>
@@ -5865,7 +5779,7 @@ box's actual workload rather than guessed) is now in <a
 href="#doc-server-specification"><code>docs/server-specification.md</code></a>.</p></li>
 <li><p><strong>Full device inventory + configs generated.</strong> Every
 device on the network now has a concrete IP — see <a
-href="#doc-ip-address-map"><code>docs/ip-address-map.md</code></a> (134
+href="#doc-ip-address-map"><code>docs/ip-address-map.md</code></a> (133
 devices total) and the redrawn <a
 href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/topology.svg"><code>diagrams/topology.svg</code></a>.
 Configs generated to match: <a
@@ -6060,13 +5974,13 @@ building</h2>
 <li><p><strong>Check the existing server's real spec against the
 calculated target in <a
 href="#doc-server-specification"><code>docs/server-specification.md</code></a>.</strong>
-In particular: does the CPU/motherboard support IOMMU (Intel VT-d or
-AMD-Vi) for GPU passthrough, is the GPU model
-VFIO-passthrough-compatible and which vMix camera-count tier does it
-actually meet, and is there enough RAM/cores (target: 16 cores/32
-threads, 96-128 GB RAM) to run 2 Windows VMs (VMix + BirdDog Central)
-plus 12 Docker containers concurrently without contention during a live
-event.</p></li>
+In particular: does it have validated (not merely tolerated) ECC
+support, enough PCIe lanes for the three NVMe pools, and enough
+RAM/cores (target: 12 cores/24 threads, 64-96 GB RAM) to run the BirdDog
+Central Windows VM plus 12 Docker containers concurrently without
+contention during a live event. (GPU passthrough/IOMMU checks dropped
+from this list — nothing needs them since the VMix VM was removed, see
+#10.)</p></li>
 <li><p><strong>Actually register/point
 <code>derp.example.net</code></strong> (or substitute whatever
 domain/DDNS host you end up controlling) at the mothership's public IP,
@@ -6140,12 +6054,18 @@ of continuous worst-to-realistic-case load (~1.5-3 typical event days),
 but this repo doesn't establish the event's real length anywhere. If it
 runs longer without a periodic archive-off step, either the pool needs
 to grow or an offload step needs adding to the ingest design.</p></li>
-<li><p><strong>Confirm what the mothership's own VMix instance VM
-actually does</strong> — how many camera/input channels, what resolution
-— before treating the GPU tier in
-<code>docs/server-specification.md</code> as settled. The 2 VMix
-<em>nodes</em> (physical PCs at the theatres) are well-documented
-(<code>docs/topology.md</code>); this separate VM's role isn't.</p></li>
+<li><p><strong>Resolved — by removal.</strong> This slot used to ask
+what the mothership's own VMix instance VM actually did (its role was
+never established anywhere in this repo, unlike the well-documented VMix
+<em>node</em> PCs). The answer arrived as a design change: <strong>the
+mothership VMix VM was removed entirely.</strong> The theatre program
+feeds originate from the VMix node PCs via Restreamer
+(<code>docs/streaming-flow.md</code>), which never depended on it.
+Knock-ons all applied: no GPU/passthrough/IOMMU requirement remains
+anywhere in the spec, RAM/CPU budgets dropped (see
+<code>docs/server-specification.md</code>), BirdDog Central is now the
+design's only VM, and the device count is 133. (Number kept so
+cross-references to #11-#15 stay stable.)</p></li>
 <li><p><strong>Confirm ATEM Overseer's, ATEM Fleet Admin's, and Flock's
 actual published container images</strong> (or that they need to be
 built from source instead) before deploying
@@ -6289,8 +6209,8 @@ this is a map, not a duplicate.</p>
 anything</h2>
 <ul class="task-list">
 <li><label><input type="checkbox" />Confirm the consolidated server's
-full spec (CPU/motherboard IOMMU support, GPU passthrough compatibility,
-RAM/cores) — <a
+full spec (validated ECC, PCIe lanes for the NVMe pools, RAM/cores — no
+GPU/IOMMU checks needed any more) — <a
 href="#doc-open-questions"><code>docs/open-questions.md</code></a>
 #1</label></li>
 <li><label><input type="checkbox" />Confirm the Cloud Gateway model (LAG
@@ -6340,9 +6260,9 @@ rate/hash-policy gotcha with Ubiquiti gear.</li>
 <h2 id="phase-2--consolidated-services-server-unraid">Phase 2 —
 Consolidated services server (Unraid)</h2>
 <ol type="1">
-<li>Install Unraid, confirm IOMMU/passthrough works for the GPU.</li>
-<li>Create the VMix instance and BirdDog Central Windows VMs (separate
-VMs; only VMix gets GPU passthrough) — <a
+<li>Install Unraid.</li>
+<li>Create the BirdDog Central Windows VM — the design's only VM, no GPU
+passthrough needed — <a
 href="#doc-topology"><code>docs/topology.md</code></a>.</li>
 <li>Bring up every Docker container in one shot with <a
 href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>

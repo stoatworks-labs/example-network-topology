@@ -53,8 +53,7 @@ calculates the <strong>target minimum spec</strong> to check that
 hardware against, working forward from the actual workload this box runs
 (<a href="topology.html"><code>docs/topology.md</code></a>'s
 VM/container table) rather than a generic "decent server" guess. Where a
-figure depends on something this repo hasn't pinned down (the
-mothership's own VMix instance's camera/channel count, the event's
+figure depends on something this repo hasn't pinned down (the event's
 actual day count/hours), that's flagged explicitly rather than assumed —
 see <a
 href="open-questions.html"><code>docs/open-questions.md</code></a> for
@@ -72,7 +71,8 @@ actually holds.</p>
 <h3 id="containervm-pool">Container/VM pool</h3>
 <p>Holds <code>docker.img</code>, all container <code>appdata</code>
 (including the three databases — MariaDB, MongoDB, Redis — that want
-fast, low-latency small-I/O access), and both Windows VM vdisks.</p>
+fast, low-latency small-I/O access), and the BirdDog Central VM's
+vdisk.</p>
 <table>
 <thead>
 <tr>
@@ -81,10 +81,6 @@ fast, low-latency small-I/O access), and both Windows VM vdisks.</p>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>VMix instance vdisk</td>
-<td>~100 GB (OS + app + local scratch)</td>
-</tr>
 <tr>
 <td>BirdDog Central vdisk</td>
 <td>~80 GB (OS + app)</td>
@@ -100,16 +96,15 @@ router + 3 DBs)</td>
 </tr>
 <tr>
 <td><strong>Total</strong></td>
-<td><strong>~288 GB</strong></td>
+<td><strong>~188 GB</strong></td>
 </tr>
 </tbody>
 </table>
 <p><strong>Minimum: 500 GB usable, mirrored NVMe</strong> (2× ~512GB+
-NVMe) — comfortable headroom over the ~288 GB estimate, and mirrored
-because rebuilding two Windows VMs from scratch mid-event is real
-downtime, not just an inconvenience. NVMe specifically (not SATA SSD)
-because VM and database performance is latency-sensitive, not
-throughput-bound.</p>
+NVMe) — comfortable headroom over the ~188 GB estimate, and mirrored
+because rebuilding a Windows VM from scratch mid-event is real downtime,
+not just an inconvenience. NVMe specifically (not SATA SSD) because VM
+and database performance is latency-sensitive, not throughput-bound.</p>
 <p><strong>Drive class: mainstream consumer NVMe with onboard DRAM
 cache</strong> (not a DRAM-less budget drive) is genuinely sufficient
 here — no need for the enterprise tier the recording pool below needs.
@@ -421,17 +416,9 @@ insurance if it's already sitting on the board.</p>
 </thead>
 <tbody>
 <tr>
-<td>VMix instance VM</td>
-<td>32 GB</td>
-<td><a
-href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">vMix's
-own "Mid" tier guidance</a> (4-6 cameras, HD multi-cam) — see GPU
-section for the caveat on which tier actually fits</td>
-</tr>
-<tr>
 <td>BirdDog Central VM</td>
 <td>8 GB</td>
-<td>Routing/control app, not encode — lighter than VMix</td>
+<td>Routing/control app, not encode</td>
 </tr>
 <tr>
 <td>Nextcloud + MariaDB + Redis</td>
@@ -468,22 +455,23 @@ hit rate — this is a floor, not a hard requirement, ZFS is adaptive</td>
 </tr>
 <tr>
 <td><strong>Subtotal</strong></td>
-<td><strong>~71 GB</strong></td>
-<td></td>
+<td><strong>~39 GB</strong></td>
+<td>Down from ~71 GB before the VMix instance VM (32 GB on its own) was
+removed from the design</td>
 </tr>
 <tr>
 <td><strong>Minimum, with headroom</strong></td>
-<td><strong>96 GB</strong></td>
-<td>71 GB doesn't map to a clean DIMM configuration on an 8-channel
-platform (see CPU section) — 96 GB is the next practical capacity above
-it with real margin, not just rounding up to the subtotal</td>
+<td><strong>64 GB</strong></td>
+<td>39 GB doesn't map to a clean multi-channel ECC DIMM configuration —
+64 GB is the next practical capacity above it with real margin, not just
+rounding up to the subtotal</td>
 </tr>
 <tr>
 <td><strong>Recommended</strong></td>
-<td><strong>128 GB</strong></td>
-<td>Matches vMix's own "64 GB for heavy Instant Replay" guidance with
-room to spare, and gives ZFS ARC meaningfully more room across all three
-pools</td>
+<td><strong>96 GB</strong></td>
+<td>Gives ZFS ARC meaningfully more room across all three pools, and
+covers any future container additions without revisiting the DIMM
+population</td>
 </tr>
 </tbody>
 </table>
@@ -509,14 +497,6 @@ electrically.</p>
 </thead>
 <tbody>
 <tr>
-<td>VMix instance</td>
-<td>8 cores dedicated</td>
-<td><a
-href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">vMix's
-official "Mid" tier</a>: "Core i7 / Core Ultra 7, 3.5-4.5 GHz, 8+ cores"
-for 4-6 camera HD multi-cam</td>
-</tr>
-<tr>
 <td>BirdDog Central</td>
 <td>2 cores</td>
 <td>Routing/control, not encode</td>
@@ -528,7 +508,7 @@ DBs)</td>
 <td>Mostly I/O-bound; Restreamer's SRT relay (remux, not transcode, per
 this design's primary path) and ATEM Overseer + Flock (each decoding up
 to 12 concurrent monitoring streams) are the heaviest individual
-containers, still light relative to VMix's own budget</td>
+containers</td>
 </tr>
 <tr>
 <td>Unraid OS/array overhead</td>
@@ -537,16 +517,16 @@ containers, still light relative to VMix's own budget</td>
 </tr>
 <tr>
 <td><strong>Subtotal</strong></td>
-<td><strong>17-19 cores</strong></td>
-<td></td>
+<td><strong>9-11 cores</strong></td>
+<td>Down from 17-19 before the VMix instance VM (8 dedicated cores on
+its own) was removed from the design</td>
 </tr>
 <tr>
 <td><strong>Minimum</strong></td>
-<td><strong>16 cores / 32 threads, high sustained (not just boost)
+<td><strong>12 cores / 24 threads, high sustained (not just boost)
 clock</strong></td>
-<td>Rounds slightly below the subtotal's high end — see platform-class
-discussion below, which matters more than squeezing out the last 1-3
-cores</td>
+<td>Rounds above the subtotal's high end — see platform-class discussion
+below, which matters more than squeezing out the last core or two</td>
 </tr>
 </tbody>
 </table>
@@ -555,135 +535,69 @@ is worth spelling out rather than just naming a chip.</strong> A 16-core
 desktop CPU is easy to find — the actual constraint is everything
 <em>around</em> it:</p>
 <ul>
-<li><strong>PCIe lanes.</strong> Between the GPU and up to 8 NVMe drives
-spread across the three pools above, this box realistically wants 24-40+
-usable PCIe lanes. Mainstream consumer desktop platforms (the socket a
-typical Ryzen 9 or Core i9/Ultra 9 sits in) top out around half that
-once you account for the GPU slot, chipset-shared bandwidth, and onboard
-I/O all competing for the same limited lane budget — workable if you're
-willing to compromise the number of drives or share lanes through
-bifurcation, tight otherwise. A <strong>workstation/HEDT-class
-platform</strong> (Threadripper PRO or a high-end Xeon W, not a consumer
-desktop chip) is the category that actually clears this without
-compromise — this is the same reason HEDT platforms exist at all, not a
-preference.</li>
+<li><strong>PCIe lanes.</strong> With up to 6 NVMe drives spread across
+the three pools above, this box still wants 20-30+ usable PCIe lanes —
+though the pressure has eased since the VMix VM (and with it a mandatory
+×16 GPU slot) left the design. Mainstream consumer desktop platforms
+(the socket a typical Ryzen 9 or Core i9/Ultra 9 sits in) are now
+workable with careful drive placement and bifurcation; a
+<strong>workstation/HEDT-class platform</strong> (Threadripper PRO or a
+high-end Xeon W) still clears it without any compromise, and remains the
+safer choice — but it's now a preference with a real mainstream
+alternative, no longer the only category that fits.</li>
 <li><strong>Validated ECC.</strong> Some mainstream consumer boards
 technically accept ECC memory electrically, but whether ECC actually
 <em>functions</em> — gets detected, enabled, and does correction —
 varies board-to-board and isn't something to gamble on for the pool
 holding irreplaceable footage. Workstation platforms build ECC support
 into the platform itself, officially validated, not a maybe.</li>
-<li><strong>Sustained clock over peak boost.</strong> vMix is a
-continuously-loaded, real-time workload, not a bursty one — a CPU's
-<em>base</em> clock under sustained all-core load is a better predictor
-of live-production performance than its headline single-core boost
-number. Worth actually comparing base clocks across whichever specific
-chips are shortlisted, not just core count.</li>
+<li><strong>Sustained clock over peak boost.</strong> The heavy loads
+here are continuous, not bursty — ATEM Overseer and Flock each decode up
+to 12 monitoring streams for the whole show, and the ingest pipelines
+run all day — so a CPU's <em>base</em> clock under sustained all-core
+load is a better predictor than its headline single-core boost number.
+Worth actually comparing base clocks across whichever specific chips are
+shortlisted, not just core count.</li>
 </ul>
 <p><strong>Trade-off worth being upfront about</strong>:
 workstation/HEDT platforms cost meaningfully more (CPU + motherboard
 together) than the mainstream desktop alternative, and idle power draw
 for 24/7 operation runs higher too. That's a real cost, not a rounding
-error — but the alternative doesn't actually satisfy this box's lane and
-ECC requirements, so it's not a straightforward "save money" option,
-it's a different, smaller build with real compromises attached.</p>
-<p><strong>Also required, not a separate line item: IOMMU (Intel VT-d)
-or AMD-Vi support</strong> on both the CPU and motherboard, for GPU
-passthrough to the VMix VM — already flagged as unconfirmed in <a
-href="open-questions.html"><code>docs/open-questions.md</code></a> #1;
-whatever CPU/board combination is checked against this spec, confirm
-this specifically. Both platform classes above support it; this is
-really only a risk on very old hardware.</p>
-<h2 id="gpu">GPU</h2>
-<p>VMix strongly recommends a dedicated NVIDIA GPU for NVENC hardware
-encode — already the existing design's own reasoning for GPU passthrough
-(<a href="topology.html"><code>docs/topology.md</code></a>:
-"Windows-only; benefits from hardware encode"). Current vMix-published
-tiers (<a
-href="https://www.coremicro.com/blogs/support/vmix-minimum-system-requirements">source</a>):</p>
-<table>
-<thead>
-<tr>
-<th>Tier</th>
-<th>GPU</th>
-<th>Use case</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Entry (1-2 cams)</td>
-<td>RTX 5060 Ti (16 GB)</td>
-<td>1080p stream + record</td>
-</tr>
-<tr>
-<td><strong>Mid (4-6 cams)</strong></td>
-<td><strong>RTX 5070 Ti</strong></td>
-<td>HD multi-cam, 1080p replay</td>
-</tr>
-<tr>
-<td>Demanding (8+ cams / 4K)</td>
-<td>RTX 5080+</td>
-<td>4K productions, multicorder</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Genuinely can't pin an exact minimum here</strong>, and worth
-being upfront about why: the 2 VMix <em>nodes</em> clearly handle "4×
-BirdDog P400 cameras, 2× VMix PCs" each (<a
-href="topology.html"><code>docs/topology.md</code></a>) — but what the
-mothership's own separate <strong>VMix instance</strong> VM actually
-processes isn't documented anywhere in this repo. Recommend the
-<strong>Mid tier (RTX 5070 Ti-equivalent performance/encode
-class)</strong> as a reasonable working target absent that detail —
-check the existing "decent GPU" already on hand (<a
-href="topology.html"><code>docs/topology.md</code></a>/<a
-href="open-questions.html"><code>docs/open-questions.md</code></a>)
-against this table once the mothership VMix instance's actual
-role/channel count is confirmed.</p>
-<p><strong>Card class: a workstation/professional-line GPU at that
-performance tier, not the consumer gaming card itself</strong> — this is
-a genuinely different recommendation from just naming a GeForce tier,
-and worth the reasoning:</p>
+error. Since the VMix VM left the design, a high-end mainstream build
+with <em>validated</em> (not merely tolerated) ECC support is a
+legitimate cheaper alternative — the deciding check is the ECC
+validation and having enough lanes for the NVMe pools, not the platform
+label.</p>
+<p>(IOMMU/VT-d support — previously a hard requirement here for GPU
+passthrough to the VMix VM — is no longer required by anything in the
+design. Virtually all current platforms have it anyway; it just no
+longer needs specific confirmation.)</p>
+<h2 id="gpu--no-longer-required">GPU — no longer required</h2>
+<p>An earlier revision of this design carried a mothership VMix instance
+VM with a passthrough GPU, and this section specified a
+workstation-class NVENC card for it. <strong>That VM has been
+removed</strong> (<a
+href="open-questions.html"><code>docs/open-questions.md</code></a> #10 —
+its role was never established; the theatre program feeds originate from
+the VMix <em>node</em> PCs, which have their own hardware). With it
+gone, nothing on this box needs a GPU:</p>
 <ul>
-<li><strong>Chassis fit.</strong> Consumer gaming GPUs are built for
-open-air desktop-tower cooling (multiple large fans dumping heat
-sideways into the case, relying on front-to-back case airflow to clear
-it). A server chassis rarely has that airflow profile. Workstation cards
-in this class commonly ship as compact, single-slot, blower-style
-coolers that pull air in and exhaust it straight out the card's own
-bracket — the form factor is built for a server/rack enclosure, not
-retrofitted into one.</li>
-<li><strong>Driver behavior under continuous load.</strong> Consumer GPU
-drivers are tuned for gaming sessions — burst to a high boost clock,
-then throttle. A continuously-loaded encode workload running for a
-multi-day event wants a driver branch built for sustained clocks under
-indefinite load, which is what the workstation/enterprise driver track
-is actually validated for.</li>
-<li><strong>ECC VRAM</strong>, same rationale as ECC system RAM above —
-protects against silent corruption during a multi-day continuous
-run.</li>
-<li><strong>Licensing.</strong> Consumer GPU license terms typically
-carry restrictive language around "datacenter"-style deployment that
-doesn't clearly define whether a single VM on owned hardware counts — a
-real, if loosely-worded and thinly-enforced, gray area for running a
-gaming card inside a server chassis long-term. The
-workstation/professional line's license doesn't carry that ambiguity;
-it's built for exactly this deployment shape. Worth noting this is a
-licensing question, not a technical one — passthrough itself works fine
-on either card class.</li>
-<li>The actual NVENC encode silicon is typically the <strong>same
-generation</strong> across the consumer and workstation lines at a
-comparable performance tier — this isn't a "buy workstation for better
-encoding" argument, the encode quality/capability is essentially
-equivalent. It's specifically about fit for continuous server
-operation.</li>
+<li><strong>Restreamer</strong> relays SRT by remuxing, not transcoding
+— no encode.</li>
+<li><strong>BirdDog Central</strong> is NDI routing/control — no
+encode.</li>
+<li><strong>ATEM Overseer and Flock</strong> decode up to 12
+monitoring/preview streams each, but these are 10 Mbps H.264 previews —
+CPU decode at this scale is already budgeted in the CPU table
+above.</li>
 </ul>
-<p><strong>Worth knowing when pricing this out</strong>: the historical
-cost gap between a workstation-class card and its consumer-tier
-equivalent has narrowed substantially in 2026 amid broader GPU
-memory/component pricing pressure — confirm current pricing before
-assuming the workstation option carries the large multiplier it used
-to.</p>
+<p>The "decent" discrete GPU already in the box (<a
+href="topology.html"><code>docs/topology.md</code></a>) can stay as
+spare capacity — potentially useful later for container-level
+decode/encode offload (e.g. if Overseer/Flock support hardware
+acceleration, or a future transcode workload appears) — but the spec no
+longer <em>requires</em> any GPU, and no replacement or upgrade should
+be budgeted for one.</p>
 <h2
 id="summary--minimum-spec-to-check-the-existing-server-against">Summary
 — minimum spec to check the existing server against</h2>
@@ -698,31 +612,32 @@ id="summary--minimum-spec-to-check-the-existing-server-against">Summary
 <tbody>
 <tr>
 <td>CPU</td>
-<td>16 cores / 32 threads, workstation/HEDT platform (Threadripper PRO
-or Xeon W class, not a mainstream desktop chip), strong sustained
-clock</td>
-<td>PCIe lane count for GPU + up to 8 NVMe drives, validated ECC
-support</td>
+<td>12 cores / 24 threads, strong sustained clock — workstation/HEDT
+platform preferred, high-end mainstream with validated ECC
+acceptable</td>
+<td>PCIe lane count for up to 6 NVMe drives, validated ECC support; lane
+pressure eased since the VMix VM (and its ×16 GPU slot) left the
+design</td>
 </tr>
 <tr>
 <td>Motherboard</td>
-<td>Workstation/HEDT chipset, IOMMU/AMD-Vi capable, validated ECC
-support, enough PCIe 4.0/5.0 lanes for 3 NVMe pools + GPU</td>
+<td>Validated ECC support, enough PCIe 4.0/5.0 lanes for 3 NVMe
+pools</td>
 <td>Same reasoning as CPU — the two are a package</td>
 </tr>
 <tr>
 <td>RAM</td>
-<td>96 GB minimum, 128 GB recommended, ECC, populate all available
+<td>64 GB minimum, 96 GB recommended, ECC, populate all available
 channels</td>
-<td>ZFS data integrity across all 3 pools; matches vMix's own heavy-use
-guidance</td>
+<td>ZFS data integrity across all 3 pools; subtotal ~39 GB since the
+VMix VM's 32 GB left the budget</td>
 </tr>
 <tr>
 <td>GPU</td>
-<td>NVENC-capable, workstation/professional line at an RTX 5070
-Ti-equivalent tier (unconfirmed exact tier — see above)</td>
-<td>Server-chassis cooling fit, sustained-clock driver, ECC VRAM,
-cleaner passthrough licensing</td>
+<td><strong>None required</strong> — the on-hand GPU stays as spare
+capacity only</td>
+<td>Nothing in the design encodes on this box any more; see the GPU
+section</td>
 </tr>
 <tr>
 <td>Container/VM pool</td>

@@ -11,8 +11,8 @@ Every Docker workload in [`docs/topology.md`](../docs/topology.md)'s "Workload /
 table, in one file: Nextcloud (+ MariaDB + Redis), Restreamer, the NDI Discovery Server,
 the DERP server, ATEM ISO Ingest, VMix Record Ingest, the UniFi Controller (+ MongoDB),
 GLKVM-Cloud (`rttys` + `coturn`), ATEM Overseer, ATEM Fleet Admin, Flock, and the
-Tailscale subnet router. The two Windows VMs (VMix instance, BirdDog Central) aren't
-here — they're VMs, not Docker, see `docs/topology.md`.
+Tailscale subnet router. The BirdDog Central Windows VM isn't
+here — it's a VM, not Docker, see `docs/topology.md`.
 
 **ATEM Overseer, ATEM Fleet Admin, and Flock are separate projects** (not built from
 source in this repo — `github.com/allansargeant/atem-overseer`,
