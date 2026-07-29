@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/vmix-record-ingest.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="vmix-record-ingest--near-real-time-nextcloud-aware">VMix record
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/vmix-record-ingest.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="vmix-record-ingest--near-real-time-nextcloud-aware">VMix record
 ingest — near-real-time, Nextcloud-aware</h1>
 <p>Goal: same as <a
 href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> —
@@ -70,9 +70,9 @@ mount-based approach, not a stretch of the ATEM pattern onto a different
 protocol.</p>
 <h2 id="architecture">Architecture</h2>
 <p>Same shape as the ATEM ingest, reusing the identical tools (<a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>
 mirrors <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/rclone-mount-rsync/"><code>config/atem-iso-ingest/rclone-mount-rsync/</code></a>),
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/rclone-mount-rsync/"><code>config/atem-iso-ingest/rclone-mount-rsync/</code></a>),
 as its own Unraid container (<code>192.168.1.18</code>):</p>
 <pre><code>VMix PC (192.168.2X.2X, SMB share) --[Tailscale, via that VMix node&#39;s own A-1300]--&gt; Unraid
                                                               |
@@ -99,7 +99,7 @@ the ATEM ingest: the pull also writes to the edit suite's dedicated NAS
 read off the VMix PC's SMB share, two writes. See <a
 href="live-editing.html"><code>docs/live-editing.md</code></a> for the
 editing subsystem this feeds — not yet implemented in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/mount-and-sync.sh"><code>config/vmix-record-ingest/mount-and-sync.sh</code></a>,
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/mount-and-sync.sh"><code>config/vmix-record-ingest/mount-and-sync.sh</code></a>,
 tracked in <a
 href="open-questions.html"><code>docs/open-questions.md</code></a>.</p>
 <p><strong>A native Linux CIFS mount (<code>mount -t cifs</code>) is a

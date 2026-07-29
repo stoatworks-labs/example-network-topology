@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/troubleshooting.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="troubleshooting">Troubleshooting</h1>
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/troubleshooting.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="troubleshooting">Troubleshooting</h1>
 <p>Known gotchas surfaced during design — check here before assuming
 something's broken.</p>
 <h2 id="theatre-cant-reach-the-mothership-at-all">"Theatre can't reach
@@ -63,7 +63,7 @@ before debugging further.</li>
 theatres can talk to each other" (should be impossible)</h2>
 <ul>
 <li>This should never happen if <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
 is loaded correctly — theatres can only reach
 <code>tag:mothership</code>. Confirm the ACL is actually applied in the
 admin console, not just present in this repo.</li>
@@ -87,7 +87,7 @@ both exist — see <a
 href="open-questions.html"><code>docs/open-questions.md</code></a>.</li>
 <li>If the self-hosted DERP is reachable from the mothership's own LAN
 but not from a theatre, suspect the uplink-VLAN firewall block in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
 catching the hairpin path — see the caveat attached to that rule.</li>
 </ul>
 <h2 id="the-nic-bond-wont-form--only-shows-one-active-link">"The NIC
@@ -169,7 +169,7 @@ href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.</li>
 leases aren't applying"</h2>
 <ul>
 <li>Every <code>REPLACE_WITH_MAC_nn</code> placeholder in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
 must be swapped for the device's real MAC first — the generated configs
 ship with placeholders deliberately, not real defaults.</li>
 </ul>

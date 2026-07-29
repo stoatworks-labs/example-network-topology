@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/atem-iso-ingest.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="atem-iso-ingest--near-real-time-nextcloud-aware">ATEM ISO ingest
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/atem-iso-ingest.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="atem-iso-ingest--near-real-time-nextcloud-aware">ATEM ISO ingest
 — near-real-time, Nextcloud-aware</h1>
 <p>Goal: get each theatre's ATEM Mini Extreme ISO recordings (up to 9
 H.264 streams — 8 camera ISOs + program — at ~10 Mbps each) onto the
@@ -89,7 +89,7 @@ Genuinely incremental transfer isn't a nice-to-have here, it's
 required.</p>
 <p><strong>Two ways to get genuinely incremental transfer</strong> —
 both implemented, pick one (see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>):</p>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>):</p>
 <table>
 <thead>
 <tr>
@@ -159,7 +159,7 @@ Nextcloud folders the same way.</p>
 <ol type="1">
 <li><strong>Pull step</strong> (<code>atem-iso-ingest</code> container,
 new — see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>):
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>):
 for each theatre, on a schedule (e.g. every 60–120s), list the ATEM's
 FTP directory, and for each media file, <code>REST</code>-resume from
 the last recorded byte offset and append the new bytes to a local mirror
@@ -189,7 +189,7 @@ Nextcloud's External Storage. One read off the ATEM, two writes, not a
 separate re-sync reading Nextcloud's copy back out. See <a
 href="live-editing.html"><code>docs/live-editing.md</code></a> for the
 full editing subsystem this feeds — not yet reflected in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/pull-iso.py"><code>config/atem-iso-ingest/pull-iso.py</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/pull-iso.py"><code>config/atem-iso-ingest/pull-iso.py</code></a>
 itself, which currently only writes the one Nextcloud destination;
 adding the second write path is a real code change, tracked in <a
 href="open-questions.html"><code>docs/open-questions.md</code></a>.</p>

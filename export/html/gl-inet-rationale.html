@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/gl-inet-rationale.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/gl-inet-rationale.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1
 id="why-gl-inet--segmentation-tailscale-overlay-multi-wan-and-beyond-this-event">Why
 GL-iNet — segmentation, Tailscale overlay, multi-WAN, and beyond this
 event</h1>
@@ -98,7 +98,7 @@ laptop, a flaky ATEM firmware bug, an ARP-spoofing or DHCP-starvation
 attempt) is contained to that theatre's subnet. It cannot see, scan, or
 reach another theatre's devices or traffic, because there's no route
 between them — <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
 only permits <code>theatre → mothership</code> and
 <code>mothership → theatre</code>, never <code>theatre → theatre</code>.
 This is the same point already made elsewhere in this repo — "VLAN
@@ -146,7 +146,7 @@ to begin with.</li>
 <li><strong>No manual routing tables.</strong> Each router advertises
 its own subnet (<code>--advertise-routes</code>) and accepts the others'
 where ACLs allow (<code>--accept-routes</code>) — see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.
 Nobody is hand-maintaining a routing table across 14+ devices.</li>
 <li><strong>Identity independent of location.</strong> A router's
 Tailscale identity is its WireGuard key, not an IP address on a specific

@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/tailscale.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="tailscale--derp-relay-avoidance">Tailscale — DERP relay
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/tailscale.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="tailscale--derp-relay-avoidance">Tailscale — DERP relay
 avoidance</h1>
 <h2 id="whos-actually-on-the-tailnet">Who's actually on the tailnet</h2>
 <p>Only <strong>15 nodes</strong> run the Tailscale client: the 14
@@ -52,7 +52,7 @@ GL-iNet A-1300 routers (12 theatres + 2 VMix nodes) and the mothership's
 Tailscale container. Each advertises its own subnet
 (<code>--advertise-routes</code>) and accepts the others'
 (<code>--accept-routes</code>) — see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</p>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</p>
 <p><strong>No individual client device runs Tailscale.</strong> Not the
 PowerPoint/VT laptops, not the control laptops, not the ATEM, not
 BirdDog Play/Central, not the VMix PCs or P400 cameras. They all reach
@@ -110,7 +110,7 @@ control) before it resolves to anything.</li>
 <li>A port forward on the Cloud Gateway: WAN <code>443/tcp</code> →
 <code>192.168.1.16:443</code>, and WAN <code>3478/udp</code> →
 <code>192.168.1.16:3478</code> (STUN). See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>.
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>.
 <strong>443</strong> for the DERP listener — matches Tailscale's own
 DERP fleet and is the most firewall-friendly port (many restrictive
 networks allow outbound 443 and nothing else), though it doesn't matter
@@ -134,7 +134,7 @@ genuinely reachable for the ACME challenge.</li>
 mothership container uses, so no <code>-p</code> port publishes, which
 are inert under macvlan anyway. The canonical definition of this service
 lives in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>;
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>;
 this standalone command is just the same thing spelled out.)</p>
 <p><code>-verify-clients</code> restricts relay use to nodes already on
 this tailnet — needs the container to reach the host's
@@ -144,7 +144,7 @@ server isn't an open relay; drop both the flag and the mount if that's
 not a concern.</p>
 <p><strong>Register it with the tailnet</strong> by adding a custom
 region to the ACL policy — see the <code>derpMap</code> block in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>.
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>.
 Kept <code>OmitDefaultRegions: false</code> (the safer default) —
 Tailscale prefers this DERP node when it's faster, but still falls back
 to the public regions if the self-hosted one goes down, rather than
@@ -153,9 +153,9 @@ losing relay fallback entirely.</p>
 region a node prefers.</p>
 <h2 id="config-sketch">Config sketch</h2>
 <p>See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-commands.sh"><code>config/tailscale-up-commands.sh</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-commands.sh"><code>config/tailscale-up-commands.sh</code></a>
 for the per-role <code>tailscale up</code> invocations and <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
 for the ACL policy.</p>
 <p>Routes still need approving in the Tailscale admin console (or via
 <code>autoApprovers</code> keyed to tag/CIDR) before they take effect —

@@ -208,7 +208,7 @@
   dedicated NAS (not Nextcloud's own storage), dual-write from the same rclone/rsync pull
   already built for ingest rather than a chained re-sync; a dedicated Mac mini running
   both the Resolve Project Server and Remote Render (needed because
-  [resolve-configurator](https://github.com/allansargeant/resolve-configurator) builds
+  [resolve-configurator](https://github.com/stoatworks-labs/resolve-configurator) builds
   one shared show project both editors work against, not independent copies — confirmed
   **not** possible on a Blackmagic Cloud Store appliance itself, storage-only, no general
   compute); Blackmagic Cloud's internet sync service not needed for a single-venue setup.

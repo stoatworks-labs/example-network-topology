@@ -230,12 +230,12 @@ services:
 
   # ---- ATEM Overseer (192.168.1.21) --------------------------------------------------
   # Fleet monitoring/tally dashboard for all 12 theatre ATEMs — a separate project
-  # (github.com/allansargeant/atem-overseer), not built from source in this repo. Image
+  # (github.com/stoatworks-labs/atem-overseer), not built from source in this repo. Image
   # reference below is a placeholder — confirm the real published tag/registry (its own
   # CI publishes multi-platform releases; not confirmed here whether that includes a
   # container image) before deploying.
   atem-overseer:
-    image: ghcr.io/allansargeant/atem-overseer:latest   # PLACEHOLDER — confirm real tag
+    image: ghcr.io/stoatworks-labs/atem-overseer:latest   # PLACEHOLDER — confirm real tag
     container_name: atem-overseer
     restart: unless-stopped
     networks:
@@ -249,12 +249,12 @@ services:
       - /mnt/user/appdata/atem-overseer:/app/data
 
   # ---- ATEM Fleet Admin (192.168.1.23) -----------------------------------------------
-  # Bulk ATEM provisioning — a separate project (github.com/allansargeant/atem-fleet-admin),
+  # Bulk ATEM provisioning — a separate project (github.com/stoatworks-labs/atem-fleet-admin),
   # not built from source in this repo. Same image-reference caveat as ATEM Overseer above.
   # Live network apply mode reaches all 12 theatres' ATEMs the same way ATEM ISO Ingest
   # does — over Tailscale subnet routing, no separate network path needed.
   atem-fleet-admin:
-    image: ghcr.io/allansargeant/atem-fleet-admin:latest   # PLACEHOLDER — confirm real tag
+    image: ghcr.io/stoatworks-labs/atem-fleet-admin:latest   # PLACEHOLDER — confirm real tag
     container_name: atem-fleet-admin
     restart: unless-stopped
     networks:
@@ -264,14 +264,14 @@ services:
       - /mnt/user/appdata/atem-fleet-admin:/app/data
 
   # ---- Flock (192.168.1.24) ----------------------------------------------------------
-  # BirdDog Play fleet manager — a separate project (github.com/allansargeant/flock),
+  # BirdDog Play fleet manager — a separate project (github.com/stoatworks-labs/flock),
   # not built from source in this repo. Same image-reference caveat as the two ATEM
   # tools above. Each theatre's BirdDog Play sends this its own 10 Mbps SRT preview
   # stream — see docs/bandwidth-analysis.md and docs/open-questions.md #11 for the
   # unconfirmed assumption that BirdDog Play can originate a stream while also
   # decoding its primary program feed.
   flock:
-    image: ghcr.io/allansargeant/flock:latest   # PLACEHOLDER — confirm real tag
+    image: ghcr.io/stoatworks-labs/flock:latest   # PLACEHOLDER — confirm real tag
     container_name: flock
     restart: unless-stopped
     networks:

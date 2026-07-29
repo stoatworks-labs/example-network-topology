@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/streaming-flow.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="streaming-flow--srt--ndi">Streaming flow — SRT / NDI</h1>
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/streaming-flow.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="streaming-flow--srt--ndi">Streaming flow — SRT / NDI</h1>
 <h2 id="primary-path-srt">Primary path (SRT)</h2>
 <pre><code>VMix PCs (both nodes) --SRT--&gt; Restreamer (mothership) --SRT (fan-out)--&gt; BirdDog Play ×12 (one per theatre)</code></pre>
 <p>SRT is unicast-by-IP, so this path has no discovery dependency and
@@ -132,7 +132,7 @@ href="https://birddog.tv/wp-content/uploads/2024/04/BirdDog_BirdUI_User-Guide.pd
 User Guide</a>. Change the default admin password before the event —
 BirdUI grants full device config access.</p>
 <p>See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/streaming-flow.svg"><code>diagrams/streaming-flow.svg</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/streaming-flow.svg"><code>diagrams/streaming-flow.svg</code></a>
 — primary path solid, backup path dashed. For why BirdDog Play is the
 theatre-side receiver at all (vs. a laptop</p>
 <ul>

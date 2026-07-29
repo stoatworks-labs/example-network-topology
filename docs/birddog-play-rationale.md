@@ -31,7 +31,7 @@ a cable. That matters at this scale — 12 theatres, unattended for most of a li
 None of these require physically visiting a theatre — and the division of labour is
 deliberate, not three redundant tools:
 
-- **[Flock](https://github.com/allansargeant/flock)** — **the fleet-management tool in
+- **[Flock](https://github.com/stoatworks-labs/flock)** — **the fleet-management tool in
   this design**: LAN discovery, tag-based grouping, full BirdUI-parity settings per
   device, and batch edits across a group (Rust + Docker). Purpose-built for managing many
   BirdDog Play units as one fleet rather than 12 individual devices, which is precisely

@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/open-questions.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="open-questions">Open questions</h1>
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/open-questions.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="open-questions">Open questions</h1>
 <h2 id="resolved">Resolved</h2>
 <ul>
 <li><p><strong>Subnet numbering.</strong> Spec said 12 theatres on
@@ -95,9 +95,9 @@ stands, but "comfortably" no longer describes the margin.)</em></p></li>
 model as the 12 theatre routers — 14 A-1300s total across the network.
 Both LAN ports bridge together (no dedicated-port split needed here,
 unlike the theatre routers' BirdDog Play case). Configs generated: <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/vmix-node-1.uci"><code>config/gl-inet/vmix-node-1.uci</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/vmix-node-1.uci"><code>config/gl-inet/vmix-node-1.uci</code></a>
 and <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/vmix-node-2.uci"><code>vmix-node-2.uci</code></a>.</p></li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/vmix-node-2.uci"><code>vmix-node-2.uci</code></a>.</p></li>
 <li><p><strong>NDI backup path discovery.</strong> Confirmed Tailscale
 can't help directly — it's point-to-point WireGuard and doesn't forward
 multicast/mDNS (a still-open Tailscale feature request, not something
@@ -129,13 +129,13 @@ href="server-specification.html"><code>docs/server-specification.md</code></a>.<
 device on the network now has a concrete IP — see <a
 href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> (133
 devices total) and the redrawn <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/topology.svg"><code>diagrams/topology.svg</code></a>.
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/topology.svg"><code>diagrams/topology.svg</code></a>.
 Configs generated to match: <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
 (UCI network config for all 14 routers — 12 theatres + 2 VMix nodes), <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>
 (all 15 tailnet nodes instantiated), and <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/"><code>config/unifi/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/"><code>config/unifi/</code></a>
 (Cloud Gateway VLANs/DHCP/firewall reference).</p>
 <p>Two things introduced <em>during config generation</em> that weren't
 decided before — flagged here since they're new, not previously
@@ -170,7 +170,7 @@ the tailnet as DERP region 900, <code>RegionCode: "example"</code>,
 hostname <code>derp.example.net</code>, port <strong>443</strong>
 (matches Tailscale's own DERP fleet, most firewall-friendly choice) —
 see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>.
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>.
 Kept <code>OmitDefaultRegions: false</code> so Tailscale's public DERP
 regions remain available as a fallback if this one goes down. See <a
 href="tailscale.html"><code>docs/tailscale.md</code></a> for the full
@@ -191,11 +191,11 @@ a naive whole-file re-sync is ruled out by the bandwidth math for any
 real session length — so genuinely incremental transfer is required,
 achieved either via <strong>FTP's <code>REST</code>/resume command
 directly</strong> (<a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/pull-iso.py"><code>pull-iso.py</code></a>,
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/pull-iso.py"><code>pull-iso.py</code></a>,
 the default — fewer moving parts) or via
 <strong><code>rclone mount</code> + <code>rsync --append</code></strong>
 (<a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/rclone-mount-rsync/"><code>rclone-mount-rsync/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/rclone-mount-rsync/"><code>rclone-mount-rsync/</code></a>
 — off-the-shelf tools, at the cost of 12 FUSE mounts to supervise). Both
 write directly into Nextcloud's External Storage (Local) mount, so
 there's no separate upload step and no need to slice/chunk the video
@@ -213,7 +213,7 @@ sits near), so this traffic never competes with that theatre's ATEM
 ingest or SRT feed. Full design in <a
 href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>,
 tooling in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>.</p></li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>.</p></li>
 <li><p><strong>Self-hosted UniFi Controller added to the consolidated
 server.</strong> A UniFi Network Application container
 (<code>192.168.1.19</code>) joins the rest of the Docker stack, same
@@ -221,9 +221,9 @@ self-hosted-over-cloud.ui.com rationale already used for DERP. The Cloud
 Gateway has its own built-in controller and doesn't require this —
 adopting it in is optional, purely a local/independent management
 console, not a change to any traffic path in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>.
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>.
 See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.</p></li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.</p></li>
 <li><p><strong>Self-hosted GLKVM-Cloud added for centralized
 administration of the 14 GL-iNet routers.</strong> No physical KVM
 hardware involved — this uses GLKVM-Cloud's separately documented
@@ -252,7 +252,7 @@ here, versus only for GLKVM-Cloud's KVM-specific remote-desktop feature,
 which doesn't apply to routers. Full design in <a
 href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a>, stack in
 <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/glkvm-cloud/"><code>config/glkvm-cloud/</code></a>.</p></li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/glkvm-cloud/"><code>config/glkvm-cloud/</code></a>.</p></li>
 <li><p><strong>Bandwidth modeled against venue-supplied VLANs — 2 VLANs
 (not 4) recommended, but reconsider given how thin that margin has
 gotten.</strong> The 4 uplink VLANs turned out to be venue-supplied, 1
@@ -305,7 +305,7 @@ NAS (not Nextcloud's own storage), dual-write from the same rclone/rsync
 pull already built for ingest rather than a chained re-sync; a dedicated
 Mac mini running both the Resolve Project Server and Remote Render
 (needed because <a
-href="https://github.com/allansargeant/resolve-configurator">resolve-configurator</a>
+href="https://github.com/stoatworks-labs/resolve-configurator">resolve-configurator</a>
 builds one shared show project both editors work against, not
 independent copies — confirmed <strong>not</strong> possible on a
 Blackmagic Cloud Store appliance itself, storage-only, no general
@@ -337,7 +337,7 @@ relying on it — the name and port are picked, but nothing resolves until
 the DNS record and port forward both exist.</p></li>
 <li><p><strong>Verify the DERP hairpin path doesn't get caught by the
 uplink-VLAN firewall block.</strong> <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
 blocks the 4 uplink VLANs from reaching Mothership-LAN directly
 (defense-in-depth for cross-theatre isolation) — that should be a
 different path from the DERP hairpin (which arrives via the WAN zone
@@ -383,7 +383,7 @@ needed at all for the SSH-terminal/web-proxy features actually in use
 here — it may only matter for GLKVM-Cloud's KVM-specific remote-desktop
 feature, unused since there's no KVM hardware in this design.</p></li>
 <li><p><strong>New assumptions introduced by <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a></strong>,
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a></strong>,
 none confirmed against a real deployment: the NDI Discovery Server image
 (<code>pnxr/ndi-discovery-minimal</code>, a third-party community build,
 not NDI/NewTek-published — confirm it's still maintained), the MongoDB
@@ -453,9 +453,9 @@ href="live-editing.html"><code>docs/live-editing.md</code></a> documents
 <code>pull-iso.py</code> and <code>mount-and-sync.sh</code> writing to
 the edit-suite NAS alongside Nextcloud — that's a real code change
 neither script has yet (<a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/pull-iso.py"><code>config/atem-iso-ingest/pull-iso.py</code></a>,
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/pull-iso.py"><code>config/atem-iso-ingest/pull-iso.py</code></a>,
 <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/mount-and-sync.sh"><code>config/vmix-record-ingest/mount-and-sync.sh</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/mount-and-sync.sh"><code>config/vmix-record-ingest/mount-and-sync.sh</code></a>
 currently write one destination each). Not done as part of documenting
 the design.</p></li>
 <li><p><strong>Verify the settled NDI-redistribution feed into BirdDog

@@ -21,7 +21,7 @@ category.
 
 14 identical GL-iNet A-1300s (12 theatre routers, 2 VMix node routers) is exactly the
 kind of fleet that benefits from one console instead of 14 separate admin logins — same
-motivation as [Flock](https://github.com/allansargeant/flock) for the BirdDog Play fleet
+motivation as [Flock](https://github.com/stoatworks-labs/flock) for the BirdDog Play fleet
 (see [`docs/birddog-play-rationale.md`](birddog-play-rationale.md)). GLKVM-Cloud's
 documented features that apply directly:
 

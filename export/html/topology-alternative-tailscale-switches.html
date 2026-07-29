@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/topology-alternative-tailscale-switches.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/topology-alternative-tailscale-switches.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1
 id="alternative-plain-switches--tailscale-on-generic-linux-no-gl-inet-routers">Alternative:
 plain switches + Tailscale on generic Linux, no GL-iNet routers</h1>
 <p>Same theatre topology (isolated <code>/24</code> per theatre, subnet
@@ -54,7 +54,7 @@ one appliance, use a plain unmanaged switch for LAN fanout plus a small
 generic Linux box (mini-PC/NUC, or the theatre's existing control
 laptop) running Tailscale as a subnet router with NAT/DHCP built from
 standard Linux tools (nftables + dnsmasq). Config in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/alt-tailscale-switch/"><code>config/alt-tailscale-switch/</code></a>.</p>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/alt-tailscale-switch/"><code>config/alt-tailscale-switch/</code></a>.</p>
 <p><strong>Why a router-equivalent device is still required, not
 eliminated:</strong> the ATEM and BirdDog Play are closed appliances —
 they can't run the Tailscale client themselves. Some device must still
@@ -64,7 +64,7 @@ two can't, this alternative just moves the subnet-router role onto
 generic Linux instead of GL-iNet's firmware. The
 <code>tailscale up</code> invocations themselves are identical either
 way — see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>
 — Tailscale doesn't care what hardware runs it.</p>
 <h2 id="comparison">Comparison</h2>
 <table>
@@ -79,7 +79,7 @@ href="https://github.com/allansargeant/example-network-topology/blob/master/conf
 <tr>
 <td>Setup effort</td>
 <td>Config file, done (see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>)</td>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>)</td>
 <td>Build + harden NAT/DHCP/Tailscale from scratch per box</td>
 </tr>
 <tr>

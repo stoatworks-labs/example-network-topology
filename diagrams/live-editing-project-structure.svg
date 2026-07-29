@@ -28,7 +28,7 @@
   <text x="550" y="130" text-anchor="middle" font-size="11" fill="#f3e2b0">run once, ahead of the event</text>
   <text x="550" y="150" text-anchor="middle" font-size="11" fill="#f3e2b0">(dry-run needs no Resolve install;</text>
   <text x="550" y="166" text-anchor="middle" font-size="11" fill="#f3e2b0">applying to Resolve needs Studio)</text>
-  <text x="550" y="188" text-anchor="middle" font-size="10" fill="#f3e2b0" font-style="italic">github.com/allansargeant/resolve-configurator</text>
+  <text x="550" y="188" text-anchor="middle" font-size="10" fill="#f3e2b0" font-style="italic">github.com/stoatworks-labs/resolve-configurator</text>
   <text x="550" y="206" text-anchor="middle" font-size="10" fill="#f3e2b0" font-style="italic">Python, stdlib only, idempotent re-runs</text>
   <rect x="770" y="60" width="300" height="200" rx="8" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
   <text x="920" y="88" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Shell Resolve project</text>

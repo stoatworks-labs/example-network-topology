@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/topology.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="topology">Topology</h1>
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/topology.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="topology">Topology</h1>
 <h2 id="theatre-nodes-12">Theatre nodes (×12)</h2>
 <p>Each theatre is its own subnet, NAT'd by its own GL-iNet
 <strong>A-1300 (Slate Plus)</strong> router. The router runs Tailscale
@@ -135,7 +135,7 @@ provide cross-theatre isolation</strong>. Each GL-iNet A-1300 already
 NATs its own theatre LAN, and once every router joins the same tailnet,
 routes are reachable tailnet-wide unless Tailscale ACLs restrict them
 (see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>).</p>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>).</p>
 <p><strong>These VLANs are venue-supplied, not our
 infrastructure</strong> — each capped at 1 Gbps, each port expensive.
 The 4-VLAN/3-theatres-each split below is safe but conservative; the
@@ -222,7 +222,7 @@ for fleet management (that's Flock's job)</td>
 <td>Nextcloud</td>
 <td>Docker container</td>
 <td>official image + MariaDB + Redis (see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>)</td>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>)</td>
 </tr>
 <tr>
 <td>Restreamer</td>
@@ -261,7 +261,7 @@ href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a></td>
 <td>Docker container</td>
 <td>self-hosted UniFi Network Application — local management/backup
 console for the Cloud Gateway, independent of cloud.ui.com — see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a></td>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a></td>
 </tr>
 <tr>
 <td>GLKVM-Cloud (<code>rttys</code> + <code>coturn</code>)</td>
@@ -392,15 +392,15 @@ recording-pool-to-NAS sync step. Full design, including the storage and
 project-server decisions and the DIT physical-media ingest workflow, in
 <a href="live-editing.html"><code>docs/live-editing.md</code></a>.</p>
 <p>See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/topology.svg"><code>diagrams/topology.svg</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/topology.svg"><code>diagrams/topology.svg</code></a>
 for the full visual layout — every theatre, every device, every real IP
 — and <a
 href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> for
 the same inventory as a text table. Per-device configs: all 14 routers
 in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>,
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>,
 the Cloud Gateway in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/"><code>config/unifi/</code></a>,
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/"><code>config/unifi/</code></a>,
 and Tailscale in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</p>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</p>
 </body></html>

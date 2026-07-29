@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/live-editing.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="live-editing--post-production-at-the-mothership">Live editing —
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/live-editing.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="live-editing--post-production-at-the-mothership">Live editing —
 post-production at the mothership</h1>
 <p>A separate subsystem at the mothership: 2× MacBook Pro editing
 workstations plus dedicated fast storage, editing event content as it
@@ -114,7 +114,7 @@ Thunderbolt-to-10GbE adapter or dock (e.g. OWC/Sonnet-class hardware) to
 actually hit these speeds; budget for that alongside whatever storage is
 chosen below.</p>
 <p>See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/live-editing-dataflow.svg"><code>diagrams/live-editing-dataflow.svg</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/live-editing-dataflow.svg"><code>diagrams/live-editing-dataflow.svg</code></a>
 for this same dual-write path as a diagram.</p>
 <h2 id="decision-1-nextclouds-storage-vs-a-dedicated-nas">Decision 1:
 Nextcloud's storage vs. a dedicated NAS</h2>
@@ -141,9 +141,9 @@ file sync, not ideal for sustained media scrubbing.</li>
 <p>A dedicated NAS, fed by the <strong>same pull, writing to a second
 destination</strong> — not a chained re-sync reading Nextcloud's own
 copy back out again, just the existing <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>
 and <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>
 containers' <code>rsync --append</code> step writing to both
 <code>/mnt/user/nextcloud-external/...</code> (Nextcloud's External
 Storage, for the near-real-time review path this repo already documents)
@@ -366,7 +366,7 @@ cut. The pieces:</p>
                          now-populated smart bin&#39;s clips in, top-and-tails, exports
                          (optionally via Remote Render — see Decision 2).</code></pre>
 <p><strong>What <a
-href="https://github.com/allansargeant/resolve-configurator">resolve-configurator</a>
+href="https://github.com/stoatworks-labs/resolve-configurator">resolve-configurator</a>
 actually builds</strong> (from its own README, not assumed): project
 format settings (frame rate/resolution, or any Resolve project setting
 via passthrough), a <code>Theatre / Date</code> bin structure, an empty
@@ -391,7 +391,7 @@ day's unsorted recordings), drag them onto the timeline, top-and-tail to
 the actual session length, export. All of the organizing work happens
 ahead of time or automatically — editors are cutting, not filing.</p>
 <p>See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/diagrams/live-editing-project-structure.svg"><code>diagrams/live-editing-project-structure.svg</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/live-editing-project-structure.svg"><code>diagrams/live-editing-project-structure.svg</code></a>
 for this whole pipeline as a diagram — from the session CSV through
 resolve-configurator's build, the smart-bin recipe's one-time hand-apply
 step, and the auto-fill down to the editor's own four-step job.</p>

@@ -247,7 +247,7 @@ Theatre ATEM/VMix ──[existing ingest containers]──> dual write:
                          (optionally via Remote Render — see Decision 2).
 ```
 
-**What [resolve-configurator](https://github.com/allansargeant/resolve-configurator)
+**What [resolve-configurator](https://github.com/stoatworks-labs/resolve-configurator)
 actually builds** (from its own README, not assumed):
 project format settings (frame rate/resolution, or any Resolve project setting via
 passthrough), a `Theatre / Date` bin structure, an empty timeline per session named from

@@ -15,8 +15,8 @@ Tailscale subnet router. The BirdDog Central Windows VM isn't
 here — it's a VM, not Docker, see `docs/topology.md`.
 
 **ATEM Overseer, ATEM Fleet Admin, and Flock are separate projects** (not built from
-source in this repo — `github.com/allansargeant/atem-overseer`,
-`github.com/allansargeant/atem-fleet-admin`, and `github.com/allansargeant/flock`), so
+source in this repo — `github.com/stoatworks-labs/atem-overseer`,
+`github.com/stoatworks-labs/atem-fleet-admin`, and `github.com/stoatworks-labs/flock`), so
 their `docker-compose.yml` entries use placeholder image references (`ghcr.io/...:latest`,
 clearly marked) rather than a confirmed published tag — check their own repos for the
 real image/registry before deploying.

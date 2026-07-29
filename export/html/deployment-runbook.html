@@ -44,7 +44,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   pre, img, svg { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/deployment-runbook.md</code> from <a href="https://github.com/allansargeant/example-network-topology">example-network-topology</a></div><h1 id="deployment-runbook">Deployment runbook</h1>
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/deployment-runbook.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="deployment-runbook">Deployment runbook</h1>
 <p>Ordered build sequence synthesizing every doc/config in this repo
 into one checklist. Each step links to the doc with the actual detail —
 this is a map, not a duplicate.</p>
@@ -89,10 +89,10 @@ href="open-questions.html"><code>docs/open-questions.md</code></a>
 Mothership networking (Cloud Gateway)</h2>
 <ol type="1">
 <li>Apply <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
 via the UniFi Network UI/API — 4 uplink VLANs, firewall baseline, LAG
 port profile, DERP + GLKVM-Cloud port forwards. Steps in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.</li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.</li>
 <li>Wire the 4 VLAN uplink cable runs (3 theatres per group) — <a
 href="topology.html#uplink-vlan-grouping"><code>docs/topology.md</code></a>.</li>
 <li>Bond the consolidated server's 2 NICs (802.3ad/LACP) into the Cloud
@@ -108,12 +108,12 @@ Consolidated services server (Unraid)</h2>
 passthrough needed — <a
 href="topology.html"><code>docs/topology.md</code></a>.</li>
 <li>Bring up every Docker container in one shot with <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>
 — Nextcloud, Restreamer, NDI Discovery Server, DERP, ATEM ISO Ingest,
 VMix Record Ingest, UniFi Controller, GLKVM-Cloud (<code>rttys</code> +
 <code>coturn</code>), ATEM Overseer, ATEM Fleet Admin, Flock, Tailscale
 subnet router. See <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/README.md"><code>config/README.md</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/README.md"><code>config/README.md</code></a>
 for the <code>.env</code> setup and prerequisites first — DERP and
 GLKVM-Cloud specifically need their hostnames/ port-forwards from Phase
 0/1 in place before they're actually useful, and ATEM Overseer/Fleet
@@ -124,7 +124,7 @@ hostnames/forwards, and the three placeholder-image services won't start
 at all until real images are filled in.</li>
 <li>Optionally adopt the Cloud Gateway into the UniFi Controller for
 local management — <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.
 Purely a local console; the network config in Phase 1 doesn't depend on
 it.</li>
 <li>Router registration into GLKVM-Cloud happens later, in Phase 4, once
@@ -133,11 +133,11 @@ the routers themselves exist.</li>
 <h2 id="phase-3--tailscale-tailnet">Phase 3 — Tailscale tailnet</h2>
 <ol type="1">
 <li>Load <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
 into the tailnet admin console — cross-theatre isolation ACLs + the
 self-hosted DERP region.</li>
 <li>Run the mothership's <code>tailscale up</code> (see <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>)
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>)
 from the Tailscale subnet-router container.</li>
 <li>Approve routes in the admin console (or configure
 <code>autoApprovers</code>) — nothing routes until approved, regardless
@@ -149,12 +149,12 @@ Theatre + VMix node routers (GL-iNet A-1300 ×14)</h2>
 <li>Flash/reset all 14 units, apply Wi-Fi lockdown per venue policy (not
 covered by the generated configs).</li>
 <li>Apply each theatre's UCI config from <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
 — replace every <code>REPLACE_WITH_MAC_nn</code> with real device MACs
 first (config won't do anything useful otherwise). Steps in <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/gl-inet/README.md"><code>config/gl-inet/README.md</code></a>.</li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/README.md"><code>config/gl-inet/README.md</code></a>.</li>
 <li>Run each router's <code>tailscale up</code> line from <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</li>
 <li>Confirm the physical wiring matches the current plan: ATEM on the
 dedicated LAN 1 port, everything else (including BirdDog Play) via the
 Netgear switch on LAN 2 — <a
@@ -180,17 +180,17 @@ href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>.</li>
 Nextcloud external storage + ingest pipelines</h2>
 <ol type="1">
 <li>Run <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/setup-nextcloud-external-storage.sh"><code>config/atem-iso-ingest/setup-nextcloud-external-storage.sh</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/setup-nextcloud-external-storage.sh"><code>config/atem-iso-ingest/setup-nextcloud-external-storage.sh</code></a>
 and <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/setup-nextcloud-external-storage.sh"><code>config/vmix-record-ingest/setup-nextcloud-external-storage.sh</code></a>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/setup-nextcloud-external-storage.sh"><code>config/vmix-record-ingest/setup-nextcloud-external-storage.sh</code></a>
 — mounts the External Storage folders and prints the cron lines for
 targeted rescans. Add those cron entries.</li>
 <li>Fill in real credentials and start <code>pull-iso.py</code> (or the
 <code>rclone-mount-rsync/</code> alternative) — <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/atem-iso-ingest/README.md"><code>config/atem-iso-ingest/README.md</code></a>.</li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/README.md"><code>config/atem-iso-ingest/README.md</code></a>.</li>
 <li>Fill in real SMB credentials/share names and start
 <code>mount-and-sync.sh</code> — <a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/vmix-record-ingest/README.md"><code>config/vmix-record-ingest/README.md</code></a>.</li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/README.md"><code>config/vmix-record-ingest/README.md</code></a>.</li>
 <li>Configure Nextcloud version-retention for both ingest folders — both
 ingest docs flag this as worth tuning once running for real.</li>
 <li><strong>Dual-write caveat</strong>: the second write destination
@@ -245,7 +245,7 @@ pipelines</label></li>
 from one theatre's subnet, verify you cannot reach another theatre's
 devices, only the mothership — this is the core ACL guarantee the whole
 design depends on (<a
-href="https://github.com/allansargeant/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>)</label></li>
+href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>)</label></li>
 <li><label><input type="checkbox" />From off-venue (a network that isn't
 the mothership's own), confirm the GLKVM-Cloud web UI is actually
 reachable through <code>https://kvm.example.net:8443</code>, and that
