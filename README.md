@@ -327,3 +327,10 @@ Design is finalized; these are the headline items still needing real-world input
 - [`config/vmix-record-ingest/`](config/vmix-record-ingest/) — the same rclone+rsync combo, targeting each VMix PC's SMB share
 - [`config/glkvm-cloud/`](config/glkvm-cloud/) — the self-hosted GLKVM-Cloud docker-compose stack (`rttys` + `coturn`)
 - [`config/alt-tailscale-switch/`](config/alt-tailscale-switch/) — configs for the plain-switch/generic-Linux alternative, not recommended but documented
+
+## Trademarks
+
+**NDI® is a registered trademark of Vizrt NDI AB.** See <https://ndi.video>.
+Other product and company names mentioned in this documentation are the
+trademarks of their respective owners. This project is not affiliated with or
+endorsed by any of them.
