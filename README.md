@@ -1,5 +1,13 @@
 # Example Network Topology
 
+> **AI-assisted project.** This design and its documents were produced with
+> [Claude](https://claude.com/claude-code) (Anthropic), directed and reviewed by
+> a human author. It is a design, not a deployment: the throughput figures are
+> real and cited and the configs are generated and ready to apply, but **nothing
+> here has been built**. See
+> [`docs/open-questions.md`](docs/open-questions.md) for what still needs
+> real-world input.
+
 A complete, fully-worked network design for a 12-theatre live event: every theatre
 streams its program feed and syncs its files back to a central "mothership," all riding
 over a single Tailscale mesh, with no reliance on venue Wi-Fi or a conference-provided
