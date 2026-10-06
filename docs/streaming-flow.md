@@ -9,6 +9,12 @@ VMix PCs (both nodes) --SRT--> Restreamer (mothership) --SRT (fan-out)--> BirdDo
 SRT is unicast-by-IP, so this path has no discovery dependency and should route cleanly
 over the tailnet.
 
+**Set the SRT payload size to 1128 bytes on every sender** (VMix's SRT outputs and each
+Restreamer SRT output). SRT's default 1316B payload makes a 1360B IP packet, which is
+larger than Tailscale's 1280B tunnel MTU, so default-sized SRT packets would be fragmented
+(or dropped if DF is set) entering the tunnel. 1128B (6 × 188B MPEG-TS packets) gives a
+1172B packet that fits. See [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
+
 ## Backup path (NDI)
 
 ```

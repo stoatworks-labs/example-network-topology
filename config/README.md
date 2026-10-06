@@ -68,8 +68,19 @@ docker compose up -d
   Every service is reachable directly at its documented IP on whatever it natively
   listens on (this is also why Restreamer's per-stream SRT/RTMP ports, created
   dynamically through its own UI/API, need no compose-level config at all).
+- **Three services aren't plain `image:` pulls.** `derp-server` is built from source
+  (`go install tailscale.com/cmd/derper`) because Tailscale publishes no `derper` image;
+  `glkvm-rttys`/`glkvm-coturn` mount upstream's entrypoint script and config templates
+  from a checkout of `gl-inet/glkvm-cloud` (the image alone ignores every `RTTYS_*`/`TURN_*`
+  variable); and `tailscale-router` runs in kernel mode (`TS_USERSPACE=false`) with its
+  socket on the host for DERP's `-verify-clients`. Fetch the GLKVM checkout with
+  `git clone https://github.com/gl-inet/glkvm-cloud.git` into `GLKVM_UPSTREAM`.
+- **Reaching the theatres from a macvlan container** relies on the Cloud Gateway's static
+  routes back to `192.168.1.2`, and on the host's replies getting back to the containers —
+  see [`docs/open-questions.md`](../docs/open-questions.md) #18 before assuming it works.
 - **Not independently verified against a real deployment**: the NDI Discovery Server
-  image (`pnxr/ndi-discovery-minimal`, a community build, not NDI/NewTek-published), the
+  image (`pnxr/ndi-discovery-minimal`, a community build, not NDI/NewTek-published, last
+  pushed 2022), the
   UniFi Controller's required MongoDB version (drifts with the controller version —
   check linuxserver's own compatibility notes before deploying), and everything already
   flagged in `docs/glkvm-cloud.md` (the `GLKVM_ACCESS_IP` WAN-remap question). None of

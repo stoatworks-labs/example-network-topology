@@ -1,47 +1,39 @@
-<svg viewBox="0 0 1300 560" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
-  <rect x="0" y="0" width="1300" height="560" fill="#ffffff"/>
-  <text x="650" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">File Sync Flow</text>
-
-  <defs>
-    <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#2a6f97"/>
-    </marker>
-    <marker id="arrow3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#5a8f3c"/>
-    </marker>
-  </defs>
-
-  <!-- Theatre laptops (x4 roles, x12 theatres) -->
-  <rect x="40" y="90" width="280" height="150" rx="8" fill="#2a6f97" stroke="#1c4d69"/>
-  <text x="180" y="118" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Theatre laptops (×12 theatres)</text>
-  <line x1="60" y1="130" x2="300" y2="130" stroke="#e0eefc"/>
-  <text x="180" y="152" text-anchor="middle" font-size="12" fill="#e0eefc">PowerPoint Main / Backup</text>
-  <text x="180" y="172" text-anchor="middle" font-size="12" fill="#e0eefc">VT Main / Backup</text>
-  <text x="180" y="198" text-anchor="middle" font-size="11" fill="#bcd8f0">each runs rclone</text>
-  <text x="180" y="216" text-anchor="middle" font-size="10" fill="#bcd8f0">192.168.{2-13}.5/.6/.7/.8 — 48 laptops total</text>
-
-  <!-- Ready room PCs -->
-  <rect x="40" y="330" width="280" height="120" rx="8" fill="#5a8f3c" stroke="#3d6528"/>
-  <text x="180" y="360" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Ready Room PCs</text>
-  <text x="180" y="382" text-anchor="middle" font-size="12" fill="#e2f0d9">4× — 192.168.1.30–.33</text>
-  <text x="180" y="404" text-anchor="middle" font-size="11" fill="#cde8c0">live local WebDAV mount</text>
-  <text x="180" y="422" text-anchor="middle" font-size="11" fill="#cde8c0">(no rclone — same LAN)</text>
-
-  <!-- Nextcloud -->
-  <rect x="880" y="200" width="280" height="160" rx="8" fill="#1a1a2e" stroke="#0d0d17"/>
-  <text x="1020" y="232" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">Nextcloud</text>
-  <text x="1020" y="252" text-anchor="middle" font-size="12" fill="#cfd3e6">mothership — 192.168.1.13</text>
-  <line x1="900" y1="266" x2="1140" y2="266" stroke="#3a3a5a"/>
-  <text x="1020" y="290" text-anchor="middle" font-size="12" fill="#cfd3e6">/$TheatreName/ per theatre</text>
-  <text x="1020" y="312" text-anchor="middle" font-size="11" fill="#9aa0c0">(rclone targets, one folder each)</text>
-  <text x="1020" y="336" text-anchor="middle" font-size="11" fill="#9aa0c0">+ ready room WebDAV root</text>
-
-  <!-- Arrows -->
-  <path d="M320,165 L880,255" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrow2)"/>
-  <text x="560" y="185" font-size="12" fill="#2a6f97" font-weight="bold">rclone sync (over Tailscale, WAN)</text>
-
-  <path d="M320,390 L880,320" fill="none" stroke="#5a8f3c" stroke-width="2.5" marker-end="url(#arrow3)"/>
-  <text x="560" y="400" font-size="12" fill="#5a8f3c" font-weight="bold">WebDAV mount (local LAN, no rclone)</text>
-
-  <text x="650" y="520" text-anchor="middle" font-size="11" fill="#888">Theatre laptops sync up over the tailnet via rclone; ready room PCs write straight to Nextcloud over a local WebDAV mount since they share the mothership LAN.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 470" width="1400" height="470" font-family="Helvetica, Arial, sans-serif">
+<title>File Sync Flow</title>
+<defs><marker id="m24668f" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#24668f"/></marker><marker id="m3b7a37" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#3b7a37"/></marker><marker id="m6b7280" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker></defs>
+<rect width="1400" height="470" fill="#ffffff"/>
+<text x="700.0" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1d2b">File Sync Flow</text>
+<text x="700.0" y="58" text-anchor="middle" font-size="13" fill="#5b6170">Documents into Nextcloud: theatre laptops over the tailnet, ready-room PCs on the local LAN</text>
+<g><rect x="40" y="100" width="380" height="150" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M40,146 V108 a8,8 0 0 1 8,-8 H412 a8,8 0 0 1 8,8 V146 Z" fill="#24668f"/></g>
+<text x="230.0" y="121.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre laptops</text>
+<text x="230.0" y="138.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">×12 theatres · 4 per theatre = 48</text>
+<text x="230.0" y="170.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">PowerPoint Main .5 · Backup .6</text>
+<text x="230.0" y="189.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">VT Main .7 · Backup .8</text>
+<text x="230.0" y="208.0" font-size="12.5" fill="#5b6170" text-anchor="middle">each runs rclone sync of its</text>
+<text x="230.0" y="227.0" font-size="12.5" fill="#5b6170" text-anchor="middle">theatre&#x27;s folder</text>
+<g><rect x="40" y="300" width="380" height="110" rx="8" fill="#edf6eb" stroke="#3b7a37" stroke-width="1.5"/><path d="M40,346 V308 a8,8 0 0 1 8,-8 H412 a8,8 0 0 1 8,8 V346 Z" fill="#3b7a37"/></g>
+<text x="230.0" y="321.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Ready room PCs</text>
+<text x="230.0" y="338.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">×4 · 192.168.1.30 – .33</text>
+<text x="230.0" y="372.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">live WebDAV mount — no rclone,</text>
+<text x="230.0" y="391.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">they share the mothership LAN</text>
+<rect x="540.0" y="140.0" width="300.0" height="70.0" rx="35" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="690.0" y="170.0" font-size="13" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale mesh</text>
+<text x="690.0" y="189.0" font-size="11" fill="#5b6170" text-anchor="middle">theatre A-1300 → mothership subnet router</text>
+<g><rect x="960" y="170" width="400" height="170" rx="8" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/><path d="M960,216 V178 a8,8 0 0 1 8,-8 H1352 a8,8 0 0 1 8,8 V216 Z" fill="#1e2235"/></g>
+<text x="1160.0" y="191.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Nextcloud</text>
+<text x="1160.0" y="208.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">container · 192.168.1.13</text>
+<text x="1160.0" y="242.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">/$TheatreName/ per theatre</text>
+<text x="1160.0" y="262.0" font-size="12.5" fill="#5b6170" text-anchor="middle">(one rclone target folder each)</text>
+<text x="1160.0" y="282.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">+ ready-room WebDAV root</text>
+<text x="1160.0" y="302.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">+ ingest copies (External Storage)</text>
+<path d="M420.0,175.0 L540.0,175.0" fill="none" stroke="#24668f" stroke-width="2.6" stroke-linejoin="round"/>
+<path d="M840.0,175.0 L900.0,175.0 L900.0,220.0 L960.0,220.0" fill="none" stroke="#24668f" stroke-width="2.6" stroke-linejoin="round" marker-end="url(#m24668f)"/>
+<rect x="454.1" y="152.0" width="51.8" height="18.0" rx="4" fill="#ffffff"/>
+<text x="480.0" y="164.0" font-size="12" fill="#24668f" text-anchor="middle" font-weight="bold">rclone</text>
+<path d="M420.0,355.0 L900.0,355.0 L900.0,280.0 L960.0,280.0" fill="none" stroke="#3b7a37" stroke-width="2.6" stroke-linejoin="round" marker-end="url(#m3b7a37)"/>
+<rect x="592.4" y="332.0" width="135.3" height="18.0" rx="4" fill="#ffffff"/>
+<text x="660.0" y="344.0" font-size="12" fill="#3b7a37" text-anchor="middle" font-weight="bold">WebDAV (local LAN)</text>
+<path d="M1160.0,400.0 L1160.0,340.0" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-linejoin="round" stroke-dasharray="4 4" marker-end="url(#m6b7280)"/>
+<text x="1160.0" y="420.0" font-size="11.5" fill="#5b6170" text-anchor="middle">Also written here: ATEM ISO + VMix recordings —</text>
+<text x="1160.0" y="437.0" font-size="11.5" fill="#5b6170" text-anchor="middle">a separate pull mechanism, see atem-iso-ingest.md / vmix-record-ingest.md</text>
 </svg>

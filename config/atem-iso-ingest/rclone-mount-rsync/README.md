@@ -19,9 +19,16 @@ appended bytes cross the theatre's uplink each cycle), via different mechanisms:
   budget for health-checking/auto-remount (e.g. a systemd service with `Restart=on-failure`
   per mount, or a periodic `mountpoint -q` check that remounts if needed).
 - **`--append` trusts the file's beginning never changes** once written — true for a pure
-  append-only recording, same assumption `pull-iso.py` makes. Run with `VERIFY=1` for a
-  one-time `--append-verify` pass (full checksum, not just size-based) — do this once per
-  finished session, not every cycle, since it requires reading the whole file.
+  append-only recording, same assumption `pull-iso.py` makes (and it never corrects a
+  header rewritten in place when recording stops). Run with `VERIFY=1` for a one-time
+  full `--checksum --inplace` pass that repairs any differing blocks — do this once per
+  finished session, not every cycle, since it reads every file in full through the FTP
+  mount (a full re-download over the theatre's uplink). It deliberately does **not** use
+  `--append-verify`, which skips any file already the same size on both sides and so
+  never checks a fully-synced file.
+- **Directory cache.** FTP has no change notification in rclone, so the mount only
+  sees a growing file's new size when its directory cache expires (default 5 minutes);
+  the script sets `--dir-cache-time 30s` so the 90s sync interval is real.
 - **Uses tools you may already operate day to day**, if that's a real advantage for your
   team over maintaining a small Python script.
 

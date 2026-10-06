@@ -23,6 +23,15 @@
 #   4. Generate config/vmix-record-ingest/rclone.conf (generate-rclone-conf.sh) before
 #      starting vmix-record-ingest — it's bind-mounted in, not generated at container
 #      start.
+#   5. Fetch the upstream glkvm-cloud checkout the two GLKVM services mount their
+#      entrypoint/templates from (see the GLKVM-Cloud section below).
+#
+# Reaching the theatres: macvlan containers cannot use their own host (192.168.1.2, where
+# tailscale-router runs) as a next hop, so they default-route to the Cloud Gateway, whose
+# static routes send the theatre/VMix /24s back to 192.168.1.2. The host's replies to
+# them go out on-link, which macvlan isolation drops unless Unraid's "Host access to
+# custom networks" (or an equivalent shim) covers this network — unverified, see
+# docs/open-questions.md #18.
 #
 # Networking note: every service below except the two DB/cache sidecars sits on
 # macvlan-mothership and is reachable directly at its own LAN IP on whatever ports it
@@ -125,8 +134,23 @@ services:
 
   # ---- DERP server (192.168.1.16) ---------------------------------------------------
   # Exact invocation per docs/tailscale.md — kept in sync with it, not generated from it.
+  # There is no official tailscale/derper image (Tailscale's own README: "You must build
+  # and update the cmd/derper binary yourself") — so it's built here. -verify-clients
+  # wants derper and tailscale-router's tailscaled from the same release: pin both
+  # (replace @latest and tailscale/tailscale:latest with one matching version) before
+  # the event. Upstream also says to permit 80/tcp alongside 443/tcp + 3478/udp — see
+  # docs/open-questions.md #2.
   derp-server:
-    image: tailscale/derper:latest
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM golang:alpine AS build
+        RUN go install tailscale.com/cmd/derper@latest
+        FROM alpine:3
+        RUN apk add --no-cache ca-certificates
+        COPY --from=build /go/bin/derper /usr/local/bin/derper
+        ENTRYPOINT ["/usr/local/bin/derper"]
+    image: local/derper:built
     container_name: derp-server
     restart: unless-stopped
     networks:
@@ -286,6 +310,18 @@ services:
   # Kept in sync with config/glkvm-cloud/docker-compose.yml.template (the standalone
   # version, for deploying/testing this piece on its own) — see docs/glkvm-cloud.md for
   # the WAN port-forward remap (8443/10443/3479) needed alongside this.
+  #
+  # The image's own entrypoint is bare /usr/bin/rttys with no config: every RTTYS_*/TURN_*
+  # variable is consumed only by upstream's docker-entrypoint.sh, which renders
+  # templates/rttys.conf.template and templates/turnserver.conf.template. Without those
+  # mounted, the token/password below would be silently ignored. So both services mount
+  # them from an upstream checkout:
+  # git clone https://github.com/gl-inet/glkvm-cloud.git into GLKVM_UPSTREAM.
+  #
+  # GLKVM_ACCESS_IP becomes rttys's webrtc-ip and coturn's external-ip — the venue's
+  # public IPv4, not a hostname. TURN_PORT is both what rttys advertises and what coturn
+  # listens on, so it's set per container: 3479 advertised (the WAN-side port), 3478
+  # listened (what the WAN 3479 forward lands on).
   glkvm-rttys:
     image: glzhitong/glkvm-cloud:latest
     container_name: glkvm-cloud
@@ -297,23 +333,41 @@ services:
       GLKVM_ACCESS_IP: ${GLKVM_ACCESS_IP}
       RTTYS_TOKEN: ${GLKVM_RTTYS_TOKEN}
       RTTYS_PASS: ${GLKVM_RTTYS_PASS}
+      RTTYS_DEVICE_PORT: "5912"
+      RTTYS_WEBUI_PORT: "443"
+      RTTYS_HTTP_PROXY_PORT: "10443"
+      TURN_PORT: "3479"
       TURN_USER: ${GLKVM_TURN_USER}
       TURN_PASS: ${GLKVM_TURN_PASS}
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+    command: ["rttys"]
     volumes:
-      - /mnt/user/appdata/glkvm-cloud/certs:/app/certs
-      - /mnt/user/appdata/glkvm-cloud/data:/app/data
+      - ${GLKVM_UPSTREAM:-/mnt/user/appdata/glkvm-cloud/upstream}/docker-compose/templates/rttys.conf.template:/tpl/rttys.conf.tmpl:ro
+      - ${GLKVM_UPSTREAM:-/mnt/user/appdata/glkvm-cloud/upstream}/docker-compose/scripts/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      # Upstream ships a generic self-signed cert/key; replace with a real one for
+      # kvm.example.net if browsers' warnings matter.
+      - ${GLKVM_UPSTREAM:-/mnt/user/appdata/glkvm-cloud/upstream}/docker-compose/certificate/glkvm.cer:/home/certificate/glkvm_cer:ro
+      - ${GLKVM_UPSTREAM:-/mnt/user/appdata/glkvm-cloud/upstream}/docker-compose/certificate/glkvm.key:/home/certificate/glkvm_key:ro
+      - /mnt/user/appdata/glkvm-cloud/database:/home/database
 
   glkvm-coturn:
     image: coturn/coturn:edge-alpine
     container_name: glkvm-coturn
     restart: unless-stopped
+    user: "0:0"   # as upstream — needs to read the bind-mounted entrypoint
     networks:
       macvlan-mothership:
         ipv4_address: 192.168.1.22
-    command:
-      - "-n"
-      - "--realm=kvm.example.net"
-      - "--user=${GLKVM_TURN_USER}:${GLKVM_TURN_PASS}"
+    environment:
+      GLKVM_ACCESS_IP: ${GLKVM_ACCESS_IP}
+      TURN_PORT: "3478"
+      TURN_USER: ${GLKVM_TURN_USER}
+      TURN_PASS: ${GLKVM_TURN_PASS}
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+    command: ["coturn"]
+    volumes:
+      - ${GLKVM_UPSTREAM:-/mnt/user/appdata/glkvm-cloud/upstream}/docker-compose/templates/turnserver.conf.template:/tpl/turnserver.conf.tmpl:ro
+      - ${GLKVM_UPSTREAM:-/mnt/user/appdata/glkvm-cloud/upstream}/docker-compose/scripts/docker-entrypoint.sh:/docker-entrypoint.sh:ro
 
   # ---- Tailscale subnet router (shares 192.168.1.2, the Unraid host's own IP) -------
   tailscale-router:
@@ -322,10 +376,28 @@ services:
     restart: unless-stopped
     network_mode: host
     cap_add: [NET_ADMIN, NET_RAW]
+    devices: ["/dev/net/tun:/dev/net/tun"]
     environment:
       TS_AUTHKEY: ${TAILSCALE_AUTHKEY}
-      TS_EXTRA_ARGS: --advertise-routes=192.168.1.0/24 --accept-routes
+      # Kernel networking, not the image's default userspace mode: userspace mode can't
+      # forward LAN -> tailnet traffic, which is exactly what the ingest containers, Fleet
+      # Admin, Restreamer and BirdDog Central need (via the gateway's static routes to
+      # 192.168.1.2 — config/unifi/network-config.yaml). Requires IP forwarding on the host
+      # (Docker normally enables it).
+      TS_USERSPACE: "false"
+      TS_ROUTES: 192.168.1.0/24
+      TS_HOSTNAME: mothership-server   # as in config/tailscale-up-all-devices.sh
+      # Tag must match config/tailscale-acl.json (tag:mothership) or none of its rules
+      # apply; --accept-routes so this node can reach the theatre/VMix /24s.
+      TS_EXTRA_ARGS: --advertise-tags=tag:mothership --accept-routes
+      # Pinned to the port the uplink-VLAN firewall allow rule targets
+      # (192.168.1.2:41641/udp in config/unifi/network-config.yaml).
+      TS_TAILSCALED_EXTRA_ARGS: --port=41641
       TS_STATE_DIR: /var/lib/tailscale
+      # The image defaults its LocalAPI socket to /tmp/tailscaled.sock inside the
+      # container. derp-server's -verify-clients needs it on the host, at the path its
+      # bind mount expects.
+      TS_SOCKET: /var/run/tailscale/tailscaled.sock
     volumes:
       - /mnt/user/appdata/tailscale-router:/var/lib/tailscale
-      - /dev/net/tun:/dev/net/tun
+      - /var/run/tailscale:/var/run/tailscale

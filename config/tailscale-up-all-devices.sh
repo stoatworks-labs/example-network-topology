@@ -29,4 +29,8 @@ tailscale up --advertise-routes=192.168.21.0/24 --accept-routes --advertise-tags
 # ---- Mothership subnet router (Docker container, host networking) -------
 # Runs on the consolidated Unraid server (192.168.1.2), not the Cloud Gateway
 # itself — see docs/topology.md and docs/open-questions.md.
-tailscale up --advertise-routes=192.168.1.0/24 --advertise-tags=tag:mothership --hostname=mothership-server
+# In practice config/docker-compose.yml's tailscale-router service applies these same
+# flags itself (TS_ROUTES / TS_EXTRA_ARGS); tailscaled there is also pinned to
+# --port=41641 (a tailscaled flag, not a `tailscale up` one) to match the firewall allow
+# in config/unifi/network-config.yaml.
+tailscale up --advertise-routes=192.168.1.0/24 --accept-routes --advertise-tags=tag:mothership --hostname=mothership-server

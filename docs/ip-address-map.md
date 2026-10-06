@@ -13,8 +13,8 @@ Tailscale rides over whatever address they get.
 
 | VLAN | 802.1Q tag | Subnet | Cloud Gateway address | Serves |
 |---|---|---|---|---|
-| Uplink 1 | 101 | 10.10.1.0/24 | 10.10.1.1 | Theatre 1–3 GL-iNet WAN ports |
-| Uplink 2 | 102 | 10.10.2.0/24 | 10.10.2.1 | Theatre 4–6 GL-iNet WAN ports |
+| Uplink 1 | 101 | 10.10.1.0/24 | 10.10.1.1 | Theatre 1–3 + VMix Node 1 GL-iNet WAN ports |
+| Uplink 2 | 102 | 10.10.2.0/24 | 10.10.2.1 | Theatre 4–6 + VMix Node 2 GL-iNet WAN ports |
 | Uplink 3 | 103 | 10.10.3.0/24 | 10.10.3.1 | Theatre 7–9 GL-iNet WAN ports |
 | Uplink 4 | 104 | 10.10.4.0/24 | 10.10.4.1 | Theatre 10–12 GL-iNet WAN ports |
 

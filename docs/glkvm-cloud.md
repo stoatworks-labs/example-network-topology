@@ -52,10 +52,18 @@ deployed anyway as the standard reference stack rather than assuming it's safe t
 not confirmed whether `rttys`'s SSH-terminal/web-proxy features have any dependency on it
 internally. Revisit once actually running.
 
+**The image needs upstream's entrypoint and templates mounted.** The
+`glzhitong/glkvm-cloud` image's own entrypoint is bare `rttys` with no config; upstream's
+compose overrides it with a bind-mounted `docker-entrypoint.sh` that renders `rttys.conf`
+and `turnserver.conf` from templates using the `RTTYS_*`/`TURN_*`/`GLKVM_ACCESS_IP`
+variables. Without those mounts the token and password are silently ignored. This repo's
+compose files now do the same, mounting from an upstream checkout.
+
 Manual Docker/docker-compose deployment supports both x86_64 and arm64
 ([deployment docs](https://github.com/gl-inet/glkvm-cloud/blob/main/docker-compose/README.md)).
 Minimum self-host requirements per GL.iNet: 1 CPU core, ≥1 GB RAM, ≥40 GB storage,
-≥3 Mbps — trivial next to what VMix/BirdDog Central already need on this box.
+≥3 Mbps — trivial next to what BirdDog Central and the rest of the stack already need on
+this box.
 
 ## Registering the 14 routers
 
@@ -86,14 +94,21 @@ WAN-side port numbers to GLKVM-Cloud's real (internal, unchanged) ports —
 | 3479 | TCP+UDP | `192.168.1.22:3478` | WAN 3478/udp already goes to DERP's STUN; kept TCP alongside it on the same alternate port for one consistent "DERP = 3478, GLKVM-Cloud = 3479" mental model, even though 3478/tcp alone was actually free |
 
 Suggested hostname: **`kvm.example.net`**, same domain as `derp.example.net`, pointed at the
-same public IP — reached as `https://kvm.example.net:8443`, with `GLKVM_ACCESS_IP` set to
-match so `rttys` advertises the right address/port back to the browser rather than its
-own LAN IP.
+same public IP — reached as `https://kvm.example.net:8443`.
+
+**What `GLKVM_ACCESS_IP` and `TURN_PORT` actually do** (from upstream's
+`scripts/docker-entrypoint.sh` and `templates/`): `GLKVM_ACCESS_IP` is written into
+`rttys`'s `webrtc-ip` and `coturn`'s `external-ip`, and the auto-detect fallback only
+accepts an IPv4 address — so set it to the venue's **public IPv4**, not the hostname (and
+expect to update it if that IP isn't static). `TURN_PORT` is both the port `rttys`
+advertises for TURN and the port `coturn` listens on; since they're separate containers,
+this repo sets it to `3479` on `rttys` (the WAN-side port) and `3478` on `coturn` (where
+the WAN 3479 forward lands). The web UI port isn't advertised anywhere — the browser just
+uses `:8443` — and `10443` is forwarded unchanged.
 
 **Not fully verified against a real deployment — confirm before relying on it:** the
-existence and general purpose of `GLKVM_ACCESS_IP` is documented upstream, but its exact
-accepted format (hostname only vs. `host:port`) isn't confirmed here. If a plain env var
-doesn't cover the WAN-side port remap cleanly, the fallback is a second public IP or an
+end-to-end behaviour of the `:8443` web UI and the remapped TURN port. If the remap
+doesn't work cleanly, the fallback is a second public IP or an
 SNI-routing reverse proxy in front of both DERP and GLKVM-Cloud on the literal 443 — more
 moving parts, only worth it if the simple remap doesn't work. Tracked in
 [`docs/open-questions.md`](open-questions.md) (question 7).

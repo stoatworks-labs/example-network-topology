@@ -21,7 +21,7 @@ doesn't care what hardware runs it.
 | | GL-iNet A-1300 (chosen) | Generic Linux box + switch (alternative) |
 |---|---|---|
 | Setup effort | Config file, done (see [`config/gl-inet/`](../config/gl-inet/)) | Build + harden NAT/DHCP/Tailscale from scratch per box |
-| Throughput confidence | Vendor datasheet, ~170 Mbps WireGuard | Unverified until benchmarked on whatever's chosen |
+| Throughput confidence | Vendor datasheet, ~170 Mbps — but that is kernel WireGuard; Tailscale's userspace `wireguard-go` is unbenchmarked on the A-1300 and likely slower (see [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)) | Unverified until benchmarked on whatever's chosen (an x86 mini-PC will very likely beat the A-1300 under Tailscale) |
 | Physical footprint | One compact unit per theatre | Separate PC + separate switch + 2 power supplies |
 | Dedicated ATEM port | Built-in (2 LAN ports) | Needs a 2nd NIC/dongle to replicate |
 | Wi-Fi | Built-in | Extra hardware if needed at all |
@@ -35,7 +35,10 @@ doesn't care what hardware runs it.
 This is 12 identical small router/switch appliances for a touring event that need to just
 work — exactly the product category a travel router is built for. A generic Linux box
 gives more flexibility and CPU headroom we don't need here, at the cost of more setup
-work, more failure modes, no vendor throughput guarantee, and a bulkier kit per theatre.
+work, more failure modes, and a bulkier kit per theatre. (The A-1300's own throughput
+"guarantee" is weaker than it looks under Tailscale — if the benchmark in
+[`docs/bandwidth-analysis.md`](bandwidth-analysis.md) comes back low, CPU headroom stops
+being something "we don't need" and this comparison should be revisited.)
 The one real advantage of the alternative — no vendor lock-in — doesn't outweigh those
 costs for this deployment. Keep GL-iNet as the primary; this alternative is documented for
 completeness, not as an equally-weighted option.

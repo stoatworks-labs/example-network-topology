@@ -13,9 +13,14 @@ live show).
 
 Every bandwidth figure elsewhere in this repo ([`docs/bandwidth-analysis.md`](bandwidth-analysis.md))
 is sized around what the *live event* needs — SRT/NDI streaming, ATEM ISO ingest, file
-sync. Editing is a different animal: scrubbing or exporting 4K footage wants sustained
-throughput in the hundreds of Mbps to multiple Gbps *per editor*, not the tens of Mbps
-this design budgets per theatre. Putting that load on the mothership's existing 2× bonded
+sync. Editing is a different animal: scrubbing a multicam timeline or exporting wants
+sustained throughput in the hundreds of Mbps *per editor* (multiple Gbps only for 4K or
+intermediate codecs), not the tens of Mbps this design budgets per theatre. For scale:
+the ATEM Mini Extreme ISO is an HD switcher whose ISO files are H.264 at up to 70 Mb/s
+each ([Blackmagic tech specs](https://www.blackmagicdesign.com/products/atemmini/techspecs)),
+so a full 9-angle multicam is ~630 Mbps ≈ 79 MB/s per editor. 4K would only enter
+through the VMix recordings (BirdDog P400s are 4K-capable; VMix's record settings are
+still unconfirmed — see [`docs/vmix-record-ingest.md`](vmix-record-ingest.md)). Putting that load on the mothership's existing 2× bonded
 1GbE ([`docs/server-specification.md`](server-specification.md)) would mean either
 starving the editors or risking contention with the live ingest pipelines still running
 during the event — the one thing this whole design goes out of its way to avoid
@@ -55,11 +60,27 @@ everything in this subsystem is in the same room as the mothership, unlike the t
 uplinks this repo's Tailscale mesh exists to solve for
 ([`docs/tailscale.md`](tailscale.md)). A simple routed connection back to `192.168.1.x`
 is enough for anything that still needs it; the edit suite doesn't need to be reachable
-*from* any theatre, and vice versa.
+*from* any theatre, and vice versa. **The dual-write itself must not ride that routed
+path**: the Unraid server needs its own interface on `192.168.22.0/24` (a 10GbE NIC —
+see [`docs/server-specification.md`](server-specification.md) § NIC), with the NAS share
+mounted on the host and bind-mounted into the ingest containers, so the second write never
+touches the theatre-facing bond. That interface has **no address assigned yet** in
+[`docs/ip-address-map.md`](ip-address-map.md).
 
-Standard MacBook Pros don't have built-in 10GbE — each needs a Thunderbolt-to-10GbE
-adapter or dock (e.g. OWC/Sonnet-class hardware) to actually hit these speeds; budget for
-that alongside whatever storage is chosen below.
+MacBook Pros have no built-in Ethernet at all — each needs a Thunderbolt-to-10GbE
+adapter or dock (e.g. Sonnet Solo10G, MSRP $199.99, ~$200-230 street as of 2026-10-06;
+OWC-class equivalents) to actually hit these speeds; budget for that alongside whatever
+storage is chosen below. The Mac mini (Decision 2) ships with 2.5GbE as standard, so
+order it with Apple's 10GbE build-to-order option rather than adding an adapter.
+
+**Throughput sanity check.** A single 10GbE link delivers roughly 900+ MB/s over SMB in
+practice ([ProVideo Coalition's Cloud Store Mini review](https://www.provideocoalition.com/review-a-look-at-the-blackmagic-cloud-store-mini/)
+measured >900 MB/s read/write from a Mac). Against that: 2 editors × ~79 MB/s (9-angle
+HD multicam), plus the ingest dual-write (~151 MB/s at the current worst-case model in
+`docs/server-specification.md`, and physically capped at ~255 MB/s by the twelve ~170 Mbps
+theatre uplinks), plus Remote Render reads, is well under half of one 10GbE port. 10GbE
+is comfortable headroom here rather than a hard requirement; it becomes necessary only if
+the VMix recordings turn out to be 4K or an intermediate codec (ProRes and similar).
 
 See [`diagrams/live-editing-dataflow.svg`](../diagrams/live-editing-dataflow.svg) for this
 same dual-write path as a diagram.
@@ -85,26 +106,29 @@ target to edit directly against:
 A dedicated NAS, fed by the **same pull, writing to a second destination** — not a
 chained re-sync reading Nextcloud's own copy back out again, just the existing
 [`config/atem-iso-ingest/`](../config/atem-iso-ingest/) and
-[`config/vmix-record-ingest/`](../config/vmix-record-ingest/) containers' `rsync
---append` step writing to both `/mnt/user/nextcloud-external/...` (Nextcloud's External
+[`config/vmix-record-ingest/`](../config/vmix-record-ingest/) containers' incremental
+append step (`pull-iso.py`'s FTP `REST` resume for the ATEMs by default, `rsync --append`
+for VMix and the ATEM alternative) writing to both `/mnt/user/nextcloud-external/...` (Nextcloud's External
 Storage, for the near-real-time review path this repo already documents) and a second
 mount on the edit-suite NAS, in the same pass. One read off the ATEM/VMix source, two
 writes — cheaper and simpler than pulling twice, and the edit suite never has to wait on
 Nextcloud's own indexing (`occ files:scan`) to see new footage, since it's not going
 through Nextcloud at all. Same incremental-transfer reasoning as everywhere else in this
-repo: `rsync --append` only transfers new bytes as footage keeps growing, on both
+repo: the append step only transfers new bytes as footage keeps growing, on both
 destinations. (The second write is a documented design, not yet a code change — the
 actual scripts currently write only the Nextcloud destination; tracked as
 [`docs/open-questions.md`](open-questions.md) item 15.)
 
-**NAS options, roughly by cost:**
+**NAS options, roughly by cost** (US prices as of 2026-10-06; Blackmagic raised Cloud
+Store prices more than once in 2026 on flash/DRAM costs, so re-check before ordering):
 
 | Option | ~Price | Notes |
 |---|---|---|
-| Blackmagic Cloud Dock 4 / Dock 2 / Pod (BYO drives) | $445-$1,535 | Pure 10GbE network enclosure, no included storage — cheapest path to real throughput if drives are sourced separately |
-| Generic 10GbE NAS (Synology/QNAP-class, populate with own drives) | Varies, comparable to Cloud Dock + drives | Not Resolve-specific, but plain SMB/NFS works identically; more flexible (can also run Docker containers — relevant to Decision 2) |
-| **Blackmagic Cloud Store Mini**, 8TB | **$4,945** | 4× M.2 NVMe, **RAID 0 — no redundancy**, 1×10GbE + 1×1GbE, up to 50 concurrent connections. Confirm the RAID0 risk is acceptable — a drive failure mid-event means falling back to a fresh pull from the mothership's own recording pool, not losing anything permanently, but it is a real mid-event disruption |
-| Blackmagic Cloud Store Mini, 16TB | $8,245 | Same, more headroom if editing against more than a curated subset of the event's footage |
+| Blackmagic Cloud Pod (BYO USB drives) | $445 | 1×10GbE, but it shares **USB-C drives** and each disk port is USB 3.0 (5 Gb/s) — the drives, not the network, set the ceiling (a few hundred MB/s per disk) |
+| Blackmagic Cloud Dock 2 / Dock 4 (BYO drives) | $649 / $1,575 | 2× / 4× 10GbE, takes 2.5" U.2 or SATA drives (≤11 mm), **exFAT/HFS+ only**. Each drive is shared as its own independent volume — **no RAID, so no redundancy either**. Cheapest path to real throughput if drives are sourced separately |
+| Generic 10GbE NAS (Synology/QNAP-class, populate with own drives) | Varies, comparable to Cloud Dock + drives | Not Resolve-specific, but plain SMB/NFS works identically; more flexible (can also run Docker containers — relevant to Decision 2), and the only option here with real RAID redundancy |
+| **Blackmagic Cloud Store Mini**, 8TB | **$5,059** | 4× M.2 NVMe, **RAID 0 — no redundancy**, 1×10GbE + 1×1GbE + USB-C, up to 50 concurrent SMB/NFS connections. Confirm the RAID0 risk is acceptable — a drive failure mid-event means falling back to a fresh pull from the mothership's own recording pool, not losing anything permanently, but it is a real mid-event disruption |
+| Blackmagic Cloud Store Mini, 16TB | $8,435 | Same, more headroom if editing against more than a curated subset of the event's footage |
 
 For 2 editors working from a curated subset of footage (not the full 8TB recording
 pool — see the open question below on how much actually needs to be pulled), the Cloud
@@ -178,9 +202,15 @@ but thinly documented, so flagging the confidence honestly:**
   Ultra) matters far more at 4K/UHD than at 1080p, where independent reviews found little
   real difference between a Mac mini and a Mac Studio. But remote rendering itself runs
   slower than local rendering regardless of hardware — one documented case measured
-  roughly half the fps remotely vs. locally. **Spec the Mac mini at M2 Pro/M4 Pro tier or
-  better**, not the base chip, given it's doing double duty as database host and render
-  node; a base-tier mini is a real risk for anything beyond light 1080p H.264 jobs.
+  roughly half the fps remotely vs. locally. **Spec the Mac mini at Pro-chip tier**, not
+  the base chip, given it's doing double duty as database host and render node; a
+  base-tier mini is a real risk for anything beyond light 1080p H.264 jobs. Current
+  lineup (announced 2026-08-25, [Apple Newsroom](https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/)):
+  **M6 from $899, M5 Pro from $1,699** (US, as of 2026-10-06), 2.5GbE standard with a
+  10GbE build-to-order option — so the realistic order is an **M5 Pro with 10GbE**. M2
+  Pro/M4 Pro minis are no longer current models but remain adequate if one is already
+  on hand. (The M5 Pro still has a single video encode engine, so the base/Pro vs. Max
+  encode-engine point above is unchanged.)
 - **Known gotcha to plan around**: submitting multiple render jobs to the same remote node
   at the same time can silently fail — send them one at a time. Fine at 2-editor scale,
   worth documenting as an operational note rather than something to engineer around.
@@ -202,7 +232,10 @@ project server needs its own host regardless of which storage option was picked.
 **Not needed for this design, and probably not worth turning on.** "Blackmagic Cloud" is
 a genuinely separate product from the physical Cloud Store hardware — an internet-based
 sync service (own subscription: **~$5/month per project library** + **~$15/TB/month**
-for synced media) built for the case where collaborators are in *different physical
+for synced media — the $15/TB figure is confirmed; the $5 library fee is stated by
+Blackmagic staff/users on Blackmagic's own forum and by third-party guides, but could not
+be confirmed on a Blackmagic pricing page as of 2026-10-06, so re-check before quoting
+it) built for the case where collaborators are in *different physical
 locations* and don't want to deal with VPNs/firewalls to reach each other. Everything in
 this design is in one room at one venue — there's no second site to sync with, so this
 service would add an ongoing subscription cost and an internet-facing dependency for a
@@ -289,9 +322,9 @@ for anything that matters enough to edit.
 | Tool | Vendor | Price | Role |
 |---|---|---|---|
 | **ShotPut Pro** | Imagine Products | $169 perpetual (+$59-70/yr updates after year 1), $60/30-day rental | Industry-standard dedicated checksummed offload + verify + PDF/CSV/MHL report — the classic "DIT cart" tool |
-| **OffShoot / OffShoot Pro** | Hedge | $149-249 one-time, $49/30-day rental | Same core job (fast checksummed offload, multiple simultaneous destinations), simpler UI, no metadata/look-management layer |
-| Silverstack Offload Manager | Pomfort | $139/yr, project licenses from $35 | Pomfort's own cut-down offload-only tier, positioned against ShotPut/OffShoot for smaller productions |
-| Silverstack XT / Lab | Pomfort | ~$899/yr (project licenses ~$99-319) | Full DIT station: offload+verify+metadata/lens data+look management (CDL/LUT), and (Lab only) audio sync + transcode/dailies — a much bigger tool than this event likely needs unless additional standalone cameras with real production metadata needs are added |
+| **OffShoot / OffShoot Pro** | Hedge | $169 / $249 one-time per activation (incl. 1 year of updates; $79 to extend), $49/30-day rental (prices as of 2026-10-06) | Same core job (fast checksummed offload, multiple simultaneous destinations), simpler UI, no metadata/look-management layer |
+| Silverstack Offload Manager | Pomfort | $169/yr; project licenses €45 (14 days) / €59 (1 month) — USD project price not confirmed (as of 2026-10-06) | Pomfort's own cut-down offload-only tier, positioned against ShotPut/OffShoot for smaller productions |
+| Silverstack XT / Lab | Pomfort | XT ~$899/yr; Lab $1,099/yr, Lab project licenses $159 (14 days) / $249 (1 month) / $399 (2 months) (as of 2026-10-06; plain Silverstack was folded into XT at v9) | Full DIT station: offload+verify+metadata/lens data+look management (CDL/LUT), and (Lab only) audio sync + transcode/dailies — a much bigger tool than this event likely needs unless additional standalone cameras with real production metadata needs are added |
 | **FoolCat** | Hedge | $29/mo, $89-129/activation, $299 bundle | Companion **report generator**, not a copy tool — HTML/PDF camera reports with thumbnails, plugs directly into OffShoot's offload queue |
 | **o/PARASHOOT** | OTTOMATIC GmbH | Free | Companion **card-safety** tool — confirms a card's files exist at the backup destination (filename+size, not checksum) then reversibly blanks the card so the camera prompts a clean reformat; pairs with OffShoot |
 
@@ -321,7 +354,12 @@ productions run this way.
 | Edit suite NAS (Cloud Store or generic 10GbE NAS) | `192.168.22.2` | See Decision 1 |
 | MacBook Pro — Editor 1 | `192.168.22.11` | 10GbE via Thunderbolt adapter/dock |
 | MacBook Pro — Editor 2 | `192.168.22.12` | 10GbE via Thunderbolt adapter/dock |
-| Mac mini — Project Server + Remote Render | `192.168.22.20` | Dedicated always-on machine, not an editor's own laptop — see Decision 2 |
+| Mac mini — Project Server + Remote Render | `192.168.22.20` | Dedicated always-on machine, not an editor's own laptop — see Decision 2; order with the 10GbE option |
+
+Not yet listed: the **Unraid server's own edit-LAN interface** on `192.168.22.0/24`, which
+the dual-write needs (see the start of this doc). It needs an address in
+[`docs/ip-address-map.md`](ip-address-map.md) — not assigned here, since that file is the
+authoritative inventory.
 
 See [`docs/ip-address-map.md`](ip-address-map.md) for how this fits the rest of the
 network's addressing.
@@ -330,6 +368,21 @@ network's addressing.
 
 - **How much of the event's footage actually needs editing access** — the full 8TB
   recording pool, or a curated/selected subset? Drives NAS capacity sizing in Decision 1.
+  Note this sizing currently rests on the repo-wide ~10 Mbps-per-ISO-stream figure;
+  Blackmagic specifies ATEM Mini Extreme ISO ISO files at **up to 70 Mb/s** each (see
+  [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) § Bandwidth). If the real figure is
+  nearer that, every theatre produces ~100-280 GB/hour and both the recording pool and
+  any NAS here fill several times faster than planned.
+- **Whether the smart-bin recipe's filters match what actually lands on the NAS.** The
+  recipe filters on "file path contains that theatre's record-drive name" and "date
+  created is the session date". But the ingest destination layout is
+  `TheatreN/ISO/<file>` (`pull-iso.py` flattens to one folder and does not carry the
+  ATEM's drive or recording-folder name), and a file's creation date on the NAS is when
+  ingest first wrote it, not when the ATEM recorded it (normally the same day, but not
+  for a late final pull after midnight). Either the NAS path layout should preserve a
+  per-theatre/drive identifier the recipe can match, or the recipe should match the
+  `TheatreN` path instead — check against resolve-configurator's actual output before the
+  event.
 - **Whether combining Project Server and Remote Render duty on one Mac mini holds up in
   practice** — Decision 2 flags this as architecturally sound but thinly documented by
   Blackmagic and practitioners alike; worth a real test before the event, not just before

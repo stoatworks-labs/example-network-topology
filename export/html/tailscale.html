@@ -26,6 +26,8 @@ tr:nth-child(even) td { background: #fafbfc; }
 blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
              color: #59636e; }
 img, svg { max-width: 100%; height: auto; }
+figure { margin: 1.5em 0; }
+figcaption { color: #59636e; font-size: .85em; margin-top: .4em; }
 hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
 ul.task-list { list-style: none; padding-left: 1.2em; }
 .doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
@@ -41,123 +43,46 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   th, td { padding: 3px 6px; }
   a { color: #1f2328; }
   h1, h2, h3 { page-break-after: avoid; }
-  pre, img, svg { page-break-inside: avoid; }
+  pre, img, svg, figure { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/tailscale.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="tailscale--derp-relay-avoidance">Tailscale — DERP relay
-avoidance</h1>
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/tailscale.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="tailscale--derp-relay-avoidance">Tailscale — DERP relay avoidance</h1>
 <h2 id="whos-actually-on-the-tailnet">Who's actually on the tailnet</h2>
-<p>Only <strong>15 nodes</strong> run the Tailscale client: the 14
-GL-iNet A-1300 routers (12 theatres + 2 VMix nodes) and the mothership's
-Tailscale container. Each advertises its own subnet
-(<code>--advertise-routes</code>) and accepts the others'
-(<code>--accept-routes</code>) — see <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</p>
-<p><strong>No individual client device runs Tailscale.</strong> Not the
-PowerPoint/VT laptops, not the control laptops, not the ATEM, not
-BirdDog Play/Central, not the VMix PCs or P400 cameras. They all reach
-the rest of the network purely through their GL-iNet's normal LAN
-gateway — subnet routing makes <code>192.168.1.0/24</code> (and every
-other theatre's subnet, where ACLs allow it) reachable transparently,
-with zero Tailscale software installed on any of them.</p>
-<h2 id="why-direct-connections-are-likely">Why direct connections are
-likely</h2>
-<p>Every node ultimately sits behind one shared mothership internet
-connection — a favorable case for direct (non-relayed) connections,
-since Tailscale can either use the true private LAN path or hairpin
-through the single shared public IP.</p>
+<p>Only <strong>15 nodes</strong> run the Tailscale client: the 14 GL-iNet A-1300 routers (12 theatres + 2 VMix nodes) and the mothership's Tailscale container. Each advertises its own subnet (<code>--advertise-routes</code>) and accepts the others' (<code>--accept-routes</code>) — see <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</p>
+<p><strong>No individual client device runs Tailscale.</strong> Not the PowerPoint/VT laptops, not the control laptops, not the ATEM, not BirdDog Play/Central, not the VMix PCs or P400 cameras. They all reach the rest of the network purely through their GL-iNet's normal LAN gateway — subnet routing makes <code>192.168.1.0/24</code> (and every other theatre's subnet, where ACLs allow it) reachable transparently, with zero Tailscale software installed on any of them.</p>
+<h2 id="why-direct-connections-are-likely">Why direct connections are likely</h2>
+<p>Every node ultimately sits behind one shared mothership internet connection — a favorable case for direct (non-relayed) connections, since Tailscale can either use the true private LAN path or hairpin through the single shared public IP.</p>
 <p>What determines it in practice:</p>
 <ol type="1">
-<li><strong>Whether the Ubiquiti firewall allows UDP between
-VLANs/subnets.</strong> If yes → direct private-path connections, no
-internet round-trip.</li>
-<li><strong>If inter-VLAN UDP is blocked</strong>, Tailscale falls back
-to NAT hairpin via the shared public IP — usually works, but more
-fragile with GL-iNet's own NAT stacked underneath (double-NAT).</li>
-<li><strong>DERP relay</strong> is only the fallback when both of the
-above fail. Tailscale continuously retries and upgrades to direct when
-possible.</li>
+<li><strong>Whether the Ubiquiti firewall allows UDP between VLANs/subnets.</strong> If yes → direct private-path connections, no internet round-trip. The uplink VLANs are otherwise blocked from Mothership-LAN, so <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a> carries an explicit allow for UDP from the uplink VLANs to the mothership's Tailscale port (<code>192.168.1.2:41641</code>) ahead of that block.</li>
+<li><strong>If inter-VLAN UDP is blocked</strong>, Tailscale falls back to NAT hairpin via the shared public IP — usually works, but depends on the Cloud Gateway's hairpin-NAT behaviour. (The GL-iNet's own NAT is not stacked in this path: <code>tailscaled</code> runs on the GL-iNet itself, so its tunnel packets originate from the WAN address — only the Cloud Gateway's NAT applies.)</li>
+<li><strong>DERP relay</strong> is only the fallback when both of the above fail. Tailscale continuously retries and upgrades to direct when possible.</li>
 </ol>
 <h2 id="verifying-after-setup">Verifying after setup</h2>
-<pre class="bash"><code>tailscale status        # shows direct vs relay per peer
-tailscale ping &lt;peer&gt;</code></pre>
-<h2
-id="self-hosted-derp-server-decided--running-on-the-mothership">Self-hosted
-DERP server (decided — running on the mothership)</h2>
-<p>Runs as a Docker container on the consolidated Unraid server —
-<code>derp-server</code>, <code>192.168.1.16</code> (see <a
-href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>) —
-using Tailscale's own <code>derper</code> binary/image (<a
-href="https://tailscale.com/docs/reference/derp-servers">official
-docs</a>).</p>
-<p><strong>Why this still needs a real, reachable hostname.</strong>
-DERP isn't reached over an already-established Tailscale tunnel to the
-peer that needs relaying — a node holds a persistent connection to its
-DERP server over its own normal WAN path, independent of any specific
-peer, precisely so it can bootstrap connectivity when direct WireGuard
-isn't available yet. That means the venue's shared-internet-connection
-hairpin trick (see above) is exactly what makes this work here: every
-theatre's GL-iNet reaches the DERP server's hostname over its
-<em>own</em> WAN path, which loops back through the same shared public
-IP without the traffic ever actually leaving the venue's router. This
-requires:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">tailscale</span> status        <span class="co"># shows direct vs relay per peer</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">tailscale</span> ping <span class="op">&lt;</span>peer<span class="op">&gt;</span></span></code></pre></div>
+<h2 id="self-hosted-derp-server-decided--running-on-the-mothership">Self-hosted DERP server (decided — running on the mothership)</h2>
+<p>Runs as a Docker container on the consolidated Unraid server — <code>derp-server</code>, <code>192.168.1.16</code> (see <a href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>) — using Tailscale's own <code>derper</code> binary (<a href="https://tailscale.com/docs/reference/derp-servers">official docs</a>). There is <strong>no official <code>tailscale/derper</code> image</strong> — Tailscale's README says to build <code>cmd/derper</code> yourself — so <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/docker-compose.yml"><code>config/docker-compose.yml</code></a> builds one (<code>local/derper:built</code>). Pin derper and the subnet router's <code>tailscaled</code> to the same release, since <code>-verify-clients</code> checks one against the other.</p>
+<p><strong>Why this still needs a real, reachable hostname.</strong> DERP isn't reached over an already-established Tailscale tunnel to the peer that needs relaying — a node holds a persistent connection to its DERP server over its own normal WAN path, independent of any specific peer, precisely so it can bootstrap connectivity when direct WireGuard isn't available yet. That means the venue's shared-internet-connection hairpin trick (see above) is exactly what makes this work here: every theatre's GL-iNet reaches the DERP server's hostname over its <em>own</em> WAN path, which loops back through the same shared public IP without the traffic ever actually leaving the venue's router. This requires:</p>
 <ul>
-<li>A real DNS hostname pointed at the mothership's public IP (a domain
-you control, or a dynamic-DNS hostname if you don't have one). Named
-<strong><code>derp.example.net</code></strong> — needs to actually be
-registered/pointed (or swapped for whatever domain/DDNS host you do
-control) before it resolves to anything.</li>
-<li>A port forward on the Cloud Gateway: WAN <code>443/tcp</code> →
-<code>192.168.1.16:443</code>, and WAN <code>3478/udp</code> →
-<code>192.168.1.16:3478</code> (STUN). See <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>.
-<strong>443</strong> for the DERP listener — matches Tailscale's own
-DERP fleet and is the most firewall-friendly port (many restrictive
-networks allow outbound 443 and nothing else), though it doesn't matter
-much for reachability here specifically since it's an internal hairpin,
-not roaming clients behind a hotel firewall.</li>
-<li>Let's Encrypt issues the cert automatically against that hostname
-(<code>-certmode=letsencrypt</code>) since the port forward makes it
-genuinely reachable for the ACME challenge.</li>
+<li>A real DNS hostname pointed at the mothership's public IP (a domain you control, or a dynamic-DNS hostname if you don't have one). Named <strong><code>derp.example.net</code></strong> — needs to actually be registered/pointed (or swapped for whatever domain/DDNS host you do control) before it resolves to anything.</li>
+<li>A port forward on the Cloud Gateway: WAN <code>443/tcp</code> → <code>192.168.1.16:443</code>, and WAN <code>3478/udp</code> → <code>192.168.1.16:3478</code> (STUN). See <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>. <strong>443</strong> for the DERP listener — matches Tailscale's own DERP fleet and is the most firewall-friendly port (many restrictive networks allow outbound 443 and nothing else), though it doesn't matter much for reachability here specifically since it's an internal hairpin, not roaming clients behind a hotel firewall.</li>
+<li>Let's Encrypt issues the cert automatically against that hostname (<code>-certmode=letsencrypt</code>) since the port forward makes it genuinely reachable for the ACME challenge. Upstream also recommends allowing 80/tcp; whether to forward it is open (<a href="open-questions.html"><code>docs/open-questions.md</code></a> #2).</li>
 </ul>
-<pre class="sh"><code>docker run -d --name derp-server \
-  --network macvlan-mothership --ip 192.168.1.16 \
-  -v /mnt/user/appdata/derper/certs:/app/certs \
-  -v /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock \
-  tailscale/derper \
-  -hostname=derp.example.net \
-  -certmode=letsencrypt -certdir=/app/certs \
-  -stun -stun-port=3478 \
-  -verify-clients</code></pre>
-<p>(Attached to the <code>macvlan-mothership</code> network at
-<code>192.168.1.16</code> — the same macvlan setup every other
-mothership container uses, so no <code>-p</code> port publishes, which
-are inert under macvlan anyway. The canonical definition of this service
-lives in <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>;
-this standalone command is just the same thing spelled out.)</p>
-<p><code>-verify-clients</code> restricts relay use to nodes already on
-this tailnet — needs the container to reach the host's
-<code>tailscaled</code>, which is exactly what the
-<code>tailscaled.sock</code> mount above is for. Recommended so the DERP
-server isn't an open relay; drop both the flag and the mount if that's
-not a concern.</p>
-<p><strong>Register it with the tailnet</strong> by adding a custom
-region to the ACL policy — see the <code>derpMap</code> block in <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>.
-Kept <code>OmitDefaultRegions: false</code> (the safer default) —
-Tailscale prefers this DERP node when it's faster, but still falls back
-to the public regions if the self-hosted one goes down, rather than
-losing relay fallback entirely.</p>
-<p>Verify with <code>tailscale netcheck</code> — it reports which DERP
-region a node prefers.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> derp-server <span class="dt">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--network</span> macvlan-mothership <span class="at">--ip</span> 192.168.1.16 <span class="dt">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> /mnt/user/appdata/derper/certs:/app/certs <span class="dt">\</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock <span class="dt">\</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  local/derper:built <span class="dt">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-hostname</span><span class="op">=</span>derp.example.net <span class="dt">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-certmode</span><span class="op">=</span>letsencrypt <span class="at">-certdir</span><span class="op">=</span>/app/certs <span class="dt">\</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-stun</span> <span class="at">-stun-port</span><span class="op">=</span>3478 <span class="dt">\</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-verify-clients</span></span></code></pre></div>
+<p>(Attached to the <code>macvlan-mothership</code> network at <code>192.168.1.16</code> — the same macvlan setup every other mothership container uses, so no <code>-p</code> port publishes, which are inert under macvlan anyway. The canonical definition of this service lives in <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>; this standalone command is just the same thing spelled out.)</p>
+<p><code>-verify-clients</code> restricts relay use to nodes already on this tailnet — needs the container to reach the host's <code>tailscaled</code>, which is exactly what the <code>tailscaled.sock</code> mount above is for. Recommended so the DERP server isn't an open relay; drop both the flag and the mount if that's not a concern.</p>
+<p><strong>Register it with the tailnet</strong> by adding a custom region to the ACL policy — see the <code>derpMap</code> block in <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>. Kept <code>OmitDefaultRegions: false</code> (the safer default) — Tailscale prefers this DERP node when it's faster, but still falls back to the public regions if the self-hosted one goes down, rather than losing relay fallback entirely.</p>
+<p>Verify with <code>tailscale netcheck</code> — it reports which DERP region a node prefers.</p>
 <h2 id="config-sketch">Config sketch</h2>
-<p>See <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-commands.sh"><code>config/tailscale-up-commands.sh</code></a>
-for the per-role <code>tailscale up</code> invocations and <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
-for the ACL policy.</p>
-<p>Routes still need approving in the Tailscale admin console (or via
-<code>autoApprovers</code> keyed to tag/CIDR) before they take effect —
-advertising a route alone is not sufficient.</p>
+<p>See <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-up-commands.sh"><code>config/tailscale-up-commands.sh</code></a> for the per-role <code>tailscale up</code> invocations and <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a> for the ACL policy. Note that a tag in an ACL (e.g. <code>tag:theatre</code>) only covers the tagged routers' own Tailscale IPs, not the subnets they advertise — so the ACL also lists each subnet as a CIDR host alias (<code>mothership-lan</code>, <code>theatre-1-lan</code>, ...), as a destination <em>and</em> as a source, because a device behind a subnet router keeps its own LAN address when it starts a connection (an ATEM's monitoring stream to Overseer, a Play's preview to Flock, a container pulling from an ATEM). Theatre ranges are only ever paired with the mothership range, so theatres still can't reach each other. Without those, the ATEM ingest, SRT fan-out and every other device-to-device flow would be denied (<a href="https://tailscale.com/kb/1019/subnets">subnet routers + ACLs</a>).</p>
+<p>Routes still need approving in the Tailscale admin console (or via <code>autoApprovers</code> keyed to tag/CIDR) before they take effect — advertising a route alone is not sufficient.</p>
 </body></html>

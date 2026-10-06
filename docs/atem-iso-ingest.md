@@ -1,7 +1,8 @@
 # ATEM ISO ingest — near-real-time, Nextcloud-aware
 
 Goal: get each theatre's ATEM Mini Extreme ISO recordings (up to 9 H.264 streams — 8
-camera ISOs + program — at ~10 Mbps each) onto the mothership's Nextcloud as close to
+camera ISOs + program — at ~10 Mbps each per this design's working figure; **Blackmagic's
+spec is up to 70 Mb/s per ISO file**, see [Bandwidth](#bandwidth)) onto the mothership's Nextcloud as close to
 real time as the hardware allows, without corrupting anything and without the theatre's
 uplink falling permanently behind.
 
@@ -12,7 +13,12 @@ uplink falling permanently behind.
   ([aaronparecki.com](https://aaronparecki.com/2022/01/25/8/),
   [Directory Opus forum](https://resource.dopus.com/t/ftp-access-to-atem-mini-iso-failed/42809)).
   This is also the only mechanism available — the unit has no NDI output and its Ethernet
-  port doesn't expose the drive over SMB/NFS, only FTP.
+  port doesn't expose the drive over SMB/NFS, only FTP. **This holds for the original
+  ATEM Mini Extreme ISO only.** The newer **ATEM Mini Extreme ISO G2** has a 10G Ethernet
+  port and shares its CFexpress/USB recording media as a network disk
+  ([Blackmagic tech specs](https://www.blackmagicdesign.com/products/atemmini/techspecs)) —
+  if the theatres have G2 units, a mount-based pull (like the VMix ingest) becomes
+  possible. Confirm which model is actually deployed.
 - **The files are very likely safe to read mid-write.** Blackmagic markets editing an ISO
   recording in DaVinci Resolve *before the event even finishes* — that only works if the
   container format is structured so a partial file is valid up to whatever's been flushed
@@ -28,10 +34,12 @@ the ATEM only speaks FTP. There's no bridging that directly; the ATEM never expo
 or SSH.
 
 **A naive periodic `rclone sync`/whole-file re-copy doesn't survive the bandwidth math.**
-Real numbers: at a realistic 4–6 active camera ISOs + program (~10 Mbps each), a 3-hour
-session is already 50–80 GB. Re-uploading the *entire current file* every 10 minutes would
-take longer than 10 minutes to transfer at the A-1300's ~170 Mbps ceiling — the sync falls
-permanently behind almost immediately for any session longer than about 15–20 minutes.
+Real numbers: at a realistic 4–6 active camera ISOs + program (~10 Mbps each, i.e.
+50–70 Mbps), a 3-hour session is already ~68–95 GB. Re-uploading the *entire current file*
+every 10 minutes stops fitting in that 10-minute window at the A-1300's ~170 Mbps ceiling
+once the session is ~25–35 minutes old (~19 minutes at the 90 Mbps worst case) — and
+that ignores everything else sharing the uplink — after which the sync falls permanently
+behind.
 Genuinely incremental transfer isn't a nice-to-have here, it's required.
 
 **Two ways to get genuinely incremental transfer** — both implemented, pick one (see
@@ -52,8 +60,9 @@ other, which isn't possible against an FTP-only source regardless of what sits i
 ## Architecture
 
 Centralized entirely on the Unraid server as its own container (`192.168.1.17`) — no
-software installed on any theatre laptop, consistent with how VMix/BirdDog Central/NDI
-Discovery Server/DERP are already consolidated there. Reaches each theatre's ATEM over
+software installed on any theatre laptop, consistent with how BirdDog Central/NDI
+Discovery Server/DERP are already consolidated there (the mothership VMix VM was removed —
+see [`docs/open-questions.md`](open-questions.md) #10). Reaches each theatre's ATEM over
 Tailscale subnet routing (see
 [`docs/tailscale.md`](tailscale.md) — this is exactly the "route between subnets where
 needed" case the subnet-router setup was built for). Described below for the default
@@ -91,7 +100,15 @@ ATEM (192.168.X.2, FTP) --[Tailscale subnet route]--> Unraid: atem-iso-ingest co
    theatre's folder and runs locally on the same box, it's cheap even at a 1-2 minute
    cadence — unlike scanning the whole Nextcloud tree, which would not be.
 4. **On session end**, a final pull + final targeted scan catches the last bytes and
-   whatever moov/index finalization happens when the ATEM's recording actually stops.
+   whatever moov/index finalization is *appended* when the ATEM's recording actually
+   stops. **It does not catch finalization that rewrites earlier bytes in place** — MP4
+   muxers commonly patch a box size or header near the start of the file when recording
+   stops (OBS's hybrid-MP4 "soft remux" is a documented example:
+   [obsproject.com](https://obsproject.com/blog/obs-studio-hybrid-mp4)). Both ingest
+   methods are append-only and would leave such a mirror with stale header bytes. Whether
+   the ATEM does this is unconfirmed; until it is, treat the mirror as "review copy" and
+   either re-pull the finished file in full or run a checksum comparison against the
+   source before treating it as final (see Open items).
 
 **Second write destination for live editing.** The pull step also writes the same
 growing mirror file to a second mount — the edit suite's dedicated NAS
@@ -103,6 +120,22 @@ itself, which currently only writes the one Nextcloud destination; adding the se
 write path is a real code change, tracked in [`docs/open-questions.md`](open-questions.md).
 
 ## Bandwidth
+
+> **The ~10 Mbps-per-stream figure is this design's working assumption, not Blackmagic's
+> spec — and it may be badly low.** Blackmagic's tech specs say the ISO inputs are recorded
+> as "H.264 .mp4 files at up to 70Mb/s quality"
+> ([blackmagicdesign.com](https://www.blackmagicdesign.com/products/atemmini/techspecs)),
+> and third-party guides report the ISO bitrate is fixed (not tied to the record-quality
+> setting) at roughly 45-70 Mb/s depending on frame rate
+> ([worshipmetrics.com](https://worshipmetrics.com/kb/switchers/blackmagic-design/blackmagic-atem-mini-pro-iso-setup-guide/)).
+> At those rates a single theatre's realistic 5 streams is ~225-350 Mbps (9 streams:
+> ~405-630 Mbps), already **above the A-1300's ~170 Mbps ceiling on its own** — the pull
+> would fall steadily behind real time rather than staying near-real-time, and
+> fleet-wide output would be ~1.2-3.4 TB/hour. The table below, and every downstream
+> figure in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) and
+> [`docs/server-specification.md`](server-specification.md), is only valid if a real unit
+> confirms ~10 Mbps. Measure a real ISO file (`ffprobe` bitrate, or file size ÷ duration)
+> before building on these numbers.
 
 | Scenario | Aggregate | vs. A-1300 ceiling |
 |---|---|---|
@@ -143,7 +176,24 @@ worth tuning once this is running for real.
 
 - **Confirm the 10 Mbps/stream figure and actual active-channel count** against the real
   ATEM recording settings, rather than relying on the estimate used for the bandwidth math
-  above.
+  above — highest-priority item here, since Blackmagic's own spec (up to 70 Mb/s per ISO)
+  would invalidate the near-real-time premise over a ~170 Mbps uplink (see Bandwidth).
+- **Confirm the ATEM model (original vs. G2)** — the G2 exposes its media as a network
+  disk, which changes which pull mechanism is the natural fit (see the hardware facts at
+  the top).
+- **`pull-iso.py` only lists one FTP directory, non-recursively, and only picks up
+  `.mp4`/`.mov`.** Blackmagic's ISO recordings are written as a *folder* per recording
+  (program file, a `Video ISO Files` subfolder, an `Audio Source Files` subfolder of
+  `.wav`s, and a `.drp` Resolve project), so as written it would miss the camera ISOs and
+  audio unless `ATEM_FTP_REMOTE_DIR` happens to point at the right subfolder — and that
+  folder name changes per recording. The script needs a recursive walk (and a decision on
+  whether to pull `.wav`/`.drp` too) once the real FTP layout is confirmed on a unit. The
+  `rclone-mount-rsync/` alternative already recurses (`rsync -a`).
+- **Decide the end-of-session integrity step.** Both methods are append-only (see step 4
+  under Architecture). For `rclone-mount-rsync/`, `VERIFY=1` now does a full
+  `--checksum` comparison and repairs any differing blocks in place; note that this reads
+  every file in full through the FTP mount — i.e. a full re-download over the theatre's
+  uplink — so run it after the session, not during. `pull-iso.py` has no equivalent yet.
 - **Confirm partial-file playability empirically** — copy a file mid-recording, check it
   opens/scrubs correctly, before treating the "safe to read mid-write" assumption as
   settled rather than "very likely."
@@ -157,4 +207,8 @@ worth tuning once this is running for real.
   genuinely growing file on a real ATEM before trusting it operationally — confirm it
   only transfers the new tail each pass (e.g. watch network throughput or
   `--itemize-changes` output), and budget for supervising 12 persistent FUSE mounts
-  (auto-remount on failure), which `pull-iso.py` doesn't need at all.
+  (auto-remount on failure), which `pull-iso.py` doesn't need at all. Also confirm new
+  bytes show up promptly: FTP has no change notification, so a growing file's size on
+  the mount only refreshes when rclone's directory cache expires (default 5 minutes — the
+  script now sets `--dir-cache-time 30s`;
+  [rclone mount docs](https://rclone.org/commands/rclone_mount/)).

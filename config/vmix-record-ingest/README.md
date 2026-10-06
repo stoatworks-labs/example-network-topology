@@ -18,7 +18,11 @@ Covers all 4 VMix PCs: VMix Node 1 (`192.168.20.21`/`.22`) and VMix Node 2
   — produces `rclone.conf` with all 4 PCs' SMB remotes.
 - [`mount-and-sync.sh`](mount-and-sync.sh) — mounts all 4 shares, then loops
   `rsync --append` into the same Nextcloud External Storage pattern the ATEM ingest uses.
-  Run with `VERIFY=1` for a one-shot `--append-verify` integrity pass once a session ends.
+  Run with `VERIFY=1` for a one-shot full `--checksum --inplace` integrity pass once a
+  session ends (not `--append-verify`, which skips same-size files and so never checks a
+  fully-synced one). Mounts use `--dir-cache-time 30s` so growing files' sizes refresh
+  within a sync cycle (rclone's default is 5 minutes for backends without change
+  notification, which includes SMB).
   (The settled design also dual-writes to the edit-suite NAS in the same pass — see
   [`docs/live-editing.md`](../../docs/live-editing.md) — but that second destination is
   not yet implemented here; tracked as

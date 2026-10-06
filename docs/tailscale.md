@@ -23,10 +23,16 @@ LAN path or hairpin through the single shared public IP.
 What determines it in practice:
 
 1. **Whether the Ubiquiti firewall allows UDP between VLANs/subnets.** If yes → direct
-   private-path connections, no internet round-trip.
+   private-path connections, no internet round-trip. The uplink VLANs are otherwise
+   blocked from Mothership-LAN, so
+   [`config/unifi/network-config.yaml`](../config/unifi/network-config.yaml) carries an
+   explicit allow for UDP from the uplink VLANs to the mothership's Tailscale port
+   (`192.168.1.2:41641`) ahead of that block.
 2. **If inter-VLAN UDP is blocked**, Tailscale falls back to NAT hairpin via the shared
-   public IP — usually works, but more fragile with GL-iNet's own NAT stacked underneath
-   (double-NAT).
+   public IP — usually works, but depends on the Cloud Gateway's hairpin-NAT behaviour.
+   (The GL-iNet's own NAT is not stacked in this path: `tailscaled` runs on the GL-iNet
+   itself, so its tunnel packets originate from the WAN address — only the Cloud Gateway's
+   NAT applies.)
 3. **DERP relay** is only the fallback when both of the above fail. Tailscale continuously
    retries and upgrades to direct when possible.
 
@@ -41,7 +47,11 @@ tailscale ping <peer>
 
 Runs as a Docker container on the consolidated Unraid server — `derp-server`,
 `192.168.1.16` (see [`docs/ip-address-map.md`](ip-address-map.md)) — using Tailscale's
-own `derper` binary/image ([official docs](https://tailscale.com/docs/reference/derp-servers)).
+own `derper` binary ([official docs](https://tailscale.com/docs/reference/derp-servers)).
+There is **no official `tailscale/derper` image** — Tailscale's README says to build
+`cmd/derper` yourself — so [`config/docker-compose.yml`](../config/docker-compose.yml)
+builds one (`local/derper:built`). Pin derper and the subnet router's `tailscaled` to the
+same release, since `-verify-clients` checks one against the other.
 
 **Why this still needs a real, reachable hostname.** DERP isn't reached over an
 already-established Tailscale tunnel to the peer that needs relaying — a node holds a
@@ -63,14 +73,16 @@ public IP without the traffic ever actually leaving the venue's router. This req
   though it doesn't matter much for reachability here specifically since it's an internal
   hairpin, not roaming clients behind a hotel firewall.
 - Let's Encrypt issues the cert automatically against that hostname (`-certmode=letsencrypt`)
-  since the port forward makes it genuinely reachable for the ACME challenge.
+  since the port forward makes it genuinely reachable for the ACME challenge. Upstream also
+  recommends allowing 80/tcp; whether to forward it is open
+  ([`docs/open-questions.md`](open-questions.md) #2).
 
 ```sh
 docker run -d --name derp-server \
   --network macvlan-mothership --ip 192.168.1.16 \
   -v /mnt/user/appdata/derper/certs:/app/certs \
   -v /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock \
-  tailscale/derper \
+  local/derper:built \
   -hostname=derp.example.net \
   -certmode=letsencrypt -certdir=/app/certs \
   -stun -stun-port=3478 \
@@ -100,7 +112,14 @@ Verify with `tailscale netcheck` — it reports which DERP region a node prefers
 
 See [`config/tailscale-up-commands.sh`](../config/tailscale-up-commands.sh) for the
 per-role `tailscale up` invocations and [`config/tailscale-acl.json`](../config/tailscale-acl.json)
-for the ACL policy.
+for the ACL policy. Note that a tag in an ACL (e.g. `tag:theatre`) only covers
+the tagged routers' own Tailscale IPs, not the subnets they advertise — so the ACL also
+lists each subnet as a CIDR host alias (`mothership-lan`, `theatre-1-lan`, ...), as a
+destination *and* as a source, because a device behind a subnet router keeps its own LAN
+address when it starts a connection (an ATEM's monitoring stream to Overseer, a Play's
+preview to Flock, a container pulling from an ATEM). Theatre ranges are only ever paired
+with the mothership range, so theatres still can't reach each other. Without those, the ATEM ingest, SRT fan-out and every other device-to-device flow would be denied
+([subnet routers + ACLs](https://tailscale.com/kb/1019/subnets)).
 
 Routes still need approving in the Tailscale admin console (or via `autoApprovers` keyed
 to tag/CIDR) before they take effect — advertising a route alone is not sufficient.

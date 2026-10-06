@@ -24,8 +24,9 @@ See [`diagrams/file-sync-flow.svg`](../diagrams/file-sync-flow.svg).
 
 This doc covers only the *document* sync — theatre laptops and ready-room PCs. Two
 recording pipelines write into the same Nextcloud by a completely different mechanism
-(near-real-time incremental pulls, not rclone sync of finished files), and one of them
-carries on to a second destination:
+(near-real-time incremental pulls, not rclone sync of finished files), and both of them
+also write to a second destination (documented design; not yet implemented in the
+scripts — see [`docs/open-questions.md`](open-questions.md) item 15):
 
 - [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) — each theatre's ATEM ISO recordings,
   pulled over FTP

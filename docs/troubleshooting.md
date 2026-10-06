@@ -34,16 +34,38 @@ Known gotchas surfaced during design — check here before assuming something's 
 
 ## "The NIC bond won't form / only shows one active link"
 
-- **LACP rate mismatch.** Ubiquiti gear hardcodes LACP rate `fast`; Unraid's bonding
-  default is `slow`. Both ends must match — see [`docs/topology.md`](topology.md).
-- **Cloud Gateway doesn't support LAG at all** on base (non-Pro/SE/Pro Max) models. If
-  so, bond through an intermediate LACP-capable switch instead — already the agreed
-  fallback, not a new problem.
+- **Bond mode / LACP rate.** Unraid's bonding default mode is not 802.3ad — set it
+  explicitly. Ubiquiti gear uses LACP rate `fast`; Unraid's (Linux's) default is `slow`.
+  The standard allows the two ends to differ, so a mismatch usually slows failure
+  detection rather than stopping the bond forming, but set both to `fast` to rule it out
+  — see [`docs/topology.md`](topology.md). (Hash policy is a per-end transmit choice; a
+  mismatch there won't stop the bond forming, it just affects how evenly each direction
+  spreads.)
+- **The gateway doesn't support LAG at all.** Only the UDM Pro / SE / Pro Max, UXG
+  Enterprise and EFG do; the Cloud Gateway Ultra/Max/Fiber don't. If so, bond through an
+  intermediate LACP-capable switch instead — already the agreed fallback, not a new
+  problem ([`docs/open-questions.md`](open-questions.md) #17).
+
+## "Mothership containers can't reach a theatre (ingest stalls, Fleet Admin can't connect)"
+
+- **Check the path hop by hop.** From another LAN machine, `traceroute 192.168.2.2` should
+  go via `192.168.1.1` then `192.168.1.2`; if it stops at the gateway, the static routes
+  in [`config/unifi/network-config.yaml`](../config/unifi/network-config.yaml) are missing.
+- **The return leg.** The Unraid host can't hand packets to its own macvlan containers
+  unless "Host access to custom networks" (or an equivalent shim) covers the compose
+  network — symptoms are SYNs leaving and nothing coming back. See
+  [`docs/open-questions.md`](open-questions.md) #18.
+- **ACL.** Tag-based rules don't cover advertised subnets; `tailscale ping` between the
+  routers working while container traffic fails points here (same #18).
+- **Subnet router in userspace mode.** `docker exec tailscale-router ip link show
+  tailscale0` should show the interface; if it doesn't, `TS_USERSPACE=false` isn't in
+  effect.
 
 ## "BirdDog Play isn't finding the NDI backup source"
 
-- Confirm the Discovery Server IP is actually entered in BirdUI's Network panel on *both*
-  BirdDog Central and every PLAY unit — one-sided config does nothing.
+- Confirm the Discovery Server IP (`192.168.1.15`) is actually configured on *both* ends —
+  BirdUI's Network panel on every PLAY unit, and NDI Access Manager on the BirdDog Central
+  VM (a Windows app, so no BirdUI) and the VMix node PCs. One-sided config does nothing.
 - Plain mDNS will never work across theatres; if Discovery Server isn't configured, this
   is expected behavior, not a fault. See [`docs/streaming-flow.md`](streaming-flow.md).
 

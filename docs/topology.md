@@ -14,8 +14,8 @@ the theatre's `/24`.
   ISO ingest pull (see [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)) is a continuous
   50-90 Mbps flow, well above BirdDog Play's — so it gets the dedicated port.
 - **LAN 2 → 8-port unmanaged Netgear switch**, which fans out to everything else: BirdDog
-  Play, PowerPoint Main/Backup, VT Main/Backup, Control laptop (5 devices, 3 spare switch
-  ports).
+  Play, PowerPoint Main/Backup, VT Main/Backup, Control laptop (6 devices + 1 uplink port,
+  1 spare switch port).
 
 All devices stay on the same `192.168.X.0/24` — this is a physical port split for traffic
 separation, not a VLAN/subnet split.
@@ -50,9 +50,11 @@ tailnet, routes are reachable tailnet-wide unless Tailscale ACLs restrict them (
 [`config/tailscale-acl.json`](../config/tailscale-acl.json)).
 
 **These VLANs are venue-supplied, not our infrastructure** — each capped at 1 Gbps, each
-port expensive. The 4-VLAN/3-theatres-each split below is safe but conservative; the real
-bandwidth math supports consolidating to 2 VLANs (6 theatres each) with genuine margin to
-spare — see [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) for the full model and
+port expensive. The 4-VLAN/3-theatres-each split below is safe but conservative; the
+bandwidth math allows consolidating to 2 VLANs (6 theatres each) for normal SRT-primary
+operation, but with eroded margin (53% realistic / 78% worst case, higher in the group
+carrying both VMix nodes) and only ~10% headroom in a mass NDI fallback — see
+[`docs/bandwidth-analysis.md`](bandwidth-analysis.md) for the full model and
 recommendation.
 
 | VLAN | Theatres | Subnets |
@@ -107,7 +109,11 @@ destination, the 12 incoming Overseer monitoring streams and Flock SRT previews,
 rclone/Nextcloud/BirdDog Central/NDI Discovery Server/DERP traffic)
 across both links by destination-IP/port hash — giving real aggregate headroom for bursty
 traffic, not just failover. Note this does **not** speed up any single flow; the benefit
-comes from having many distinct flows to hash across.
+comes from having many distinct flows to hash across. On the wire, though, everything
+bound for one theatre leaves the Tailscale container inside a single WireGuard UDP flow to
+that theatre's A-1300, so the bond actually hashes ~14 tunnel flows (one per router), not
+dozens of application flows — still enough to spread, but coarse: one link can end up
+carrying noticeably more than half.
 
 **Assuming the Cloud Gateway supports LAG** on the ports the Unraid server lands on (only
 UDM Pro/SE/Pro Max, UXG Enterprise, and EFG support port aggregation — not base Cloud
@@ -116,15 +122,19 @@ switch in between and bond through that instead — the bond doesn't care which 
 terminates it, only that something in the path speaks LACP, so this is a cheap fallback
 rather than a blocker.
 
-One thing that does need doing regardless of which device terminates the bond: **LACP
-rate/hash policy must match on both ends.** Ubiquiti gear hardcodes LACP rate `fast` and
-hash policy `layer3+4`; Unraid's bonding defaults differ (`slow` rate, layer2 hash) and
-need to be set to match, or the bond won't form correctly.
+One thing worth doing regardless of which device terminates the bond: **set Unraid's
+bond to match Ubiquiti's LACP settings.** Ubiquiti gear hardcodes LACP rate `fast` and
+hash policy `layer3+4`; Unraid's bonding defaults are `slow` rate and layer2 hash. The
+bond still forms with a mismatched hash policy (each end hashes its own transmit traffic
+independently), but layer2 hashing on the Unraid side puts everything bound for the one
+gateway MAC on a single link, which throws away the outbound headroom the bond exists for.
 
 **Why Unraid over TrueNAS SCALE:** both support Docker and Windows VMs, and Unraid has
 the more polished one-click container experience (Community Applications) — useful since
 this may be maintained on-site by AV staff rather than a Linux admin. Trade-off: Unraid
-requires a paid license (Lifetime tier is a $129 one-time cost); TrueNAS SCALE is free.
+requires a paid license (2026 tiers: Starter $49 for 6 storage devices, Unleashed $109,
+Lifetime $249 — see [`docs/open-questions.md`](open-questions.md) for which tier this box's
+pools need); TrueNAS SCALE is free.
 (The original tiebreaker — Unraid's more mature GPU-passthrough workflow — no longer
 applies now that the VMix VM is gone: nothing on this box needs GPU passthrough. BirdDog
 Central is NDI routing/control, not video encode, and runs as a plain VM. The choice

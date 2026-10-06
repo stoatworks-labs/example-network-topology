@@ -26,6 +26,8 @@ tr:nth-child(even) td { background: #fafbfc; }
 blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
              color: #59636e; }
 img, svg { max-width: 100%; height: auto; }
+figure { margin: 1.5em 0; }
+figcaption { color: #59636e; font-size: .85em; margin-top: .4em; }
 hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
 ul.task-list { list-style: none; padding-left: 1.2em; }
 .doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
@@ -41,238 +43,86 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   th, td { padding: 3px 6px; }
   a { color: #1f2328; }
   h1, h2, h3 { page-break-after: avoid; }
-  pre, img, svg { page-break-inside: avoid; }
+  pre, img, svg, figure { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
 </style></head><body><div class="doc-meta">Standalone export of <code>docs/deployment-runbook.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="deployment-runbook">Deployment runbook</h1>
-<p>Ordered build sequence synthesizing every doc/config in this repo
-into one checklist. Each step links to the doc with the actual detail —
-this is a map, not a duplicate.</p>
-<h2 id="phase-0--before-touching-anything">Phase 0 — Before touching
-anything</h2>
+<p>Ordered build sequence synthesizing every doc/config in this repo into one checklist. Each step links to the doc with the actual detail — this is a map, not a duplicate.</p>
+<h2 id="phase-0--before-touching-anything">Phase 0 — Before touching anything</h2>
 <ul class="task-list">
-<li><label><input type="checkbox" />Confirm the consolidated server's
-full spec (validated ECC, PCIe lanes for the NVMe pools, RAM/cores — no
-GPU/IOMMU checks needed any more) — <a
-href="open-questions.html"><code>docs/open-questions.md</code></a>
-#1</label></li>
-<li><label><input type="checkbox" />Confirm the Cloud Gateway model (LAG
-support assumed, not confirmed) — <a
-href="open-questions.html"><code>docs/open-questions.md</code></a>
-resolved-items section</label></li>
-<li><label><input type="checkbox" />Decide a real hostname/DDNS for the
-DERP server and confirm you can port-forward on the Cloud Gateway — <a
-href="tailscale.html"><code>docs/tailscale.md</code></a></label></li>
-<li><label><input type="checkbox" />Confirm VMix's actual recording
-mode/bitrate and get SMB sharing set up on all 4 VMix PCs — <a
-href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a></label></li>
-<li><label><input type="checkbox" />Confirm ATEM FTP credentials and
-recording path on a real unit — <a
-href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a></label></li>
-<li><label><input type="checkbox" />Decide a real hostname/DDNS for
-GLKVM-Cloud and confirm <code>GLKVM_ACCESS_IP</code>'s exact format for
-the WAN-remapped ports — <a
-href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a></label></li>
-<li><label><input type="checkbox" />Confirm ATEM Overseer's, ATEM Fleet
-Admin's, and Flock's real container images, and whether the ATEM and
-BirdDog Play can actually originate their monitoring/preview streams
-alongside their primary feeds — <a
-href="open-questions.html"><code>docs/open-questions.md</code></a>
-#11</label></li>
-<li><label><input type="checkbox" />Settle the live-editing open
-questions — footage-volume sizing, the Mac mini's combined Project
-Server + Remote Render role, standalone cameras in scope or not — <a
-href="open-questions.html"><code>docs/open-questions.md</code></a>
-#12-14</label></li>
+<li><label><input type="checkbox" /><strong>First:</strong> measure a real ATEM ISO file's bitrate at the event frame rate — if it's near Blackmagic's up-to-70 Mb/s spec rather than the modelled 10 Mbps, real-time ISO ingest and the 8 TB pool sizing don't hold — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #0</label></li>
+<li><label><input type="checkbox" />Confirm the consolidated server's full spec (validated ECC, PCIe lanes for the NVMe pools, RAM/cores — no GPU/IOMMU checks needed any more) — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #1</label></li>
+<li><label><input type="checkbox" />Confirm the Cloud Gateway model — LAG support (assumed, not confirmed) and its real inter-VLAN routing throughput — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #17</label></li>
+<li><label><input type="checkbox" />Benchmark Tailscale throughput on one A-1300 with <code>iperf3 --bidir</code> before trusting the per-router bandwidth figures — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #19</label></li>
+<li><label><input type="checkbox" />Decide a real hostname/DDNS for the DERP server and confirm you can port-forward on the Cloud Gateway — <a href="tailscale.html"><code>docs/tailscale.md</code></a></label></li>
+<li><label><input type="checkbox" />Confirm VMix's actual recording mode/bitrate and get SMB sharing set up on all 4 VMix PCs — <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a></label></li>
+<li><label><input type="checkbox" />Confirm ATEM FTP credentials and recording path on a real unit — <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a></label></li>
+<li><label><input type="checkbox" />Decide a real hostname/DDNS for GLKVM-Cloud, and note the venue's public IPv4 — <code>GLKVM_ACCESS_IP</code> takes the IP, not the hostname — <a href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a></label></li>
+<li><label><input type="checkbox" />Confirm ATEM Overseer's, ATEM Fleet Admin's, and Flock's real container images, and whether the ATEM and BirdDog Play can actually originate their monitoring/preview streams alongside their primary feeds — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #11</label></li>
+<li><label><input type="checkbox" />Settle the live-editing open questions — footage-volume sizing, the Mac mini's combined Project Server + Remote Render role, standalone cameras in scope or not — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #12-14</label></li>
 </ul>
-<h2 id="phase-1--mothership-networking-cloud-gateway">Phase 1 —
-Mothership networking (Cloud Gateway)</h2>
+<h2 id="phase-1--mothership-networking-cloud-gateway">Phase 1 — Mothership networking (Cloud Gateway)</h2>
 <ol type="1">
-<li>Apply <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a>
-via the UniFi Network UI/API — 4 uplink VLANs, firewall baseline, LAG
-port profile, DERP + GLKVM-Cloud port forwards. Steps in <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.</li>
-<li>Wire the 4 VLAN uplink cable runs (3 theatres per group) — <a
-href="topology.html#uplink-vlan-grouping"><code>docs/topology.md</code></a>.</li>
-<li>Bond the consolidated server's 2 NICs (802.3ad/LACP) into the Cloud
-Gateway (or an intermediate switch if LAG isn't supported) — <a
-href="topology.html"><code>docs/topology.md</code></a>, watch the LACP
-rate/hash-policy gotcha with Ubiquiti gear.</li>
+<li>Apply <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a> via the UniFi Network UI/API — 4 uplink VLANs, firewall baseline, LAG port profile, DERP + GLKVM-Cloud port forwards. Steps in <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/unifi/README.md"><code>config/unifi/README.md</code></a>.</li>
+<li>Wire the 4 VLAN uplink cable runs (3 theatres per group) — <a href="topology.html#uplink-vlan-grouping"><code>docs/topology.md</code></a>.</li>
+<li>Bond the consolidated server's 2 NICs (802.3ad/LACP) into the Cloud Gateway (or an intermediate switch if LAG isn't supported) — <a href="topology.html"><code>docs/topology.md</code></a>, watch the LACP rate/hash-policy gotcha with Ubiquiti gear.</li>
+<li>Configure and verify the gateway's <strong>static routes</strong> — all 14 theatre/VMix <code>/24</code>s (<code>192.168.2-13.0/24</code>, <code>192.168.20.0/24</code>, <code>192.168.21.0/24</code>) via <code>192.168.1.2</code>, per the <code>static_routes</code> block in <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/unifi/network-config.yaml"><code>config/unifi/network-config.yaml</code></a> — and the uplink-VLAN allow for <code>192.168.1.2:41641/udp</code>. Check the routing table in the UniFi UI lists all 14; once Phase 3 is done, <code>traceroute</code> to a theatre ATEM from a ready-room PC should show <code>192.168.1.1</code> then <code>192.168.1.2</code>. These routes are how the macvlan containers and the BirdDog Central VM reach the tailnet; that traffic crosses the server's bond twice (see <a href="server-specification.html"><code>docs/server-specification.md</code></a>'s NIC section).</li>
 </ol>
-<h2 id="phase-2--consolidated-services-server-unraid">Phase 2 —
-Consolidated services server (Unraid)</h2>
+<h2 id="phase-2--consolidated-services-server-unraid">Phase 2 — Consolidated services server (Unraid)</h2>
 <ol type="1">
-<li>Install Unraid.</li>
-<li>Create the BirdDog Central Windows VM — the design's only VM, no GPU
-passthrough needed — <a
-href="topology.html"><code>docs/topology.md</code></a>.</li>
-<li>Bring up every Docker container in one shot with <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/docker-compose.yml"><code>config/docker-compose.yml</code></a>
-— Nextcloud, Restreamer, NDI Discovery Server, DERP, ATEM ISO Ingest,
-VMix Record Ingest, UniFi Controller, GLKVM-Cloud (<code>rttys</code> +
-<code>coturn</code>), ATEM Overseer, ATEM Fleet Admin, Flock, Tailscale
-subnet router. See <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/README.md"><code>config/README.md</code></a>
-for the <code>.env</code> setup and prerequisites first — DERP and
-GLKVM-Cloud specifically need their hostnames/ port-forwards from Phase
-0/1 in place before they're actually useful, and ATEM Overseer/Fleet
-Admin/Flock need their real container images confirmed first (see <a
-href="open-questions.html"><code>docs/open-questions.md</code></a> #11)
-— DERP and GLKVM-Cloud will start but be non-functional without their
-hostnames/forwards, and the three placeholder-image services won't start
-at all until real images are filled in.</li>
-<li>Optionally adopt the Cloud Gateway into the UniFi Controller for
-local management — <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/unifi/README.md"><code>config/unifi/README.md</code></a>.
-Purely a local console; the network config in Phase 1 doesn't depend on
-it.</li>
-<li>Router registration into GLKVM-Cloud happens later, in Phase 4, once
-the routers themselves exist.</li>
+<li>Install Unraid (Unleashed or Lifetime licence — the pools exceed Starter's 6-device limit, see <a href="open-questions.html"><code>docs/open-questions.md</code></a>). In Settings → Docker, turn on "Host access to custom networks" — the host has to hand tailnet replies back to the macvlan containers (<a href="open-questions.html"><code>docs/open-questions.md</code></a> #18).</li>
+<li>Create the BirdDog Central Windows VM — the design's only VM, no GPU passthrough needed — <a href="topology.html"><code>docs/topology.md</code></a>. Recommended: give it its own persistent routes to the theatre <code>/24</code>s via <code>192.168.1.2</code> (<code>route -p add</code>), so its NDI-fallback traffic doesn't hairpin through the gateway and cross the bond twice.</li>
+<li>Bring up every Docker container in one shot with <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/docker-compose.yml"><code>config/docker-compose.yml</code></a> — Nextcloud, Restreamer, NDI Discovery Server, DERP, ATEM ISO Ingest, VMix Record Ingest, UniFi Controller, GLKVM-Cloud (<code>rttys</code> + <code>coturn</code>), ATEM Overseer, ATEM Fleet Admin, Flock, Tailscale subnet router. See <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/README.md"><code>config/README.md</code></a> for the <code>.env</code> setup and prerequisites first — DERP and GLKVM-Cloud specifically need their hostnames/ port-forwards from Phase 0/1 in place before they're actually useful, and ATEM Overseer/Fleet Admin/Flock need their real container images confirmed first (see <a href="open-questions.html"><code>docs/open-questions.md</code></a> #11) — DERP and GLKVM-Cloud will start but be non-functional without their hostnames/forwards, and the three placeholder-image services won't start at all until real images are filled in. Two services aren't plain pulls: <code>derp-server</code> is built from source on first <code>up</code>, and GLKVM-Cloud needs an upstream <code>gl-inet/glkvm-cloud</code> checkout for its entrypoint and templates (<code>git clone https://github.com/gl-inet/glkvm-cloud.git</code> into <code>GLKVM_UPSTREAM</code>).</li>
+<li>Optionally adopt the Cloud Gateway into the UniFi Controller for local management — <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/unifi/README.md"><code>config/unifi/README.md</code></a>. Purely a local console; the network config in Phase 1 doesn't depend on it.</li>
+<li>Router registration into GLKVM-Cloud happens later, in Phase 4, once the routers themselves exist.</li>
 </ol>
 <h2 id="phase-3--tailscale-tailnet">Phase 3 — Tailscale tailnet</h2>
 <ol type="1">
-<li>Load <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>
-into the tailnet admin console — cross-theatre isolation ACLs + the
-self-hosted DERP region.</li>
-<li>Run the mothership's <code>tailscale up</code> (see <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>)
-from the Tailscale subnet-router container.</li>
-<li>Approve routes in the admin console (or configure
-<code>autoApprovers</code>) — nothing routes until approved, regardless
-of what's advertised.</li>
+<li>Load <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a> into the tailnet admin console — cross-theatre isolation ACLs + the self-hosted DERP region.</li>
+<li>Bring up the mothership's subnet router — the <code>tailscale-router</code> container applies the same flags as the mothership line in <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a> itself (routes, <code>tag:mothership</code>, <code>--accept-routes</code>, port 41641), so this is just a valid <code>TAILSCALE_AUTHKEY</code> pre-tagged <code>tag:mothership</code>. Confirm the ACL allows the subnet CIDRs, not just the tags (<a href="open-questions.html"><code>docs/open-questions.md</code></a> #18).</li>
+<li>Approve routes in the admin console (or configure <code>autoApprovers</code>) — nothing routes until approved, regardless of what's advertised.</li>
 </ol>
-<h2 id="phase-4--theatre--vmix-node-routers-gl-inet-a-1300-14">Phase 4 —
-Theatre + VMix node routers (GL-iNet A-1300 ×14)</h2>
+<h2 id="phase-4--theatre--vmix-node-routers-gl-inet-a-1300-14">Phase 4 — Theatre + VMix node routers (GL-iNet A-1300 ×14)</h2>
 <ol type="1">
-<li>Flash/reset all 14 units, apply Wi-Fi lockdown per venue policy (not
-covered by the generated configs).</li>
-<li>Apply each theatre's UCI config from <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/"><code>config/gl-inet/</code></a>
-— replace every <code>REPLACE_WITH_MAC_nn</code> with real device MACs
-first (config won't do anything useful otherwise). Steps in <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/gl-inet/README.md"><code>config/gl-inet/README.md</code></a>.</li>
-<li>Run each router's <code>tailscale up</code> line from <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</li>
-<li>Confirm the physical wiring matches the current plan: ATEM on the
-dedicated LAN 1 port, everything else (including BirdDog Play) via the
-Netgear switch on LAN 2 — <a
-href="topology.html"><code>docs/topology.md</code></a>.</li>
-<li>Register each router against GLKVM-Cloud (brought up in Phase 2)
-using the connection script from its web UI, run over SSH on each A-1300
-— rides the tailnet already set up in step 3, no WAN exposure needed for
-this part — <a
-href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a>.</li>
+<li>Flash/reset all 14 units, apply Wi-Fi lockdown per venue policy (not covered by the generated configs).</li>
+<li>Apply each theatre's UCI config from <a href="https://github.com/stoatworks-labs/example-network-topology/tree/main/config/gl-inet"><code>config/gl-inet/</code></a> — replace every <code>REPLACE_WITH_MAC_nn</code> with real device MACs first (config won't do anything useful otherwise). Steps in <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/gl-inet/README.md"><code>config/gl-inet/README.md</code></a>.</li>
+<li>Run each router's <code>tailscale up</code> line from <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-up-all-devices.sh"><code>config/tailscale-up-all-devices.sh</code></a>.</li>
+<li>Confirm the physical wiring matches the current plan: ATEM on the dedicated LAN 1 port, everything else (including BirdDog Play) via the Netgear switch on LAN 2 — <a href="topology.html"><code>docs/topology.md</code></a>.</li>
+<li>Register each router against GLKVM-Cloud (brought up in Phase 2) using the connection script from its web UI, run over SSH on each A-1300 — rides the tailnet already set up in step 3, no WAN exposure needed for this part — <a href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a>.</li>
 </ol>
-<h2 id="phase-5--birddog-play--ndi-discovery">Phase 5 — BirdDog Play +
-NDI discovery</h2>
+<h2 id="phase-5--birddog-play--ndi-discovery">Phase 5 — BirdDog Play + NDI discovery</h2>
 <ol type="1">
-<li>Change the default <code>birddog</code> admin password on all 12
-PLAY units.</li>
-<li>Point BirdDog Central, all 12 PLAY units, <em>and both VMix node
-PCs' NDI config</em> at the NDI Discovery Server
-(<code>192.168.1.15:5959</code>) — BirdUI's Network panel on the PLAYs,
-NDI Access Manager on the Windows machines — <a
-href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>.</li>
+<li>Change the default <code>birddog</code> admin password on all 12 PLAY units.</li>
+<li>Point BirdDog Central, all 12 PLAY units, <em>and both VMix node PCs' NDI config</em> at the NDI Discovery Server (<code>192.168.1.15:5959</code>) — BirdUI's Network panel on the PLAYs, NDI Access Manager on the Windows machines — <a href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>.</li>
+<li>Set the SRT payload size to <strong>1128 bytes</strong> on every VMix node PC's SRT output and on Restreamer's outputs — the 1316-byte default doesn't fit Tailscale's 1280-byte MTU — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #20.</li>
 </ol>
-<h2 id="phase-6--nextcloud-external-storage--ingest-pipelines">Phase 6 —
-Nextcloud external storage + ingest pipelines</h2>
+<h2 id="phase-6--nextcloud-external-storage--ingest-pipelines">Phase 6 — Nextcloud external storage + ingest pipelines</h2>
 <ol type="1">
-<li>Run <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/setup-nextcloud-external-storage.sh"><code>config/atem-iso-ingest/setup-nextcloud-external-storage.sh</code></a>
-and <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/setup-nextcloud-external-storage.sh"><code>config/vmix-record-ingest/setup-nextcloud-external-storage.sh</code></a>
-— mounts the External Storage folders and prints the cron lines for
-targeted rescans. Add those cron entries.</li>
-<li>Fill in real credentials and start <code>pull-iso.py</code> (or the
-<code>rclone-mount-rsync/</code> alternative) — <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/README.md"><code>config/atem-iso-ingest/README.md</code></a>.</li>
-<li>Fill in real SMB credentials/share names and start
-<code>mount-and-sync.sh</code> — <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/README.md"><code>config/vmix-record-ingest/README.md</code></a>.</li>
-<li>Configure Nextcloud version-retention for both ingest folders — both
-ingest docs flag this as worth tuning once running for real.</li>
-<li><strong>Dual-write caveat</strong>: the second write destination
-(the edit-suite NAS, see <a
-href="live-editing.html"><code>docs/live-editing.md</code></a>) is
-documented but <strong>not yet implemented</strong> in either ingest
-script — implement it or consciously defer it before the event (<a
-href="open-questions.html"><code>docs/open-questions.md</code></a> #15).
-As shipped, both scripts write only the Nextcloud destination.</li>
+<li>Run <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/atem-iso-ingest/setup-nextcloud-external-storage.sh"><code>config/atem-iso-ingest/setup-nextcloud-external-storage.sh</code></a> and <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/vmix-record-ingest/setup-nextcloud-external-storage.sh"><code>config/vmix-record-ingest/setup-nextcloud-external-storage.sh</code></a> — mounts the External Storage folders and prints the cron lines for targeted rescans. Add those cron entries.</li>
+<li>Fill in real credentials and start <code>pull-iso.py</code> (or the <code>rclone-mount-rsync/</code> alternative) — <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/atem-iso-ingest/README.md"><code>config/atem-iso-ingest/README.md</code></a>.</li>
+<li>Fill in real SMB credentials/share names and start <code>mount-and-sync.sh</code> — <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/vmix-record-ingest/README.md"><code>config/vmix-record-ingest/README.md</code></a>.</li>
+<li>Configure Nextcloud version-retention for both ingest folders — both ingest docs flag this as worth tuning once running for real.</li>
+<li><strong>Dual-write caveat</strong>: the second write destination (the edit-suite NAS, see <a href="live-editing.html"><code>docs/live-editing.md</code></a>) is documented but <strong>not yet implemented</strong> in either ingest script — implement it or consciously defer it before the event (<a href="open-questions.html"><code>docs/open-questions.md</code></a> #15). As shipped, both scripts write only the Nextcloud destination.</li>
 </ol>
-<h2 id="phase-6b--live-editing-subsystem">Phase 6b — Live editing
-subsystem</h2>
-<p>The edit suite (<a
-href="live-editing.html"><code>docs/live-editing.md</code></a>) is its
-own 10GbE LAN, off the tailnet, so it can be built any time after Phase
-2 — it only depends on the ingest pipelines (Phase 6) for its footage
-feed:</p>
+<h2 id="phase-6b--live-editing-subsystem">Phase 6b — Live editing subsystem</h2>
+<p>The edit suite (<a href="live-editing.html"><code>docs/live-editing.md</code></a>) is its own 10GbE LAN, off the tailnet, so it can be built any time after Phase 2 — it only depends on the ingest pipelines (Phase 6) for its footage feed:</p>
 <ol type="1">
-<li>Stand up the <code>192.168.22.0/24</code> 10GbE LAN — switch,
-edit-suite NAS (<code>.22.2</code>), routed connection back to the
-mothership LAN for the dual-write (no Tailscale).</li>
-<li>Set up the Mac mini (<code>.22.20</code>): install DaVinci Resolve
-Studio + the Project Server app, create the shared project library,
-enable it as a Remote Render node.</li>
-<li>Connect both MacBook Pros (<code>.22.11</code>/<code>.22.12</code>)
-via Thunderbolt-to-10GbE, mount the NAS on all three machines with
-identical paths (Resolve's Remote Render requires the media volume
-mounted on every machine).</li>
-<li>Run resolve-configurator against the event's session CSV to build
-the shell project; apply each smart-bin recipe once, by hand, in
-Resolve's UI.</li>
+<li>Stand up the <code>192.168.22.0/24</code> 10GbE LAN — switch, edit-suite NAS (<code>.22.2</code>), routed connection back to the mothership LAN for the dual-write (no Tailscale).</li>
+<li>Set up the Mac mini (<code>.22.20</code>): install DaVinci Resolve Studio + the Project Server app, create the shared project library, enable it as a Remote Render node.</li>
+<li>Connect both MacBook Pros (<code>.22.11</code>/<code>.22.12</code>) via Thunderbolt-to-10GbE, mount the NAS on all three machines with identical paths (Resolve's Remote Render requires the media volume mounted on every machine).</li>
+<li>Run resolve-configurator against the event's session CSV to build the shell project; apply each smart-bin recipe once, by hand, in Resolve's UI.</li>
 </ol>
-<h2 id="phase-7--verify-before-the-event">Phase 7 — Verify before the
-event</h2>
+<h2 id="phase-7--verify-before-the-event">Phase 7 — Verify before the event</h2>
 <ul class="task-list">
-<li><label><input type="checkbox" /><code>tailscale status</code> /
-<code>tailscale ping</code> from a few nodes — confirm direct vs relay —
-<a href="tailscale.html"><code>docs/tailscale.md</code></a></label></li>
-<li><label><input type="checkbox" /><code>tailscale netcheck</code> on a
-theatre router — confirm the self-hosted DERP region is reachable and
-not blocked by the uplink-VLAN firewall rule — <a
-href="open-questions.html"><code>docs/open-questions.md</code></a>
-#3</label></li>
-<li><label><input type="checkbox" />Copy an ATEM file mid-recording and
-confirm it opens/scrubs — empirically verify the "safe to read
-mid-write" assumption — <a
-href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a></label></li>
-<li><label><input type="checkbox" />Confirm ingested files actually
-appear in Nextcloud's UI (not just on disk) for both
-pipelines</label></li>
-<li><label><input type="checkbox" />Confirm cross-theatre isolation:
-from one theatre's subnet, verify you cannot reach another theatre's
-devices, only the mothership — this is the core ACL guarantee the whole
-design depends on (<a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>)</label></li>
-<li><label><input type="checkbox" />From off-venue (a network that isn't
-the mothership's own), confirm the GLKVM-Cloud web UI is actually
-reachable through <code>https://kvm.example.net:8443</code>, and that
-all 14 routers show up registered and their SSH terminal/web-proxy
-access works — <a
-href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a></label></li>
-<li><label><input type="checkbox" />Confirm all 12 theatres'
-monitoring/preview streams actually reach ATEM Overseer and Flock and
-show up live in each dashboard — this is the first real-hardware test of
-the dual-stream assumption flagged in <a
-href="open-questions.html"><code>docs/open-questions.md</code></a>
-#11</label></li>
-<li><label><input type="checkbox" />Live editing: confirm footage lands
-on the edit-suite NAS as it's ingested (once the dual-write is
-implemented — see Phase 6 step 5), both editors can open the shared show
-project simultaneously, the smart bins auto-fill as clips arrive, and a
-test export dispatched to the Mac mini via Remote Render completes — <a
-href="live-editing.html"><code>docs/live-editing.md</code></a></label></li>
-<li><label><input type="checkbox" />Rehearse an NDI fallback end-to-end:
-pause the source node's VMix record ingest, confirm the node's VMix NDI
-output appears via the Discovery Server, confirm BirdDog Central picks
-it up and <strong>re-originates</strong> it (the PLAY must connect to
-Central, not directly to the node — direct would bypass the ACL model
-and the bandwidth math), switch one theatre's PLAY over via Flock, and
-measure the node uplink against the modelled ~130 Mbps — <a
-href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>, <a
-href="open-questions.html"><code>docs/open-questions.md</code></a>
-#16</label></li>
+<li><label><input type="checkbox" /><code>tailscale status</code> / <code>tailscale ping</code> from a few nodes — confirm direct vs relay — <a href="tailscale.html"><code>docs/tailscale.md</code></a></label></li>
+<li><label><input type="checkbox" /><code>tailscale netcheck</code> on a theatre router — confirm the self-hosted DERP region is reachable and not blocked by the uplink-VLAN firewall rule — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #3</label></li>
+<li><label><input type="checkbox" />Copy an ATEM file mid-recording and confirm it opens/scrubs — empirically verify the "safe to read mid-write" assumption — <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a></label></li>
+<li><label><input type="checkbox" />From inside a macvlan container, reach a theatre device and get an answer back — e.g. <code>docker exec atem-iso-ingest python -c "import socket; socket.create_connection(('192.168.2.2', 21), 5)"</code> — proves the gateway static route, the host return leg and the subnet ACLs together (<a href="open-questions.html"><code>docs/open-questions.md</code></a> #18)</label></li>
+<li><label><input type="checkbox" />Confirm ingested files actually appear in Nextcloud's UI (not just on disk) for both pipelines</label></li>
+<li><label><input type="checkbox" />Confirm cross-theatre isolation: from one theatre's subnet, verify you cannot reach another theatre's devices, only the mothership — this is the core ACL guarantee the whole design depends on (<a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>)</label></li>
+<li><label><input type="checkbox" />From off-venue (a network that isn't the mothership's own), confirm the GLKVM-Cloud web UI is actually reachable through <code>https://kvm.example.net:8443</code>, and that all 14 routers show up registered and their SSH terminal/web-proxy access works — <a href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a></label></li>
+<li><label><input type="checkbox" />Confirm all 12 theatres' monitoring/preview streams actually reach ATEM Overseer and Flock and show up live in each dashboard — this is the first real-hardware test of the dual-stream assumption flagged in <a href="open-questions.html"><code>docs/open-questions.md</code></a> #11</label></li>
+<li><label><input type="checkbox" />Live editing: confirm footage lands on the edit-suite NAS as it's ingested (once the dual-write is implemented — see Phase 6 step 5), both editors can open the shared show project simultaneously, the smart bins auto-fill as clips arrive, and a test export dispatched to the Mac mini via Remote Render completes — <a href="live-editing.html"><code>docs/live-editing.md</code></a></label></li>
+<li><label><input type="checkbox" />Rehearse an NDI fallback end-to-end: pause the source node's VMix record ingest, confirm the node's VMix NDI output appears via the Discovery Server, confirm BirdDog Central picks it up and <strong>re-originates</strong> it (the PLAY must connect to Central, not directly to the node — direct would bypass the ACL model and the bandwidth math), switch one theatre's PLAY over via Flock, and measure the node uplink against the modelled ~130 Mbps — <a href="streaming-flow.html"><code>docs/streaming-flow.md</code></a>, <a href="open-questions.html"><code>docs/open-questions.md</code></a> #16</label></li>
 </ul>
 </body></html>

@@ -11,9 +11,18 @@
 # from off-the-shelf tools instead of a custom script.
 #
 # --append trusts that the beginning of the file never changes once written (true for
-# a pure append-only recording). Run mount-and-sync.sh with VERIFY=1 for a final
-# --append-verify pass (reads/checksums the whole file) once a session ends, as a
-# one-time integrity check rather than paying that cost every cycle.
+# a pure append-only recording) — it never corrects bytes rewritten in place, e.g. an
+# MP4 header patched when recording stops. Run mount-and-sync.sh with VERIFY=1 once a
+# session ends for a one-time integrity pass: a full --checksum comparison that repairs
+# any differing blocks in place. (Not --append-verify: that SKIPS any file already the
+# same size on both sides, so it never checks a fully-synced file.) VERIFY reads every
+# file in full through the FTP mount — a full re-download over the theatre's uplink —
+# so run it after the session, never during.
+#
+# --dir-cache-time 30s: FTP has no change notification in rclone, so a growing file's
+# size on the mount only refreshes when the directory cache expires (default 5m, which
+# would silently stretch the 90s sync interval to ~5 minutes). Keep it below the
+# sync interval.
 set -euo pipefail
 
 RCLONE_CONFIG="$(dirname "$0")/rclone.conf"
@@ -31,6 +40,7 @@ mount_theatre() {
 		rclone mount "atem-theatre${theatre}:" "$mount_point" \
 			--config "$RCLONE_CONFIG" \
 			--vfs-cache-mode off \
+			--dir-cache-time 30s \
 			--read-only \
 			--daemon
 		echo "[theatre-${theatre}] mounted at ${mount_point}"
@@ -43,17 +53,18 @@ sync_theatre() {
 	local dest="${DEST_BASE}/Theatre${theatre}/ISO/"
 	mkdir -p "$dest"
 
-	local append_flag="--append"
+	local mode_flags=(--append)
 	if [ "$VERIFY" = "1" ]; then
-		append_flag="--append-verify"   # full checksum pass — run occasionally, not every cycle
+		# full checksum pass, repairs differing blocks in place — run once per finished session
+		mode_flags=(--checksum --inplace --no-whole-file)
 	fi
 
-	rsync -a "$append_flag" --itemize-changes "${mount_point}/" "$dest" \
+	rsync -a "${mode_flags[@]}" --itemize-changes "${mount_point}/" "$dest" \
 		|| echo "[theatre-${theatre}] rsync pass failed (will retry next cycle)"
 }
 
 if [ "$VERIFY" = "1" ]; then
-	echo "ATEM ISO ingest — one-shot --append-verify integrity pass"
+	echo "ATEM ISO ingest — one-shot --checksum integrity pass"
 else
 	echo "ATEM ISO ingest (rclone mount + rsync --append) starting"
 	echo "Mounts under ${MOUNT_BASE}, syncing into ${DEST_BASE}, every ${SYNC_INTERVAL_SECONDS}s"

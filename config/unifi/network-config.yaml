@@ -13,7 +13,7 @@ networks:
     dhcp:
       enabled: true
       range: 10.10.1.10 - 10.10.1.250
-    serves: Theatre 1-3 GL-iNet WAN ports
+    serves: Theatre 1-3 + VMix Node 1 GL-iNet WAN ports
     uplink_port_profile: uplink-vlan-1-ports
 
   - name: Uplink-VLAN-2
@@ -24,7 +24,7 @@ networks:
     dhcp:
       enabled: true
       range: 10.10.2.10 - 10.10.2.250
-    serves: Theatre 4-6 GL-iNet WAN ports
+    serves: Theatre 4-6 + VMix Node 2 GL-iNet WAN ports
     uplink_port_profile: uplink-vlan-2-ports
 
   - name: Uplink-VLAN-3
@@ -65,11 +65,11 @@ port_profiles:
   - name: uplink-vlan-1-ports
     native_network: Uplink-VLAN-1
     tagged_networks: []
-    note: Apply to the switch port(s) carrying the Theatre 1-3 uplink cable run
+    note: Apply to the switch port(s) carrying the Theatre 1-3 (+ VMix Node 1) uplink cable run
   - name: uplink-vlan-2-ports
     native_network: Uplink-VLAN-2
     tagged_networks: []
-    note: Apply to the switch port(s) carrying the Theatre 4-6 uplink cable run
+    note: Apply to the switch port(s) carrying the Theatre 4-6 (+ VMix Node 2) uplink cable run
   - name: uplink-vlan-3-ports
     native_network: Uplink-VLAN-3
     tagged_networks: []
@@ -91,6 +91,29 @@ port_profiles:
       UXG Enterprise, and EFG do). If it turns out not to: drop an intermediate
       LACP-capable switch in between, bond through that instead, and land that
       switch's uplink here as a normal (non-LAG) port. See docs/open-questions.md.
+
+static_routes:
+  # Mothership LAN devices (BirdDog Central, the macvlan containers, ready-room PCs)
+  # default-route via 192.168.1.1, which otherwise has no route to the theatre/VMix
+  # subnets — they live behind the Tailscale subnet router on the Unraid host. Without
+  # these, mothership-initiated flows (ATEM ISO / VMix record ingest, SRT fan-out,
+  # NDI out of Central) have nowhere to go. Traffic that takes this path crosses the
+  # Unraid bond twice; see docs/bandwidth-analysis.md for why Central's VM should get its
+  # own direct route via 192.168.1.2 instead.
+  - { name: Theatre 1 via Tailscale,   destination: 192.168.2.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 2 via Tailscale,   destination: 192.168.3.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 3 via Tailscale,   destination: 192.168.4.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 4 via Tailscale,   destination: 192.168.5.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 5 via Tailscale,   destination: 192.168.6.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 6 via Tailscale,   destination: 192.168.7.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 7 via Tailscale,   destination: 192.168.8.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 8 via Tailscale,   destination: 192.168.9.0/24,  next_hop: 192.168.1.2 }
+  - { name: Theatre 9 via Tailscale,   destination: 192.168.10.0/24, next_hop: 192.168.1.2 }
+  - { name: Theatre 10 via Tailscale,  destination: 192.168.11.0/24, next_hop: 192.168.1.2 }
+  - { name: Theatre 11 via Tailscale,  destination: 192.168.12.0/24, next_hop: 192.168.1.2 }
+  - { name: Theatre 12 via Tailscale,  destination: 192.168.13.0/24, next_hop: 192.168.1.2 }
+  - { name: VMix Node 1 via Tailscale, destination: 192.168.20.0/24, next_hop: 192.168.1.2 }
+  - { name: VMix Node 2 via Tailscale, destination: 192.168.21.0/24, next_hop: 192.168.1.2 }
 
 port_forwards:
   - name: DERP server HTTPS
@@ -133,6 +156,25 @@ firewall_rules:
     destination: WAN
     reason: Needed for each GL-iNet's Tailscale connection to reach the internet/DERP
 
+  - name: Allow uplink VLANs to DERP server (hairpin)
+    action: accept
+    source: [Uplink-VLAN-1, Uplink-VLAN-2, Uplink-VLAN-3, Uplink-VLAN-4]
+    destination: 192.168.1.16
+    ports: [443/tcp, 3478/udp]
+    reason: >
+      Hairpinned DERP traffic enters the Cloud Gateway on an uplink VLAN interface and
+      is DNAT'd to 192.168.1.16, so the next rule would otherwise most likely drop it.
+
+  - name: Allow uplink VLANs to mothership Tailscale (direct WireGuard)
+    action: accept
+    source: [Uplink-VLAN-1, Uplink-VLAN-2, Uplink-VLAN-3, Uplink-VLAN-4]
+    destination: 192.168.1.2
+    ports: [41641/udp]
+    reason: >
+      Lets each GL-iNet open a direct (non-relayed) WireGuard path to the mothership's
+      Tailscale container — the DERP-avoidance goal in docs/tailscale.md. Assumes
+      tailscaled's default port 41641; pin it with --port=41641 on the container.
+
   - name: Block uplink VLANs from Mothership-LAN
     action: drop
     source: [Uplink-VLAN-1, Uplink-VLAN-2, Uplink-VLAN-3, Uplink-VLAN-4]
@@ -142,13 +184,11 @@ firewall_rules:
       reason to reach the mothership LAN directly — all real mothership access
       happens over Tailscale instead.
     caveat: >
-      Should NOT interfere with the DERP hairpin path (see port_forwards above and
-      docs/tailscale.md) — that traffic leaves a theatre's GL-iNet via its own WAN
-      path and re-enters via the WAN-facing port forward, so it arrives at
-      Mothership-LAN from the WAN zone, not directly from an Uplink-VLAN zone. This
-      rule targets direct inter-VLAN routing, a different path. Worth confirming
-      with a real `tailscale netcheck` test once built, since exact hairpin/zone
-      behavior is Cloud-Gateway-firmware-specific.
+      Hairpinned DERP traffic (see port_forwards above and docs/tailscale.md) arrives
+      on the uplink VLAN interface, not from the WAN zone, so after DNAT it would
+      normally match this rule — hence the two explicit allows above it. Worth
+      confirming with real `tailscale netcheck` / `tailscale status` tests once built,
+      since exact hairpin/zone behavior is Cloud-Gateway-firmware-specific.
 
   - name: Block uplink VLANs from each other
     action: drop

@@ -23,6 +23,11 @@ networks:
           gateway: 192.168.1.1
 
 services:
+  # The image's entrypoint is bare /usr/bin/rttys with no config — the RTTYS_*/TURN_*
+  # variables below are only read by upstream's docker-entrypoint.sh, which renders the
+  # rttys/coturn config templates. So, as upstream does, both services mount those files
+  # from a checkout of https://github.com/gl-inet/glkvm-cloud (replace UPSTREAM_DIR with
+  # its path, e.g. /mnt/user/appdata/glkvm-cloud/upstream).
   rttys:
     image: glzhitong/glkvm-cloud:latest
     container_name: glkvm-cloud
@@ -31,26 +36,42 @@ services:
       macvlan-mothership:
         ipv4_address: 192.168.1.20
     environment:
-      # Set to the public hostname (kvm.example.net) so the app advertises the right
-      # address back to clients instead of auto-detecting its LAN IP — see
-      # docs/glkvm-cloud.md for the "not fully verified" caveat on the exact format.
-      GLKVM_ACCESS_IP: "REPLACE_WITH_kvm.example.net"
+      # Written into rttys's webrtc-ip and coturn's external-ip, and upstream's own
+      # auto-detect only accepts IPv4 — so the venue's PUBLIC IPv4, not kvm.example.net.
+      GLKVM_ACCESS_IP: "REPLACE_WITH_PUBLIC_IPV4"
       RTTYS_TOKEN: "REPLACE_ME"
       RTTYS_PASS: "REPLACE_ME"
+      RTTYS_DEVICE_PORT: "5912"
+      RTTYS_WEBUI_PORT: "443"
+      RTTYS_HTTP_PROXY_PORT: "10443"
+      # The TURN port rttys advertises to browsers: the WAN-side 3479 (DERP holds 3478).
+      TURN_PORT: "3479"
       TURN_USER: "REPLACE_ME"
       TURN_PASS: "REPLACE_ME"
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+    command: ["rttys"]
     volumes:
-      - /mnt/user/appdata/glkvm-cloud/certs:/app/certs
-      - /mnt/user/appdata/glkvm-cloud/data:/app/data
+      - UPSTREAM_DIR/docker-compose/templates/rttys.conf.template:/tpl/rttys.conf.tmpl:ro
+      - UPSTREAM_DIR/docker-compose/scripts/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - UPSTREAM_DIR/docker-compose/certificate/glkvm.cer:/home/certificate/glkvm_cer:ro
+      - UPSTREAM_DIR/docker-compose/certificate/glkvm.key:/home/certificate/glkvm_key:ro
+      - /mnt/user/appdata/glkvm-cloud/database:/home/database
 
   coturn:
     image: coturn/coturn:edge-alpine
     container_name: glkvm-coturn
     restart: unless-stopped
+    user: "0:0"   # as upstream — needs to read the bind-mounted entrypoint
     networks:
       macvlan-mothership:
         ipv4_address: 192.168.1.22
-    command:
-      - "-n"
-      - "--realm=kvm.example.net"
-      - "--user=REPLACE_ME:REPLACE_ME"   # match TURN_USER/TURN_PASS above
+    environment:
+      GLKVM_ACCESS_IP: "REPLACE_WITH_PUBLIC_IPV4"   # same value as rttys
+      TURN_PORT: "3478"                             # what coturn listens on; WAN 3479 forwards here
+      TURN_USER: "REPLACE_ME"                       # match rttys
+      TURN_PASS: "REPLACE_ME"                       # match rttys
+    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
+    command: ["coturn"]
+    volumes:
+      - UPSTREAM_DIR/docker-compose/templates/turnserver.conf.template:/tpl/turnserver.conf.tmpl:ro
+      - UPSTREAM_DIR/docker-compose/scripts/docker-entrypoint.sh:/docker-entrypoint.sh:ro

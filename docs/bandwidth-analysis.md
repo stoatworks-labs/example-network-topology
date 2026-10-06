@@ -17,10 +17,21 @@ than assuming.
 
 Every figure below that crosses the tailnet (SRT, NDI, ATEM ingest, rclone) is wrapped in
 a WireGuard tunnel between the theatre's A-1300 and the mothership's Tailscale container —
-that adds a real, quantifiable tax on top of the raw payload. For IPv4 at full-size (1500B)
-packets, WireGuard's header overhead is 60 bytes (20B IP + 8B UDP + 32B WireGuard header) —
-**~4.0%** ([header breakdown](https://lists.zx2c4.com/pipermail/wireguard/2017-December/002201.html)).
-All figures in this doc already have that 4% folded in.
+that adds a real, quantifiable tax on top of the raw payload. For an IPv4 outer path,
+WireGuard's per-packet overhead is 60 bytes (20B IP + 8B UDP + 32B WireGuard header + auth
+tag) ([header breakdown](https://lists.zx2c4.com/pipermail/wireguard/2017-December/002201.html)).
+That is 4.0% of a 1500B packet — but Tailscale's tunnel MTU is **1280B**, not 1500B, so a
+full-size packet inside the tunnel carries 60/1280 ≈ **4.7%** overhead (≈4.4% for a
+default 1360B SRT packet). All figures in this doc have a flat 4% folded in, which
+understates every tailnet figure by under 1% (e.g. NDI ~130 → ~131 Mbps) — immaterial at
+the precision used here, so the figures are left as-is.
+
+**The 1280B tunnel MTU also matters for SRT itself, not just the overhead maths.** SRT's
+default payload is 1316B (7 × 188B MPEG-TS packets), i.e. a 1360B IP packet — larger than
+Tailscale's 1280B MTU, so every SRT packet would be IP-fragmented (or dropped, if sent with
+DF set) on its way into the tunnel. Set the SRT payload size on the senders (VMix PCs,
+Restreamer's outputs) to **1128B** (6 × 188B → 1172B IP packet, fits under 1280B). See
+[`docs/streaming-flow.md`](streaming-flow.md).
 
 **Presenter internet does NOT get this tax.** It's a separate path — presenter laptops go
 straight out to the internet via the A-1300's normal NAT/WAN, never touching the Tailscale
@@ -33,10 +44,10 @@ the end of this doc), but it never shares the encrypted tunnel or its overhead.
 
 | Traffic | Direction | Basis | Figure |
 |---|---|---|---|
-| SRT, baseline (static/motion-graphics) | Mothership → theatre | 3-6 Mbps encoder for low-motion 1080p H.264, +25% SRT overhead ([Haivision](https://www.haivision.com/blog/all/how-to-configure-srt-settings-video-encoder-optimal-performance/)), +4% WireGuard | **~5.8 Mbps** |
+| SRT, baseline (static/motion-graphics) | Mothership → theatre | 3-6 Mbps encoder for low-motion 1080p H.264 (4.5 Mbps midpoint used), +25% SRT overhead ([Haivision](https://www.haivision.com/blog/all/how-to-configure-srt-settings-video-encoder-optimal-performance/) — 25% is SRT's default *ceiling* for retransmission headroom, not steady-state use, so this is conservative), +4% WireGuard | **~5.8 Mbps** |
 | SRT, peak (opening/closing, higher motion) | Mothership → theatre | 6-8 Mbps encoder + 25% overhead + 4% WireGuard | **~10.4 Mbps** |
 | **NDI backup, active (1080p50, full — not HX)** | Mothership → theatre | Official NDI spec ([docs.ndi.video](https://docs.ndi.video/all/getting-started/white-paper/bandwidth)) — **roughly constant regardless of content**, unlike SRT's H.264 long-GOP; the "mostly static graphics" discount does not apply here. +4% WireGuard | **~130 Mbps** |
-| ATEM ISO ingest, realistic | Theatre → mothership | 5-7 active streams × 10 Mbps (your figures) + 4% WireGuard | **~62 Mbps** |
+| ATEM ISO ingest, realistic | Theatre → mothership | 5-7 active streams × 10 Mbps (your figures; 6-stream midpoint used, range 52-73 Mbps) + 4% WireGuard | **~62 Mbps** |
 | ATEM ISO ingest, worst case | Theatre → mothership | all 9 streams × 10 Mbps + 4% WireGuard | **~94 Mbps** |
 | **ATEM Overseer monitoring stream** | Theatre → mothership | 10 Mbps per theatre (your figure) + 4% WireGuard — flat, doesn't scale with ATEM channel count like ISO ingest does, see [`docs/topology.md`](topology.md) | **~10.4 Mbps** |
 | **Flock BirdDog Play preview stream** | Theatre → mothership | 10 Mbps SRT per theatre (your figure) + 4% WireGuard — flat, same treatment as the Overseer stream, see [`docs/topology.md`](topology.md) | **~10.4 Mbps** |
@@ -44,6 +55,32 @@ the end of this doc), but it never shares the encrypted tunnel or its overhead.
 | rclone file sync, worst case | Theatre → mothership | multiple laptops syncing simultaneously (was already implicit in the per-theatre worst-case upstream total below; made explicit here) | **~15 Mbps** |
 | rclone file sync, initial bulk ingest | Theatre → mothership | 10-20 GB/theatre, **one-time** | not a sustained-load concern — see below |
 | Presenter internet | Both, shared VLAN link, **no WireGuard tax** | web/slides/occasional demo video — **unconfirmed whether it shares this VLAN or is separate infrastructure** | ~10-25 Mbps allowance |
+
+> **⚠️ Check the 10 Mbps-per-ISO-stream basis before relying on anything below
+> (2026-10-06 review).** Blackmagic's own spec for the ATEM Mini Extreme ISO records each
+> ISO input as H.264 "at up to 70 Mb/s" (variable bitrate, the 70 figure being 1080p60;
+> lower frame rates and simpler pictures come in under it), and the ISO files have no
+> separate bitrate setting the way the program/stream output does. If real ISO files
+> land anywhere near that, the ATEM rows above are 4.5-7× too low:
+>
+> | | 10 Mbps/stream (used in this doc) | ~58 Mbps (70 scaled to 50p) | 70 Mbps |
+> |---|---|---|---|
+> | ATEM ingest, 6 streams, +4% WG | ~62 Mbps | ~364 Mbps | ~437 Mbps |
+> | ATEM ingest, 9 streams, +4% WG | ~94 Mbps | ~546 Mbps | ~655 Mbps |
+> | Theatre upstream, 6 streams (+ Overseer, Flock, rclone) | ~88 Mbps | ~390 Mbps (229% of 170) | ~463 Mbps (272%) |
+> | 3-theatre VLAN, upstream | ~265 Mbps | ~1,170 Mbps — over 1 Gbps | ~1,390 Mbps |
+> | Recording pool, 12 theatres × 6 streams | ~0.3 TB/hr | ~1.9 TB/hr | ~2.3 TB/hr |
+>
+> At those rates near-real-time pulling of *every* ISO stream does not fit through an
+> A-1300 or a 3-theatre VLAN, whatever else is done, and the 8 TB recording pool sizing
+> in [`docs/server-specification.md`](server-specification.md) shrinks to a few hours.
+> One `ffprobe` (or file size ÷ duration) of a real ISO file from the actual ATEM, at the
+> event's frame rate, settles it. If it confirms the vendor figure, the realistic fixes
+> are: pull only the program recording (which follows the configurable streaming
+> bitrate) plus at most one or two key ISOs live and leave the rest to the physical
+> DIT offload ([`docs/live-editing.md`](live-editing.md)); or defer ISO pulls to
+> between sessions; or a faster router and more VLANs. Tracked in
+> [`docs/open-questions.md`](open-questions.md).
 
 **Initial bulk ingest isn't a bandwidth risk if scheduled right.** 15 GB at a generously
 throttled 100 Mbps takes ~20 minutes; even at a conservative 50 Mbps, ~40 minutes. Run it
@@ -63,7 +100,9 @@ down as ATEM ISO (~62 Mbps) + Overseer (~10.4 Mbps) + Flock (~10.4 Mbps) + rclon
 (~5 Mbps); **~129 Mbps** worst case as ATEM ISO (~94 Mbps) + Overseer (~10.4 Mbps) +
 Flock (~10.4 Mbps) + rclone worst-case (~15 Mbps). Both monitoring streams are flat
 regardless of ATEM channel count, unlike ISO ingest — see [`docs/topology.md`](topology.md)
-for what they're for.
+for what they're for. Downstream is SRT plus presenter internet: **~21 Mbps** = SRT
+baseline (~5.8 Mbps) + ~15 Mbps presenter; **35 Mbps** = SRT peak (~10.4 Mbps) + the
+25 Mbps presenter ceiling.
 
 ## New finding: check the A-1300's own ceiling, not just the shared VLAN
 
@@ -71,6 +110,21 @@ The GL-iNet A-1300's own published WireGuard throughput (~170 Mbps, see
 [`docs/open-questions.md`](open-questions.md)) is a **separate, tighter bottleneck** from
 the shared VLAN — every byte a theatre sends/receives over the tailnet has to pass through
 that one router's crypto engine, regardless of how much headroom the VLAN itself has.
+
+**Bigger caveat on the 170 Mbps figure itself: it is not a Tailscale figure.** GL-iNet's
+170 Mbps is its *kernel* WireGuard client-mode benchmark
+([GL-A1300 product page](https://www.gl-inet.com/products/gl-a1300/): "WireGuard 170
+Mbps … results above are in client mode"). Tailscale never uses the kernel WireGuard
+module — `tailscaled` runs its own userspace `wireguard-go` engine
+([Tailscale throughput post](https://tailscale.com/blog/throughput-improvements)), which on
+embedded ARM routers is typically far slower than kernel WireGuard on the same box (GL-iNet
+forum reports of Tailscale on older GL-iNet models in the ~8-20 Mbps range where kernel
+WireGuard does ~80 Mbps — [thread](https://forum.gl-inet.com/t/feedback-on-tailscale-implementation-v4-2-firmware/25871/48)).
+There is no published Tailscale throughput figure for the A-1300. **Every "% of ~170 Mbps"
+below is therefore a best case, and even normal operation (~94 Mbps combined) is
+unproven.** Benchmark one A-1300 running Tailscale as a subnet router (`iperf3` from a
+LAN device to the mothership, both directions at once) before treating any figure in this
+section as settled — this is the single most load-bearing unverified number in the design.
 
 | Scenario | Upstream | Downstream | Combined | vs. ~170 Mbps ceiling |
 |---|---|---|---|---|
@@ -109,20 +163,32 @@ story on its own:
 
 | Level | Without the mitigation (ATEM still ingesting) | With it (ATEM paused) |
 |---|---|---|
-| **Single theatre's own A-1300** (upstream + downstream combined, vs. 170 Mbps) | 218.2 Mbps — **128%, exceeds the ceiling** | 155.8 Mbps realistic (**92%**) / **165.8 Mbps worst case (97%)** — both under, but worst case leaves only ~7 Mbps of headroom |
+| **Single theatre's own A-1300** (upstream + downstream combined, vs. 170 Mbps) | 218.2 Mbps — **128%, exceeds the ceiling** | 155.8 Mbps realistic (**92%**) / **165.8 Mbps worst case (98%)** — both under, but worst case leaves only ~4 Mbps of headroom |
 | **That theatre's VLAN group, upstream side only** (NDI itself doesn't touch upstream — full-duplex, separate capacity) | n/a — this is exactly what the mitigation removes | Drops to just rclone + Overseer + Flock per theatre (25.8-35.8 Mbps) — even a fully-loaded 6-theatre group sits at 15.5-21.5% upstream, nowhere near a concern |
 | **Mothership's own bonded NIC, mass-fallback disaster case** (all 12 theatres on NDI at once) | Downstream 1,560 Mbps + upstream ~1,553 Mbps worst case — both sides genuinely loaded | Downstream unchanged at 1,560 Mbps (NDI doesn't care about the ATEM side), but **upstream drops to just 310-430 Mbps** — the mitigation's biggest payoff shows up here, not at the single-router level |
-| **Central's own NDI feed in** (the source VMix node's program arriving for redistribution — see [`docs/streaming-flow.md`](streaming-flow.md)) | +130 Mbps inbound per active node program (max +260 if both nodes' programs are being redistributed) — rides the node's uplink, then the mothership NIC inbound | Same +130-260 Mbps — this feed is what's being redistributed, so it persists through the mitigation; even stacked on the *unmitigated* worst-case inbound (~1,553 + 260 ≈ 1,813 Mbps) it stays under the bond's ~2,000 Mbps aggregate, and with ATEM paused it's trivial |
+| **Central's own NDI feed in** (the source VMix node's program arriving for redistribution — see [`docs/streaming-flow.md`](streaming-flow.md)) | +130 Mbps inbound per active node program (max +260 if both nodes' programs are being redistributed) — rides the node's uplink, then the mothership NIC inbound | Same +130-260 Mbps — this feed is what's being redistributed, so it persists through the mitigation; even stacked on the *unmitigated* worst-case inbound (~1,553 + 260 ≈ 1,813 Mbps) it stays under the bond's ~2,000 Mbps aggregate counted once, and with ATEM paused it's trivial. Counted properly it arrives twice (gateway → Tailscale container on `.1.2`, then `.1.2` → Central), see the hairpin note below |
 
-**The one number worth remembering from this table: 97% at worst case, single theatre.**
+**The one number worth remembering from this table: 98% at worst case, single theatre.**
 The mitigation reliably resolves the per-router ceiling problem (128% → under 100%
-either way), but under the pessimistic rclone assumption it leaves only about 3% headroom
+either way), but under the pessimistic rclone assumption it leaves only about 2.5% (~4 Mbps) headroom
 — comfortably safe on paper, uncomfortably close in practice if anything else about that
 theatre's traffic runs a little hotter than modeled. Pausing ATEM ingest fleet-wide during
 a genuine mass NDI fallback is unambiguously the right call regardless — that's where the
 mitigation actually earns its keep, cutting the mothership's own upstream load from
-~1,553 Mbps to ~310-430 Mbps (a ~72-80% reduction depending on realistic vs. worst-case
-rclone) at exactly the moment the network is already under the most stress.
+~1,058 Mbps realistic / ~1,553 Mbps worst case to ~310 / ~430 Mbps respectively (a ~71-72%
+reduction either way) at exactly the moment the network is already under the most stress.
+
+**Mothership-side routing caveat for the NIC row above:** those NIC figures assume
+mothership LAN devices (BirdDog Central VM, the macvlan containers) hand theatre-bound
+traffic straight to the Tailscale subnet router on the Unraid host (`192.168.1.2`). If they
+instead follow their default gateway and the Cloud Gateway bounces it back to `.2` via a
+static route (see `static_routes` in
+[`config/unifi/network-config.yaml`](../config/unifi/network-config.yaml)), every such
+byte crosses the bond an extra time in each direction — at mass-NDI-fallback scale
+(1,560 Mbps out of Central) that alone would exceed the bond's ~2,000 Mbps. Give Central's
+VM a direct route to the theatre/VMix subnets via `192.168.1.2`; for the macvlan containers
+note that by default the Unraid host can't reach its own macvlan containers at all, unless
+"Host access to custom networks" is enabled ([`docs/open-questions.md`](open-questions.md) #18).
 
 **Alternative: a higher-throughput GL-iNet model.** Would fix this numerically, but not
 cleanly for either mid/high-tier option:
@@ -131,7 +197,7 @@ cleanly for either mid/high-tier option:
 |---|---|---|---|---|---|
 | A-1300 (current) | 170 Mbps | 2 | Pocket travel router | ~$100 | 128% |
 | Beryl AX (GL-MT3000) | [300 Mbps](https://www.gl-inet.com/en-us/products/gl-mt3000) | **1 only** | Pocket travel router | ~$100-140 | 73% |
-| Flint 2 (GL-MT6000) | [900 Mbps](https://www.gl-inet.com/en-us/products/gl-mt6000) | 5 (2×2.5GbE+4×1GbE, minus WAN) | 233×137×53mm, 761g | ~$170 | 24% |
+| Flint 2 (GL-MT6000) | [900 Mbps](https://www.gl-inet.com/en-us/products/gl-mt6000) | 5 (2×2.5GbE+4×1GbE, minus WAN) | 233×137×57mm, 761g | ~$170 | 24% |
 
 **Beryl AX is a trap for this design specifically** — better throughput, but only 1 LAN
 port total, so it can't replicate the dedicated-ATEM-port wiring
@@ -139,7 +205,7 @@ port total, so it can't replicate the dedicated-ATEM-port wiring
 share anyway, undoing exactly the isolation that wiring was for.
 
 **Flint 2 genuinely solves it** — ports to spare, comfortable margin (24% vs. 128%) — but
-it's ~3x the volume and ~5x the weight of the A-1300, no longer pocket-travel-router class
+it's ~6x the volume and ~4x the weight of the A-1300 (118×85×30mm, 181g), no longer pocket-travel-router class
 for a 14-unit touring kit, at ~70% more per unit. Its 900 Mbps figure carries the same
 caveat as the A-1300's 170 Mbps: a vendor benchmark, not a confirmed real-world
 simultaneous-bidirectional rating under this exact mixed traffic.
@@ -258,10 +324,13 @@ shouldn't get dedicated VLANs of their own for just 2 nodes — fold each into w
 group its adjacent theatre already belongs to (Node 1 → Theatre 1's group, Node 2 →
 Theatre 4's group). VMix record-ingest bitrate is unconfirmed (see
 [`docs/vmix-record-ingest.md`](vmix-record-ingest.md) open items), but even at a generous
-assumed 20-30 Mbps/PC (comparable to a single ATEM channel), adding 2 PCs' worth of
-traffic to a 6-theatre VLAN group (529 Mbps realistic) still leaves room, if less than it
-used to — worth re-checking against the 2-VLAN group's now-thinner margin above once
-VMix's real bitrate is confirmed. The per-router NDI-fallback caveat bites *harder* here
+assumed 20-30 Mbps/PC (2-3x a single ATEM channel's 10 Mbps), each node adds 2 PCs'
+worth (~42-62 Mbps with WireGuard). Note that under a 2-VLAN split (Theatres 1-6 / 7-12)
+**both** nodes land in the same group, since Theatre 1 and Theatre 4 do — so that group
+carries 4 PCs' worth (~83-125 Mbps) on top of its 529 / 776 Mbps: **~612-654 Mbps
+realistic (61-65%) and ~860-901 Mbps worst case (86-90%)**. That makes the Theatre 1-6
+group noticeably tighter than the 78% figure above suggests — re-check once VMix's real
+bitrate is confirmed, or move Node 2 to the other group. The per-router NDI-fallback caveat bites *harder* here
 than at the theatres: during any NDI fallback, the source node's own uplink carries the
 ~130 Mbps NDI program feed up to BirdDog Central for redistribution
 ([`docs/streaming-flow.md`](streaming-flow.md)) — on its own that's 76% of the node's
@@ -273,6 +342,11 @@ pause-the-ingest lever as the theatre-side mitigation, applied at the node.
 ## Recommendation
 
 - **Confirm the full-duplex assumption with the venue** before finalizing any count.
+- **Benchmark Tailscale throughput on one A-1300 before anything else.** Every per-router
+  figure in this doc is measured against GL-iNet's 170 Mbps *kernel* WireGuard number;
+  Tailscale runs userspace `wireguard-go`, which is likely well below that on this
+  hardware (see the per-router section). If the real figure is under ~94 Mbps combined,
+  the A-1300 fails in *normal* operation, not just during an NDI fallback.
 - **Set up the per-theatre NDI-fallback mitigation regardless of VLAN count** — pause/
   throttle that theatre's ATEM ingest when it falls back to NDI. This isn't optional the
   way the VLAN-count trade-offs are; without it, one theatre alone can exceed its own
@@ -299,7 +373,9 @@ pause-the-ingest lever as the theatre-side mitigation, applied at the node.
     SRT-primary operation, but weigh this carefully now — halves current VLAN cost, keeps
     real-time ATEM ingest, but margin has eroded a real amount since this recommendation
     was first made: 78% worst-case (was 65% before either monitoring stream existed) and
-    now over half the link (53%) even at realistic load, which wasn't true before. This
+    now over half the link (53%) even at realistic load, which wasn't true before — and
+    the group holding both VMix nodes (Theatres 1-6) runs hotter still, ~86-90% worst
+    case at an assumed 20-30 Mbps per VMix PC (see "VMix nodes' uplinks"). This
     is the trade-off most worth revisiting given everything added since the original
     2-VLAN call.
 - **Fold both VMix nodes into their adjacent theatre's VLAN group** rather than requesting

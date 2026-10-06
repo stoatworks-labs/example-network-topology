@@ -1,357 +1,443 @@
-<svg viewBox="0 0 1600 1435" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
-  <rect x="0" y="0" width="1600" height="1435" fill="#ffffff"/>
-  <text x="800" y="30" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">Event Network — Full Device Inventory</text>
-  <text x="800" y="48" text-anchor="middle" font-size="11" fill="#666">Every device, every real IP — see docs/ip-address-map.md for the same data as text</text>
-  <g>
-    <rect x="600" y="60" width="400" height="150" rx="10" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
-    <text x="800" y="85" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffffff">MOTHERSHIP — 192.168.1.x</text>
-    <text x="800" y="107" text-anchor="middle" font-size="12" fill="#cfd3e6">Ubiquiti Cloud Gateway — 192.168.1.1</text>
-    <text x="800" y="125" text-anchor="middle" font-size="12" fill="#cfd3e6">← see consolidated services server detail</text>
-    <text x="800" y="143" text-anchor="middle" font-size="12" fill="#cfd3e6">4× Ready Room PCs — .30/.31/.32/.33 (physical)</text>
-    <text x="800" y="161" text-anchor="middle" font-size="12" fill="#cfd3e6">Hardwired WAN</text>
-    <text x="800" y="193" text-anchor="middle" font-size="11" fill="#f2b134" font-style="italic">Tailscale subnet router runs as a container on that same server →</text>
-  </g>
-  <g>
-    <rect x="20" y="60" width="570" height="336" rx="8" fill="#eef1f8" stroke="#4a5a8a" stroke-width="2"/>
-    <text x="305" y="83" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a1a2e">Consolidated services server — 1 physical box (Unraid) — 192.168.1.2</text>
-    <text x="305" y="99" text-anchor="middle" font-size="10" fill="#4a5a8a">Router + ready-room PCs stay physical; everything else below is virtualized here</text>
-    <line x1="40" y1="109" x2="570" y2="109" stroke="#c3cbe0"/>
-    <text x="40" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">VM (Windows)</text>
-    <text x="50" y="145" font-size="11" fill="#333">BirdDog Central — 192.168.1.12</text>
-    <text x="40" y="163" font-size="11" fill="#333">Tailscale router — shares .2 (host net)</text>
-    <line x1="315" y1="115" x2="315" y2="333" stroke="#c3cbe0"/>
-    <text x="335" y="127" font-size="11" font-weight="bold" fill="#1a1a2e">Docker containers</text>
-    <text x="345" y="145" font-size="11" fill="#333">Nextcloud — 192.168.1.13</text>
-    <text x="345" y="163" font-size="11" fill="#333">Restreamer — 192.168.1.14</text>
-    <text x="345" y="181" font-size="11" fill="#333">NDI Discovery Server — 192.168.1.15</text>
-    <text x="345" y="199" font-size="11" fill="#333">DERP server — 192.168.1.16</text>
-    <text x="345" y="217" font-size="11" fill="#333">ATEM ISO Ingest — 192.168.1.17</text>
-    <text x="345" y="235" font-size="11" fill="#333">VMix Record Ingest — 192.168.1.18</text>
-    <text x="345" y="253" font-size="11" fill="#333">UniFi Controller — 192.168.1.19</text>
-    <text x="345" y="271" font-size="11" fill="#333">GLKVM-Cloud (rttys+coturn) — .20/.22</text>
-    <text x="345" y="289" font-size="11" fill="#333">ATEM Overseer — 192.168.1.21</text>
-    <text x="345" y="307" font-size="11" fill="#333">ATEM Fleet Admin — 192.168.1.23</text>
-    <text x="345" y="325" font-size="11" fill="#333">Flock — 192.168.1.24</text>
-    <line x1="40" y1="343" x2="570" y2="343" stroke="#c3cbe0"/>
-    <text x="305" y="358" text-anchor="middle" font-size="9" fill="#4a5a8a" font-style="italic">Server on hand — 2x GbE NIC (bonded, LACP) confirmed, full spec TBD (GPU on hand, no longer required)</text>
-  </g>
-  <!-- VLAN trunk lines — squared-off elbows, staggered so 1/4 and 2/3 don't overlap -->
-  <polyline points="700,210 700,416 190,416" fill="none" stroke="#3a3a5a" stroke-width="2"/>
-  <polyline points="760,210 760,432 610,432" fill="none" stroke="#3a3a5a" stroke-width="2"/>
-  <polyline points="840,210 840,432 1030,432" fill="none" stroke="#3a3a5a" stroke-width="2"/>
-  <polyline points="900,210 900,416 1450,416" fill="none" stroke="#3a3a5a" stroke-width="2"/>
-  <text x="190" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 1</text>
-  <text x="610" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 2</text>
-  <text x="1030" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 3</text>
-  <text x="1450" y="456" text-anchor="middle" font-size="12" fill="#3a3a5a">VLAN 4</text>
-  <g>
-  <rect x="60" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="190" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 1</text>
-  <text x="190" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.2.0/24</text>
-  <line x1="74" y1="506" x2="306" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="74" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="306" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.1</text>
-  <text x="74" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="306" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.2</text>
-  <text x="74" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="306" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.20</text>
-  <text x="74" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="306" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.5</text>
-  <text x="74" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="306" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.6</text>
-  <text x="74" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="306" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.7</text>
-  <text x="74" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="306" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.8</text>
-  <text x="74" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="306" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.2.10</text>
-  </g>
-  <g>
-  <rect x="60" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="190" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 2</text>
-  <text x="190" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.3.0/24</text>
-  <line x1="74" y1="731" x2="306" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="74" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="306" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.1</text>
-  <text x="74" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="306" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.2</text>
-  <text x="74" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="306" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.20</text>
-  <text x="74" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="306" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.5</text>
-  <text x="74" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="306" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.6</text>
-  <text x="74" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="306" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.7</text>
-  <text x="74" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="306" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.8</text>
-  <text x="74" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="306" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.3.10</text>
-  </g>
-  <g>
-  <rect x="60" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="190" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 3</text>
-  <text x="190" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.4.0/24</text>
-  <line x1="74" y1="956" x2="306" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="74" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="306" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.1</text>
-  <text x="74" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="306" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.2</text>
-  <text x="74" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="306" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.20</text>
-  <text x="74" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="306" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.5</text>
-  <text x="74" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="306" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.6</text>
-  <text x="74" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="306" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.7</text>
-  <text x="74" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="306" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.8</text>
-  <text x="74" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="306" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.4.10</text>
-  </g>
-  <g>
-  <rect x="480" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="610" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 4</text>
-  <text x="610" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.5.0/24</text>
-  <line x1="494" y1="506" x2="726" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="494" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="726" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.1</text>
-  <text x="494" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="726" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.2</text>
-  <text x="494" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="726" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.20</text>
-  <text x="494" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="726" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.5</text>
-  <text x="494" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="726" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.6</text>
-  <text x="494" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="726" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.7</text>
-  <text x="494" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="726" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.8</text>
-  <text x="494" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="726" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.5.10</text>
-  </g>
-  <g>
-  <rect x="480" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="610" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 5</text>
-  <text x="610" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.6.0/24</text>
-  <line x1="494" y1="731" x2="726" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="494" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="726" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.1</text>
-  <text x="494" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="726" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.2</text>
-  <text x="494" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="726" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.20</text>
-  <text x="494" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="726" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.5</text>
-  <text x="494" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="726" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.6</text>
-  <text x="494" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="726" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.7</text>
-  <text x="494" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="726" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.8</text>
-  <text x="494" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="726" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.6.10</text>
-  </g>
-  <g>
-  <rect x="480" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="610" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 6</text>
-  <text x="610" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.7.0/24</text>
-  <line x1="494" y1="956" x2="726" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="494" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="726" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.1</text>
-  <text x="494" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="726" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.2</text>
-  <text x="494" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="726" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.20</text>
-  <text x="494" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="726" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.5</text>
-  <text x="494" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="726" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.6</text>
-  <text x="494" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="726" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.7</text>
-  <text x="494" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="726" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.8</text>
-  <text x="494" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="726" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.7.10</text>
-  </g>
-  <g>
-  <rect x="900" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="1030" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 7</text>
-  <text x="1030" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.8.0/24</text>
-  <line x1="914" y1="506" x2="1146" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="914" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="1146" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.1</text>
-  <text x="914" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="1146" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.2</text>
-  <text x="914" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="1146" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.20</text>
-  <text x="914" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="1146" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.5</text>
-  <text x="914" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="1146" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.6</text>
-  <text x="914" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="1146" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.7</text>
-  <text x="914" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="1146" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.8</text>
-  <text x="914" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="1146" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.8.10</text>
-  </g>
-  <g>
-  <rect x="900" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="1030" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 8</text>
-  <text x="1030" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.9.0/24</text>
-  <line x1="914" y1="731" x2="1146" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="914" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="1146" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.1</text>
-  <text x="914" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="1146" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.2</text>
-  <text x="914" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="1146" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.20</text>
-  <text x="914" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="1146" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.5</text>
-  <text x="914" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="1146" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.6</text>
-  <text x="914" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="1146" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.7</text>
-  <text x="914" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="1146" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.8</text>
-  <text x="914" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="1146" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.9.10</text>
-  </g>
-  <g>
-  <rect x="900" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="1030" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 9</text>
-  <text x="1030" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.10.0/24</text>
-  <line x1="914" y1="956" x2="1146" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="914" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="1146" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.1</text>
-  <text x="914" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="1146" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.2</text>
-  <text x="914" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="1146" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.20</text>
-  <text x="914" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="1146" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.5</text>
-  <text x="914" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="1146" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.6</text>
-  <text x="914" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="1146" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.7</text>
-  <text x="914" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="1146" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.8</text>
-  <text x="914" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="1146" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.10.10</text>
-  </g>
-  <g>
-  <rect x="1320" y="460" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="1450" y="482" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 10</text>
-  <text x="1450" y="498" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.11.0/24</text>
-  <line x1="1334" y1="506" x2="1566" y2="506" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="1334" y="524" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="1566" y="524" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.1</text>
-  <text x="1334" y="541" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="1566" y="541" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.2</text>
-  <text x="1334" y="558" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="1566" y="558" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.20</text>
-  <text x="1334" y="575" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="1566" y="575" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.5</text>
-  <text x="1334" y="592" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="1566" y="592" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.6</text>
-  <text x="1334" y="609" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="1566" y="609" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.7</text>
-  <text x="1334" y="626" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="1566" y="626" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.8</text>
-  <text x="1334" y="643" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="1566" y="643" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.11.10</text>
-  </g>
-  <g>
-  <rect x="1320" y="685" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="1450" y="707" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 11</text>
-  <text x="1450" y="723" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.12.0/24</text>
-  <line x1="1334" y1="731" x2="1566" y2="731" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="1334" y="749" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="1566" y="749" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.1</text>
-  <text x="1334" y="766" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="1566" y="766" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.2</text>
-  <text x="1334" y="783" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="1566" y="783" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.20</text>
-  <text x="1334" y="800" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="1566" y="800" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.5</text>
-  <text x="1334" y="817" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="1566" y="817" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.6</text>
-  <text x="1334" y="834" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="1566" y="834" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.7</text>
-  <text x="1334" y="851" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="1566" y="851" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.8</text>
-  <text x="1334" y="868" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="1566" y="868" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.12.10</text>
-  </g>
-  <g>
-  <rect x="1320" y="910" width="260" height="200" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="1450" y="932" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Theatre 12</text>
-  <text x="1450" y="948" text-anchor="middle" font-size="10" fill="#e8f2fb">192.168.13.0/24</text>
-  <line x1="1334" y1="956" x2="1566" y2="956" stroke="#e8f2fb" stroke-opacity="0.4"/>
-  <text x="1334" y="974" font-size="10.5" fill="#e8f2fb">GL-iNet A-1300 (gateway)</text>
-  <text x="1566" y="974" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.1</text>
-  <text x="1334" y="991" font-size="10.5" fill="#e8f2fb">ATEM Mini ISO (LAN1, direct)</text>
-  <text x="1566" y="991" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.2</text>
-  <text x="1334" y="1008" font-size="10.5" fill="#e8f2fb">BirdDog Play</text>
-  <text x="1566" y="1008" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.20</text>
-  <text x="1334" y="1025" font-size="10.5" fill="#e8f2fb">PowerPoint Main</text>
-  <text x="1566" y="1025" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.5</text>
-  <text x="1334" y="1042" font-size="10.5" fill="#e8f2fb">PowerPoint Backup</text>
-  <text x="1566" y="1042" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.6</text>
-  <text x="1334" y="1059" font-size="10.5" fill="#e8f2fb">VT Main</text>
-  <text x="1566" y="1059" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.7</text>
-  <text x="1334" y="1076" font-size="10.5" fill="#e8f2fb">VT Backup</text>
-  <text x="1566" y="1076" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.8</text>
-  <text x="1334" y="1093" font-size="10.5" fill="#e8f2fb">Control laptop</text>
-  <text x="1566" y="1093" text-anchor="end" font-size="10.5" font-weight="bold" fill="#e8f2fb">192.168.13.10</text>
-  </g>
-  <!-- VMix Node 1 (off Theatre 1) -->
-  <g>
-  <rect x="60" y="1165" width="260" height="190" rx="8" fill="#c14953" stroke="#8f2f37" stroke-width="2"/>
-  <text x="190" y="1187" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">VMix Node 1</text>
-  <text x="190" y="1203" text-anchor="middle" font-size="10" fill="#fbdadd">192.168.20.0/24 — off Theatre 1</text>
-  <line x1="74" y1="1211" x2="306" y2="1211" stroke="#fbdadd" stroke-opacity="0.4"/>
-  <text x="74" y="1229" font-size="10.5" fill="#fbdadd">Node router (A-1300)</text>
-  <text x="306" y="1229" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.1</text>
-  <text x="74" y="1246" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 1</text>
-  <text x="306" y="1246" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.11</text>
-  <text x="74" y="1263" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 2</text>
-  <text x="306" y="1263" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.12</text>
-  <text x="74" y="1280" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 3</text>
-  <text x="306" y="1280" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.13</text>
-  <text x="74" y="1297" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 4</text>
-  <text x="306" y="1297" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.14</text>
-  <text x="74" y="1314" font-size="10.5" fill="#fbdadd">VMix PC 1</text>
-  <text x="306" y="1314" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.21</text>
-  <text x="74" y="1331" font-size="10.5" fill="#fbdadd">VMix PC 2</text>
-  <text x="306" y="1331" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.20.22</text>
-  </g>
-  <polyline points="320,490 360,490 360,1195 320,1195" fill="none" stroke="#8f2f37" stroke-width="2"/>
-  <!-- VMix Node 2 (off Theatre 4) -->
-  <g>
-  <rect x="480" y="1165" width="260" height="190" rx="8" fill="#c14953" stroke="#8f2f37" stroke-width="2"/>
-  <text x="610" y="1187" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">VMix Node 2</text>
-  <text x="610" y="1203" text-anchor="middle" font-size="10" fill="#fbdadd">192.168.21.0/24 — off Theatre 4</text>
-  <line x1="494" y1="1211" x2="726" y2="1211" stroke="#fbdadd" stroke-opacity="0.4"/>
-  <text x="494" y="1229" font-size="10.5" fill="#fbdadd">Node router (A-1300)</text>
-  <text x="726" y="1229" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.1</text>
-  <text x="494" y="1246" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 1</text>
-  <text x="726" y="1246" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.11</text>
-  <text x="494" y="1263" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 2</text>
-  <text x="726" y="1263" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.12</text>
-  <text x="494" y="1280" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 3</text>
-  <text x="726" y="1280" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.13</text>
-  <text x="494" y="1297" font-size="10.5" fill="#fbdadd">BirdDog P400 Cam 4</text>
-  <text x="726" y="1297" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.14</text>
-  <text x="494" y="1314" font-size="10.5" fill="#fbdadd">VMix PC 1</text>
-  <text x="726" y="1314" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.21</text>
-  <text x="494" y="1331" font-size="10.5" fill="#fbdadd">VMix PC 2</text>
-  <text x="726" y="1331" text-anchor="end" font-size="10.5" font-weight="bold" fill="#fbdadd">192.168.21.22</text>
-  </g>
-  <polyline points="740,490 780,490 780,1195 740,1195" fill="none" stroke="#8f2f37" stroke-width="2"/>
-  <text x="800" y="1395" text-anchor="middle" font-size="11" fill="#888">VLAN grouping = physical uplink cabling only. Cross-theatre isolation is enforced by Tailscale ACLs (config/tailscale-acl.json), not by the VLANs themselves.</text>
-  <text x="800" y="1413" text-anchor="middle" font-size="11" fill="#888">Uplink VLAN transit addressing (10.10.1-4.0/24) omitted here for space — see docs/ip-address-map.md and config/unifi/network-config.yaml.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1485" width="1640" height="1485" font-family="Helvetica, Arial, sans-serif">
+<title>Event Network — Full Device Inventory</title>
+<defs></defs>
+<rect width="1640" height="1485" fill="#ffffff"/>
+<text x="820.0" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1d2b">Event Network — Full Device Inventory</text>
+<text x="820.0" y="58" text-anchor="middle" font-size="13" fill="#5b6170">Every device and IP, generated from docs/ip-address-map.md · Tailscale runs only on the 14 GL-iNet routers and the mothership subnet router</text>
+<g><rect x="30" y="84" width="560" height="286" rx="8" fill="#eef0f5" stroke="#3d4a63" stroke-width="1.5"/><path d="M30,130 V92 a8,8 0 0 1 8,-8 H582 a8,8 0 0 1 8,8 V130 Z" fill="#3d4a63"/></g>
+<text x="310.0" y="105.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Consolidated services server — Unraid</text>
+<text x="310.0" y="122.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">one physical box · host 192.168.1.2</text>
+<text x="46.0" y="152.0" font-size="11.5" fill="#5b6170" font-style="italic">1 Windows VM + Docker containers (macvlan, own IPs)</text>
+<text x="46.0" y="176.0" font-size="12" fill="#3d4a63" font-weight="bold">BirdDog Central (VM)</text>
+<text x="296.0" y="176.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.12</text>
+<text x="46.0" y="195.0" font-size="12" fill="#1a1d2b">Nextcloud</text>
+<text x="296.0" y="195.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.13</text>
+<text x="46.0" y="214.0" font-size="12" fill="#1a1d2b">Restreamer</text>
+<text x="296.0" y="214.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.14</text>
+<text x="46.0" y="233.0" font-size="12" fill="#1a1d2b">NDI Discovery Server</text>
+<text x="296.0" y="233.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.15</text>
+<text x="46.0" y="252.0" font-size="12" fill="#1a1d2b">DERP server</text>
+<text x="296.0" y="252.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.16</text>
+<text x="46.0" y="271.0" font-size="12" fill="#1a1d2b">ATEM ISO Ingest</text>
+<text x="296.0" y="271.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.17</text>
+<text x="46.0" y="290.0" font-size="12" fill="#1a1d2b">VMix Record Ingest</text>
+<text x="296.0" y="290.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.18</text>
+<text x="46.0" y="309.0" font-size="12" fill="#1a1d2b">UniFi Controller</text>
+<text x="296.0" y="309.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.19</text>
+<text x="310.0" y="176.0" font-size="12" fill="#1a1d2b">GLKVM-Cloud (rttys)</text>
+<text x="560.0" y="176.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.20</text>
+<text x="310.0" y="195.0" font-size="12" fill="#1a1d2b">ATEM Overseer</text>
+<text x="560.0" y="195.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.21</text>
+<text x="310.0" y="214.0" font-size="12" fill="#1a1d2b">GLKVM-Cloud (coturn)</text>
+<text x="560.0" y="214.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.22</text>
+<text x="310.0" y="233.0" font-size="12" fill="#1a1d2b">ATEM Fleet Admin</text>
+<text x="560.0" y="233.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.23</text>
+<text x="310.0" y="252.0" font-size="12" fill="#1a1d2b">Flock</text>
+<text x="560.0" y="252.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">.1.24</text>
+<text x="310.0" y="271.0" font-size="12" fill="#1a1d2b">Tailscale subnet router</text>
+<text x="560.0" y="271.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">host net (.1.2)</text>
+<text x="46.0" y="332.0" font-size="11" fill="#5b6170" font-style="italic">IPs are 192.168.1.x · the subnet router uses the host&#x27;s own address</text>
+<text x="310.0" y="356.0" font-size="11" fill="#5b6170" text-anchor="middle" font-style="italic">2× 1GbE bonded (802.3ad LACP) to the gateway — aggregate headroom, not a faster single flow</text>
+<g><rect x="650" y="114" width="340" height="150" rx="8" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/><path d="M650,160 V122 a8,8 0 0 1 8,-8 H982 a8,8 0 0 1 8,8 V160 Z" fill="#1e2235"/></g>
+<text x="820.0" y="135.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Mothership — Cloud Gateway</text>
+<text x="820.0" y="152.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.1.0/24 · gateway 192.168.1.1</text>
+<text x="820.0" y="182.0" font-size="12" fill="#1a1d2b" text-anchor="middle">Hardwired venue WAN (internet)</text>
+<text x="820.0" y="200.0" font-size="12" fill="#1a1d2b" text-anchor="middle">Terminates the 4 uplink VLANs</text>
+<text x="820.0" y="218.0" font-size="12" fill="#1a1d2b" text-anchor="middle">WAN forwards: DERP 443/tcp + 3478/udp,</text>
+<text x="820.0" y="236.0" font-size="12" fill="#1a1d2b" text-anchor="middle">GLKVM-Cloud 8443 · 10443 · 3479</text>
+<rect x="750.0" y="68.0" width="140.0" height="26.0" rx="13" fill="#ffffff" stroke="#1e2235" stroke-width="1.5"/>
+<text x="820.0" y="85.0" font-size="12" fill="#1e2235" text-anchor="middle" font-weight="bold">Internet / WAN</text>
+<path d="M820.0,94.0 L820.0,114.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<path d="M590.0,189.0 L650.0,189.0" fill="none" stroke="#1e2235" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M590.0,195.0 L650.0,195.0" fill="none" stroke="#1e2235" stroke-width="2.2" stroke-linejoin="round"/>
+<text x="620.0" y="216.0" font-size="10.5" fill="#1e2235" text-anchor="middle" font-weight="bold">LACP</text>
+<text x="620.0" y="230.0" font-size="10.5" fill="#1e2235" text-anchor="middle" font-weight="bold">2×1GbE</text>
+<g><rect x="1050" y="84" width="560" height="80" rx="8" fill="#edf6eb" stroke="#3b7a37" stroke-width="1.5"/><path d="M1050,130 V92 a8,8 0 0 1 8,-8 H1602 a8,8 0 0 1 8,8 V130 Z" fill="#3b7a37"/></g>
+<text x="1330.0" y="105.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Ready room PCs (physical, mothership LAN)</text>
+<text x="1330.0" y="122.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">WebDAV mount straight onto Nextcloud — same LAN, no rclone</text>
+<text x="1330.0" y="153.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle" font-weight="bold">PC 1 .1.30   ·   PC 2 .1.31   ·   PC 3 .1.32   ·   PC 4 .1.33</text>
+<path d="M1050.0,124.0 L990.0,154.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<g><rect x="1050" y="182" width="560" height="152" rx="8" fill="#f2eef8" stroke="#64458f" stroke-width="1.5"/><path d="M1050,228 V190 a8,8 0 0 1 8,-8 H1602 a8,8 0 0 1 8,8 V228 Z" fill="#64458f"/></g>
+<text x="1330.0" y="203.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Edit suite — 192.168.22.0/24, own 10GbE LAN</text>
+<text x="1330.0" y="220.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">Not on the tailnet · routed to the mothership LAN only for the ingest dual-write</text>
+<text x="1066.0" y="250.0" font-size="12" fill="#1a1d2b">Edit suite NAS</text>
+<text x="1594.0" y="250.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.22.2</text>
+<text x="1066.0" y="269.0" font-size="12" fill="#1a1d2b">MacBook Pro — Editor 1</text>
+<text x="1594.0" y="269.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.22.11</text>
+<text x="1066.0" y="288.0" font-size="12" fill="#1a1d2b">MacBook Pro — Editor 2</text>
+<text x="1594.0" y="288.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.22.12</text>
+<text x="1066.0" y="307.0" font-size="12" fill="#1a1d2b">Mac mini — Project Server + Remote Render</text>
+<text x="1594.0" y="307.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.22.20</text>
+<path d="M1050.0,258.0 L1020.0,258.0 L1020.0,224.0 L990.0,224.0" fill="none" stroke="#64458f" stroke-width="2" stroke-linejoin="round"/>
+<rect x="998.3" y="222.5" width="43.4" height="16.5" rx="4" fill="#ffffff"/>
+<text x="1020.0" y="233.0" font-size="10.5" fill="#64458f" text-anchor="middle" font-style="italic">routed</text>
+<path d="M820.0,264.0 L820.0,410.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M42.0,410.0 L1246.5,410.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M42.0,410.0 L42.0,424.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<rect x="30.0" y="424.0" width="375.5" height="40.0" rx="6" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/>
+<text x="217.8" y="440.0" font-size="13" fill="#1a1d2b" text-anchor="middle" font-weight="bold">VLAN 101 — 10.10.1.0/24</text>
+<text x="217.8" y="457.0" font-size="11" fill="#5b6170" text-anchor="middle">venue-supplied 1 Gbps · Theatre 1–3 + VMix Node 1</text>
+<g><rect x="64.0" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,528 V490 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
+<text x="234.8" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 1</text>
+<text x="234.8" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.2.0/24</text>
+<text x="76.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="176.0" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="207.0" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="393.5" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.1</text>
+<text x="76.0" y="569.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="393.5" y="569.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.2</text>
+<text x="76.0" y="588.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="90.0" y="607.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="393.5" y="607.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.20</text>
+<text x="90.0" y="626.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="393.5" y="626.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.5</text>
+<text x="90.0" y="645.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="393.5" y="645.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.6</text>
+<text x="90.0" y="664.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="393.5" y="664.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.7</text>
+<text x="90.0" y="683.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="393.5" y="683.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.8</text>
+<text x="90.0" y="702.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="393.5" y="702.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.10</text>
+<g><rect x="64.0" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,777 V739 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
+<text x="234.8" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 2</text>
+<text x="234.8" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.3.0/24</text>
+<text x="76.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="176.0" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="207.0" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="393.5" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.1</text>
+<text x="76.0" y="818.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="393.5" y="818.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.2</text>
+<text x="76.0" y="837.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="90.0" y="856.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="393.5" y="856.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.20</text>
+<text x="90.0" y="875.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="393.5" y="875.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.5</text>
+<text x="90.0" y="894.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="393.5" y="894.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.6</text>
+<text x="90.0" y="913.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="393.5" y="913.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.7</text>
+<text x="90.0" y="932.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="393.5" y="932.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.8</text>
+<text x="90.0" y="951.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="393.5" y="951.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.10</text>
+<g><rect x="64.0" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,1026 V988 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
+<text x="234.8" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 3</text>
+<text x="234.8" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.4.0/24</text>
+<text x="76.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="176.0" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="207.0" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="393.5" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.1</text>
+<text x="76.0" y="1067.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="393.5" y="1067.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.2</text>
+<text x="76.0" y="1086.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="90.0" y="1105.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="393.5" y="1105.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.20</text>
+<text x="90.0" y="1124.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="393.5" y="1124.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.5</text>
+<text x="90.0" y="1143.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="393.5" y="1143.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.6</text>
+<text x="90.0" y="1162.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="393.5" y="1162.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.7</text>
+<text x="90.0" y="1181.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="393.5" y="1181.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.8</text>
+<text x="90.0" y="1200.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="393.5" y="1200.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.10</text>
+<g><rect x="64.0" y="1229" width="341.5" height="197" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M64.0,1275 V1237 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V1275 Z" fill="#b03a48"/></g>
+<text x="234.8" y="1250.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix Node 1</text>
+<text x="234.8" y="1267.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.20.0/24 · sits beside Theatre 1</text>
+<text x="76.0" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="176.0" y="1286.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="207.0" y="1297.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="393.5" y="1297.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.1</text>
+<text x="76.0" y="1316.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 1</text>
+<text x="393.5" y="1316.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.11</text>
+<text x="76.0" y="1335.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 2</text>
+<text x="393.5" y="1335.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.12</text>
+<text x="76.0" y="1354.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 3</text>
+<text x="393.5" y="1354.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.13</text>
+<text x="76.0" y="1373.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 4</text>
+<text x="393.5" y="1373.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.14</text>
+<text x="76.0" y="1392.0" font-size="12" fill="#1a1d2b">VMix PC 1</text>
+<text x="393.5" y="1392.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.21</text>
+<text x="76.0" y="1411.0" font-size="12" fill="#1a1d2b">VMix PC 2</text>
+<text x="393.5" y="1411.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.22</text>
+<path d="M42.0,464.0 L42.0,1252.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M42.0,505.0 L64.0,505.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="48.0" y="500.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M42.0,754.0 L64.0,754.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="48.0" y="749.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M42.0,1003.0 L64.0,1003.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="48.0" y="998.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M42.0,1252.0 L64.0,1252.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="48.0" y="1247.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M443.5,410.0 L443.5,424.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<rect x="431.5" y="424.0" width="375.5" height="40.0" rx="6" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/>
+<text x="619.2" y="440.0" font-size="13" fill="#1a1d2b" text-anchor="middle" font-weight="bold">VLAN 102 — 10.10.2.0/24</text>
+<text x="619.2" y="457.0" font-size="11" fill="#5b6170" text-anchor="middle">venue-supplied 1 Gbps · Theatre 4–6 + VMix Node 2</text>
+<g><rect x="465.5" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,528 V490 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
+<text x="636.2" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 4</text>
+<text x="636.2" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.5.0/24</text>
+<text x="477.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="577.5" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="608.5" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="795.0" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.1</text>
+<text x="477.5" y="569.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="795.0" y="569.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.2</text>
+<text x="477.5" y="588.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="491.5" y="607.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="795.0" y="607.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.20</text>
+<text x="491.5" y="626.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="795.0" y="626.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.5</text>
+<text x="491.5" y="645.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="795.0" y="645.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.6</text>
+<text x="491.5" y="664.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="795.0" y="664.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.7</text>
+<text x="491.5" y="683.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="795.0" y="683.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.8</text>
+<text x="491.5" y="702.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="795.0" y="702.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.10</text>
+<g><rect x="465.5" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,777 V739 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
+<text x="636.2" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 5</text>
+<text x="636.2" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.6.0/24</text>
+<text x="477.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="577.5" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="608.5" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="795.0" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.1</text>
+<text x="477.5" y="818.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="795.0" y="818.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.2</text>
+<text x="477.5" y="837.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="491.5" y="856.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="795.0" y="856.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.20</text>
+<text x="491.5" y="875.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="795.0" y="875.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.5</text>
+<text x="491.5" y="894.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="795.0" y="894.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.6</text>
+<text x="491.5" y="913.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="795.0" y="913.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.7</text>
+<text x="491.5" y="932.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="795.0" y="932.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.8</text>
+<text x="491.5" y="951.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="795.0" y="951.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.10</text>
+<g><rect x="465.5" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,1026 V988 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
+<text x="636.2" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 6</text>
+<text x="636.2" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.7.0/24</text>
+<text x="477.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="577.5" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="608.5" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="795.0" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.1</text>
+<text x="477.5" y="1067.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="795.0" y="1067.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.2</text>
+<text x="477.5" y="1086.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="491.5" y="1105.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="795.0" y="1105.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.20</text>
+<text x="491.5" y="1124.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="795.0" y="1124.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.5</text>
+<text x="491.5" y="1143.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="795.0" y="1143.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.6</text>
+<text x="491.5" y="1162.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="795.0" y="1162.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.7</text>
+<text x="491.5" y="1181.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="795.0" y="1181.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.8</text>
+<text x="491.5" y="1200.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="795.0" y="1200.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.10</text>
+<g><rect x="465.5" y="1229" width="341.5" height="197" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M465.5,1275 V1237 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V1275 Z" fill="#b03a48"/></g>
+<text x="636.2" y="1250.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix Node 2</text>
+<text x="636.2" y="1267.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.21.0/24 · sits beside Theatre 4</text>
+<text x="477.5" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="577.5" y="1286.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="608.5" y="1297.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="795.0" y="1297.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.1</text>
+<text x="477.5" y="1316.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 1</text>
+<text x="795.0" y="1316.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.11</text>
+<text x="477.5" y="1335.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 2</text>
+<text x="795.0" y="1335.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.12</text>
+<text x="477.5" y="1354.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 3</text>
+<text x="795.0" y="1354.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.13</text>
+<text x="477.5" y="1373.0" font-size="12" fill="#1a1d2b">BirdDog P400 cam 4</text>
+<text x="795.0" y="1373.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.14</text>
+<text x="477.5" y="1392.0" font-size="12" fill="#1a1d2b">VMix PC 1</text>
+<text x="795.0" y="1392.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.21</text>
+<text x="477.5" y="1411.0" font-size="12" fill="#1a1d2b">VMix PC 2</text>
+<text x="795.0" y="1411.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.22</text>
+<path d="M443.5,464.0 L443.5,1252.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M443.5,505.0 L465.5,505.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="449.5" y="500.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M443.5,754.0 L465.5,754.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="449.5" y="749.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M443.5,1003.0 L465.5,1003.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="449.5" y="998.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M443.5,1252.0 L465.5,1252.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="449.5" y="1247.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M845.0,410.0 L845.0,424.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<rect x="833.0" y="424.0" width="375.5" height="40.0" rx="6" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/>
+<text x="1020.8" y="440.0" font-size="13" fill="#1a1d2b" text-anchor="middle" font-weight="bold">VLAN 103 — 10.10.3.0/24</text>
+<text x="1020.8" y="457.0" font-size="11" fill="#5b6170" text-anchor="middle">venue-supplied 1 Gbps · Theatre 7–9</text>
+<g><rect x="867.0" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,528 V490 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
+<text x="1037.8" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 7</text>
+<text x="1037.8" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.8.0/24</text>
+<text x="879.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="979.0" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="1010.0" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="1196.5" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.1</text>
+<text x="879.0" y="569.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="1196.5" y="569.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.2</text>
+<text x="879.0" y="588.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="893.0" y="607.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="1196.5" y="607.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.20</text>
+<text x="893.0" y="626.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="1196.5" y="626.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.5</text>
+<text x="893.0" y="645.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="1196.5" y="645.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.6</text>
+<text x="893.0" y="664.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="1196.5" y="664.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.7</text>
+<text x="893.0" y="683.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="1196.5" y="683.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.8</text>
+<text x="893.0" y="702.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="1196.5" y="702.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.10</text>
+<g><rect x="867.0" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,777 V739 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
+<text x="1037.8" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 8</text>
+<text x="1037.8" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.9.0/24</text>
+<text x="879.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="979.0" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="1010.0" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="1196.5" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.1</text>
+<text x="879.0" y="818.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="1196.5" y="818.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.2</text>
+<text x="879.0" y="837.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="893.0" y="856.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="1196.5" y="856.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.20</text>
+<text x="893.0" y="875.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="1196.5" y="875.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.5</text>
+<text x="893.0" y="894.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="1196.5" y="894.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.6</text>
+<text x="893.0" y="913.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="1196.5" y="913.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.7</text>
+<text x="893.0" y="932.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="1196.5" y="932.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.8</text>
+<text x="893.0" y="951.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="1196.5" y="951.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.10</text>
+<g><rect x="867.0" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,1026 V988 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
+<text x="1037.8" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 9</text>
+<text x="1037.8" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.10.0/24</text>
+<text x="879.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="979.0" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="1010.0" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="1196.5" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.1</text>
+<text x="879.0" y="1067.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="1196.5" y="1067.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.2</text>
+<text x="879.0" y="1086.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="893.0" y="1105.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="1196.5" y="1105.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.20</text>
+<text x="893.0" y="1124.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="1196.5" y="1124.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.5</text>
+<text x="893.0" y="1143.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="1196.5" y="1143.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.6</text>
+<text x="893.0" y="1162.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="1196.5" y="1162.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.7</text>
+<text x="893.0" y="1181.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="1196.5" y="1181.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.8</text>
+<text x="893.0" y="1200.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="1196.5" y="1200.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.10</text>
+<path d="M845.0,464.0 L845.0,1003.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M845.0,505.0 L867.0,505.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="851.0" y="500.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M845.0,754.0 L867.0,754.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="851.0" y="749.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M845.0,1003.0 L867.0,1003.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="851.0" y="998.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M1246.5,410.0 L1246.5,424.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<rect x="1234.5" y="424.0" width="375.5" height="40.0" rx="6" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/>
+<text x="1422.2" y="440.0" font-size="13" fill="#1a1d2b" text-anchor="middle" font-weight="bold">VLAN 104 — 10.10.4.0/24</text>
+<text x="1422.2" y="457.0" font-size="11" fill="#5b6170" text-anchor="middle">venue-supplied 1 Gbps · Theatre 10–12</text>
+<g><rect x="1268.5" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,528 V490 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
+<text x="1439.2" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 10</text>
+<text x="1439.2" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.11.0/24</text>
+<text x="1280.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="1380.5" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="1411.5" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="1598.0" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.1</text>
+<text x="1280.5" y="569.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="1598.0" y="569.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.2</text>
+<text x="1280.5" y="588.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="1294.5" y="607.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="1598.0" y="607.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.20</text>
+<text x="1294.5" y="626.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="1598.0" y="626.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.5</text>
+<text x="1294.5" y="645.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="1598.0" y="645.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.6</text>
+<text x="1294.5" y="664.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="1598.0" y="664.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.7</text>
+<text x="1294.5" y="683.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="1598.0" y="683.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.8</text>
+<text x="1294.5" y="702.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="1598.0" y="702.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.10</text>
+<g><rect x="1268.5" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,777 V739 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
+<text x="1439.2" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 11</text>
+<text x="1439.2" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.12.0/24</text>
+<text x="1280.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="1380.5" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="1411.5" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="1598.0" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.1</text>
+<text x="1280.5" y="818.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="1598.0" y="818.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.2</text>
+<text x="1280.5" y="837.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="1294.5" y="856.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="1598.0" y="856.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.20</text>
+<text x="1294.5" y="875.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="1598.0" y="875.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.5</text>
+<text x="1294.5" y="894.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="1598.0" y="894.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.6</text>
+<text x="1294.5" y="913.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="1598.0" y="913.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.7</text>
+<text x="1294.5" y="932.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="1598.0" y="932.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.8</text>
+<text x="1294.5" y="951.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="1598.0" y="951.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.10</text>
+<g><rect x="1268.5" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,1026 V988 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
+<text x="1439.2" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 12</text>
+<text x="1439.2" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.13.0/24</text>
+<text x="1280.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<rect x="1380.5" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
+<text x="1411.5" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
+<text x="1598.0" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.1</text>
+<text x="1280.5" y="1067.0" font-size="12" fill="#1a1d2b">LAN1 → ATEM Mini Extreme ISO</text>
+<text x="1598.0" y="1067.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.2</text>
+<text x="1280.5" y="1086.0" font-size="11.5" fill="#5b6170" font-style="italic">LAN2 → 8-port switch (1 port spare):</text>
+<text x="1294.5" y="1105.0" font-size="12" fill="#1a1d2b">BirdDog Play</text>
+<text x="1598.0" y="1105.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.20</text>
+<text x="1294.5" y="1124.0" font-size="12" fill="#1a1d2b">PowerPoint Main</text>
+<text x="1598.0" y="1124.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.5</text>
+<text x="1294.5" y="1143.0" font-size="12" fill="#1a1d2b">PowerPoint Backup</text>
+<text x="1598.0" y="1143.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.6</text>
+<text x="1294.5" y="1162.0" font-size="12" fill="#1a1d2b">VT Main</text>
+<text x="1598.0" y="1162.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.7</text>
+<text x="1294.5" y="1181.0" font-size="12" fill="#1a1d2b">VT Backup</text>
+<text x="1598.0" y="1181.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.8</text>
+<text x="1294.5" y="1200.0" font-size="12" fill="#1a1d2b">Control laptop</text>
+<text x="1598.0" y="1200.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.10</text>
+<path d="M1246.5,464.0 L1246.5,1003.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M1246.5,505.0 L1268.5,505.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="1252.5" y="500.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M1246.5,754.0 L1268.5,754.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="1252.5" y="749.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<path d="M1246.5,1003.0 L1268.5,1003.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
+<text x="1252.5" y="998.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
+<rect x="833.0" y="1235.0" width="777.0" height="230.0" rx="8" fill="#f3f4f6" stroke="#d5d9e2" stroke-width="1.5"/>
+<text x="849.0" y="1261.0" font-size="13" fill="#1a1d2b" font-weight="bold">How to read this</text>
+<text x="849.0" y="1283.0" font-size="12" fill="#1a1d2b" font-weight="bold">Isolation</text>
+<text x="937.0" y="1283.0" font-size="12" fill="#1a1d2b">VLAN grouping is cabling only. Cross-theatre isolation is enforced by the Tailscale ACL</text>
+<text x="937.0" y="1302.0" font-size="12" fill="#1a1d2b">(config/tailscale-acl.json); each A-1300 also NATs its own theatre /24.</text>
+<text x="849.0" y="1321.0" font-size="12" fill="#1a1d2b" font-weight="bold">Overlay</text>
+<text x="937.0" y="1321.0" font-size="12" fill="#1a1d2b">Every A-1300 advertises its /24 as a Tailscale subnet router; the mothership&#x27;s</text>
+<text x="937.0" y="1340.0" font-size="12" fill="#1a1d2b">subnet router (container on the Unraid box) advertises 192.168.1.0/24.</text>
+<text x="849.0" y="1359.0" font-size="12" fill="#1a1d2b" font-weight="bold">Relay</text>
+<text x="937.0" y="1359.0" font-size="12" fill="#1a1d2b">If a direct WireGuard path fails, traffic falls back to the self-hosted DERP</text>
+<text x="937.0" y="1378.0" font-size="12" fill="#1a1d2b">server (.1.16) behind the gateway&#x27;s WAN forward, so it never leaves the event.</text>
+<text x="849.0" y="1397.0" font-size="12" fill="#1a1d2b" font-weight="bold">VMix nodes</text>
+<text x="937.0" y="1397.0" font-size="12" fill="#1a1d2b">Each node&#x27;s own A-1300 WAN joins its neighbour theatre&#x27;s VLAN group; it is a</text>
+<text x="937.0" y="1416.0" font-size="12" fill="#1a1d2b">separate tailnet node, not part of that theatre&#x27;s LAN.</text>
+<text x="849.0" y="1435.0" font-size="12" fill="#1a1d2b" font-weight="bold">Counts</text>
+<text x="937.0" y="1435.0" font-size="12" fill="#1a1d2b">14 GL-iNet A-1300s · 12 theatres × 8 devices · 133 devices in total</text>
+<text x="937.0" y="1454.0" font-size="12" fill="#1a1d2b">(see docs/ip-address-map.md for the per-device table).</text>
 </svg>

@@ -93,10 +93,13 @@ This build's current default is a single hardwired WAN per theatre (see
 `docs/topology.md`) — but GL-iNet's broader lineup supports genuine multi-WAN failover:
 multiple uplink sources (wired Ethernet, WiFi acting as a WAN client, a USB cellular
 modem) with automatic failover between them, no manual cable-swap or on-site
-intervention required. (Whether the A-1300 specifically has the automatic-failover
-feature is not documented — see the comparison table below; the Flint 2 documents it
-explicitly. Treat this as a lineup capability to verify per-model, not an assumed
-A-1300 feature.) For a deployment where most theatres run unattended for
+intervention required. This is a firmware 4.x feature (**NETWORK → Multi-WAN**: Failover
+or Load Balance across Ethernet, Repeater, Tethering and Cellular) that the A-1300's own
+user guide documents too, not just the bigger models — what differs per model is which
+WAN *media* it has to fail over to (the A-1300 has no built-in modem, so cellular means a
+USB dongle or a tethered phone)
+([GL.iNet Multi-WAN guide](https://docs.gl-inet.com/router/en/4/interface_guide/multi-wan/),
+[A-1300 user guide](https://docs.gl-inet.com/router/en/4/user_guide/gl-a1300/)). For a deployment where most theatres run unattended for
 long stretches, that matters — a lost wired connection mid-session isn't something
 someone can necessarily walk over and fix before it costs real time.
 
@@ -345,13 +348,17 @@ Prices and specs below are current as of when this doc was written (mid-2026) �
 runs frequent promo pricing, and this isn't a live-updated table, so treat exact figures
 as indicative and re-check before procurement. GBP pricing was only reliably obtainable
 for a couple of models (GL-iNet's regional store pages don't consistently expose static
-GBP pricing to an automated check) — USD is the more solid figure throughout.
+GBP pricing to an automated check) — USD is the more solid figure throughout. The
+WireGuard column is GL.iNet's own figure for its built-in (kernel) WireGuard client;
+this design runs **Tailscale**, which uses its own userspace engine and is likely slower
+on the same hardware — not benchmarked yet, see
+[`docs/open-questions.md`](open-questions.md) #19.
 
 | Model | Price (USD) | WireGuard throughput | Ports | WiFi | Cellular | Multi-WAN failover | Notes |
 |---|---|---|---|---|---|---|---|
-| **Slate Plus** (GL-A1300) | $70–100 (promo vs. list — [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) uses ~$100) | ~170 Mbps | 2× GbE LAN, 1× GbE WAN, 1× USB 3.0 | WiFi 5 | USB dongle only | Not documented | This build's current choice — see [`docs/topology.md`](topology.md). Smallest/cheapest of the group. |
-| **Beryl AX** (GL-MT3000) | $99 | ~300 Mbps | 1× GbE LAN, 1× 2.5G WAN, 1× USB 3.0 | WiFi 6 | USB dongle only (needs an add-on board for a real slot) | Not documented | Only 1 LAN port — doesn't fit this build's "ATEM gets its own dedicated port" wiring without an added switch. |
-| **Flint 2** (GL-MT6000) | $170 | ~900 Mbps | 4× GbE + 2× 2.5G | WiFi 6 | None | **Yes** — explicit failover + load-balancing | Highest throughput of the non-cellular models; much larger/heavier, poor fit for 12-per-theatre portability. |
+| **Slate Plus** (GL-A1300) | $70–100 (promo vs. list — [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) uses ~$100) | ~170 Mbps | 2× GbE LAN, 1× GbE WAN, 1× USB 3.0 | WiFi 5 | USB dongle only | Yes (firmware 4.x Multi-WAN) | This build's current choice — see [`docs/topology.md`](topology.md). Smallest/cheapest of the group. |
+| **Beryl AX** (GL-MT3000) | $99 | ~300 Mbps | 1× GbE LAN, 1× 2.5G WAN, 1× USB 3.0 | WiFi 6 | USB dongle only (needs an add-on board for a real slot) | Yes (firmware 4.x Multi-WAN) | Only 1 LAN port — doesn't fit this build's "ATEM gets its own dedicated port" wiring without an added switch. |
+| **Flint 2** (GL-MT6000) | $170 | ~900 Mbps | 4× GbE + 2× 2.5G | WiFi 6 | None (USB dongle/tethering) | **Yes** — failover + load-balancing, plus two Ethernet WANs | Highest throughput of the non-cellular models; much larger/heavier, poor fit for 12-per-theatre portability. |
 | **Slate 7** (GL-BE3600) | $150–170 | ~540 Mbps | 1× 2.5G LAN, 1× 2.5G WAN, 1× USB 3.0 | WiFi 7 (dual-band only — no 6GHz/320MHz, so limited real-world WiFi 7 benefit) | USB dongle only | Yes, per its own user guide | Newest of the group; compact. |
 | **Spitz AX** (GL-X3000) | $380 | ~300 Mbps | 1× GbE LAN, 1× 2.5G WAN, 1× USB 2.0 | WiFi 6 | **Built-in 5G/4G modem, dual Nano-SIM** | **Yes** — Ethernet/repeater/cellular/tethering | No internal battery — needs external 12V power. The dedicated cellular-failover choice if built-in modem matters more than portability. |
 | **Puli AX** (GL-XE3000) | $410 | ~300 Mbps | 1× GbE LAN, 1× 2.5G WAN, 1× USB 2.0 | WiFi 6 | **Built-in 5G modem, dual Nano-SIM** | **Yes** | Same cellular capability as Spitz AX, plus a **built-in 6400 mAh battery** — genuinely portable/untethered for short sessions, at a real price premium. |
@@ -365,7 +372,7 @@ for what that means in practice for running several theatres off one drop.
 **For this build specifically**, the Slate Plus stays the right call, but the margin
 behind that call has eroded a real amount as this design has grown — worth being
 precise rather than repeating the original reasoning unchanged. Under normal operation
-its 170 Mbps ceiling is still comfortable (~55% combined, per
+its 170 Mbps ceiling is still comfortable on paper (~55% combined, per
 [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)'s latest figures, which now
 include the ATEM Overseer and Flock monitoring/preview streams added after this
 comparison was first written). The scenario that actually bites is a theatre's NDI

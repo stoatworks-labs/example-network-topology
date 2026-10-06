@@ -20,13 +20,21 @@ standalone template is for deploying/testing GLKVM-Cloud on its own instead.
 
 ## Before running
 
-- **Confirm the upstream compose file hasn't changed** — this template is transcribed
-  from GL.iNet's own reference as of when this repo was written, not vendored as a file
-  dependency. Diff against
+- **Confirm the upstream compose file hasn't changed** — this template follows GL.iNet's
+  own reference (checked against upstream commit `be821d4`, 2026-08-20), adapted to
+  macvlan, not vendored as a file dependency. Diff against
   [the live version](https://github.com/gl-inet/glkvm-cloud/blob/main/docker-compose/docker-compose.yml)
   before deploying.
+- **Fetch the upstream checkout** both services mount their entrypoint script, config
+  templates and default certificate from (`git clone
+  https://github.com/gl-inet/glkvm-cloud.git`, then put its path in place of
+  `UPSTREAM_DIR`). The image's own entrypoint is bare `rttys` with no config, so without
+  these mounts every `RTTYS_*`/`TURN_*` value is silently ignored.
 - **Set real values** for `RTTYS_TOKEN`, `RTTYS_PASS`, `TURN_USER`/`TURN_PASS` (must match
-  between `rttys` and `coturn`), and `GLKVM_ACCESS_IP`.
+  between `rttys` and `coturn`), and `GLKVM_ACCESS_IP` — the venue's **public IPv4**
+  (upstream writes it into `rttys`'s `webrtc-ip` and `coturn`'s `external-ip`), not the
+  `kvm.example.net` hostname. `TURN_PORT` differs per service on purpose: `3479` on `rttys`
+  (the WAN port it advertises), `3478` on `coturn` (what it listens on).
 - **Apply the port forwards** in
   [`config/unifi/network-config.yaml`](../unifi/network-config.yaml) before expecting
   remote (off-venue) access to work — LAN access on `192.168.1.20` works regardless.

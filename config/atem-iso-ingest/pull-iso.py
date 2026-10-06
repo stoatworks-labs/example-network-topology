@@ -86,11 +86,19 @@ def sync_theatre(theatre_num, state):
         ftp = ftplib.FTP()
         ftp.connect(ip, timeout=15)
         ftp.login(FTP_USER, FTP_PASS)
+        # Binary mode before SIZE, not just before RETR: many FTP servers refuse SIZE (or
+        # report a different size) in the default ASCII mode.
+        ftp.voidcmd("TYPE I")
         ftp.cwd(FTP_REMOTE_DIR)
     except (ftplib.all_errors, OSError) as e:
         print(f"[theatre-{theatre_num}] FTP connect/login failed ({ip}): {e}", file=sys.stderr)
         return
 
+    # KNOWN GAP: lists FTP_REMOTE_DIR only, non-recursively. Blackmagic ISO recordings are
+    # a folder per recording ("Video ISO Files/", "Audio Source Files/" .wav, a .drp
+    # project), so the camera ISOs sit one level down in a folder whose name changes per
+    # recording. Needs a recursive walk once the real FTP layout is confirmed on a unit —
+    # see docs/atem-iso-ingest.md "Open items".
     try:
         names = ftp.nlst()
     except ftplib.all_errors as e:

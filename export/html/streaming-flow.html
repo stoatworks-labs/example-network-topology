@@ -26,6 +26,8 @@ tr:nth-child(even) td { background: #fafbfc; }
 blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
              color: #59636e; }
 img, svg { max-width: 100%; height: auto; }
+figure { margin: 1.5em 0; }
+figcaption { color: #59636e; font-size: .85em; margin-top: .4em; }
 hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
 ul.task-list { list-style: none; padding-left: 1.2em; }
 .doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
@@ -41,102 +43,34 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   th, td { padding: 3px 6px; }
   a { color: #1f2328; }
   h1, h2, h3 { page-break-after: avoid; }
-  pre, img, svg { page-break-inside: avoid; }
+  pre, img, svg, figure { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
 </style></head><body><div class="doc-meta">Standalone export of <code>docs/streaming-flow.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="streaming-flow--srt--ndi">Streaming flow — SRT / NDI</h1>
 <h2 id="primary-path-srt">Primary path (SRT)</h2>
 <pre><code>VMix PCs (both nodes) --SRT--&gt; Restreamer (mothership) --SRT (fan-out)--&gt; BirdDog Play ×12 (one per theatre)</code></pre>
-<p>SRT is unicast-by-IP, so this path has no discovery dependency and
-should route cleanly over the tailnet.</p>
+<p>SRT is unicast-by-IP, so this path has no discovery dependency and should route cleanly over the tailnet.</p>
+<p><strong>Set the SRT payload size to 1128 bytes on every sender</strong> (VMix's SRT outputs and each Restreamer SRT output). SRT's default 1316B payload makes a 1360B IP packet, which is larger than Tailscale's 1280B tunnel MTU, so default-sized SRT packets would be fragmented (or dropped if DF is set) entering the tunnel. 1128B (6 × 188B MPEG-TS packets) gives a 1172B packet that fits. See <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.</p>
 <h2 id="backup-path-ndi">Backup path (NDI)</h2>
 <pre><code>BirdDog Central (mothership) --NDI--&gt; BirdDog Play ×12 (one per theatre)</code></pre>
-<p><strong>How Central gets the program — NDI redistribution
-(settled).</strong> Central works as an NDI <em>redistributor</em>: the
-source VMix node PC's native NDI output registers with the NDI Discovery
-Server, Central receives it over that node's own uplink (~130 Mbps of
-the node's ~170 Mbps ceiling, a <strong>fallback-only</strong> load —
-pausing that node's VMix record ingest for the duration keeps it under
-the ceiling, the same lever the theatre side already uses), and Central
-re-sends it to the theatre PLAYs. Two researched facts pin this
-shape:</p>
+<p><strong>How Central gets the program — NDI redistribution (settled).</strong> Central works as an NDI <em>redistributor</em>: the source VMix node PC's native NDI output registers with the NDI Discovery Server, Central receives it over that node's own uplink (~130 Mbps of the node's ~170 Mbps ceiling, a <strong>fallback-only</strong> load — pausing that node's VMix record ingest for the duration keeps it under the ceiling, the same lever the theatre side already uses), and Central re-sends it to the theatre PLAYs. Two researched facts pin this shape:</p>
 <ul>
-<li><strong>BirdDog Central is NDI-only on the input side</strong> — its
-own user guide lists NDI sources, an NDI file-player, and an NDI
-re-transmitter; there is no SRT/RTMP ingest anywhere in it (<a
-href="https://birddog.tv/wp-content/uploads/2022/09/BirdDog-Central-2.0_User-Guide.pdf">Central
-2.0 User Guide</a>). So the feed into Central must already be NDI — it
-can't terminate the SRT program.</li>
-<li><strong>Restreamer can't be the NDI sender instead</strong> —
-upstream FFmpeg removed NDI support in 2019 over a NewTek GPL violation
-and never reinstated it; datarhei's own FFmpeg build contains no NDI
-library and the maintainers have declined to ship it for licensing
-reasons (<a
-href="https://github.com/datarhei/restreamer/discussions/391">datarhei/restreamer
-discussion #391</a>).</li>
+<li><strong>BirdDog Central is NDI-only on the input side</strong> — its own user guide lists NDI sources, an NDI file-player, and an NDI re-transmitter; there is no SRT/RTMP ingest anywhere in it (<a href="https://birddog.tv/wp-content/uploads/2022/09/BirdDog-Central-2.0_User-Guide.pdf">Central 2.0 User Guide</a>). So the feed into Central must already be NDI — it can't terminate the SRT program.</li>
+<li><strong>Restreamer can't be the NDI sender instead</strong> — upstream FFmpeg removed NDI support in 2019 over a NewTek GPL violation and never reinstated it; datarhei's own FFmpeg build contains no NDI library and the maintainers have declined to ship it for licensing reasons (<a href="https://github.com/datarhei/restreamer/discussions/391">datarhei/restreamer discussion #391</a>).</li>
 </ul>
-<p>Remaining verification items (not design questions) are tracked as <a
-href="open-questions.html"><code>docs/open-questions.md</code></a> #16.
-BirdDog Central was deliberately retained for this sender role when its
-fleet-management duties moved to Flock — see <a
-href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>.</p>
-<p><strong>Bandwidth note:</strong> full NDI (not HX) at 1080p50 is ~125
-Mbps per stream, roughly constant regardless of content — 12-22x SRT's
-figures, and without SRT's "static content is cheap" discount. Fine for
-a single theatre falling back — <em>provided that theatre's ATEM ISO
-ingest is paused for the duration</em>, since NDI plus the ingest
-together exceed the theatre's own A-1300 WireGuard ceiling — and a real
-capacity question if this path ever has to carry all 12 theatres at once
-(e.g. a Restreamer failure). See <a
-href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>
-for the full impact at per-router, per-VLAN, and mothership-NIC
-level.</p>
-<p><strong>Caveat, and the fix:</strong> NDI relies on mDNS multicast
-for discovery, which does not cross a Tailscale-routed boundary —
-Tailscale is point-to-point WireGuard and doesn't forward multicast/mDNS
-(<a href="https://github.com/tailscale/tailscale/issues/8884">still an
-open feature request</a>, not something MagicDNS papers over). Plain
-local mDNS discovery will not find BirdDog Central across theatres on
-its own.</p>
-<p><strong>Plan: run an NDI Discovery Server on the mothership.</strong>
-NDI 5+ added this specifically for WAN/VPN scenarios — it's unicast TCP
-(default port <strong>5959</strong>), so it works fine across the
-tailnet with no multicast involved:</p>
+<p>Remaining verification items (not design questions) are tracked as <a href="open-questions.html"><code>docs/open-questions.md</code></a> #16. BirdDog Central was deliberately retained for this sender role when its fleet-management duties moved to Flock — see <a href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>.</p>
+<p><strong>Bandwidth note:</strong> full NDI (not HX) at 1080p50 is ~125 Mbps per stream, roughly constant regardless of content — 12-22x SRT's figures, and without SRT's "static content is cheap" discount. Fine for a single theatre falling back — <em>provided that theatre's ATEM ISO ingest is paused for the duration</em>, since NDI plus the ingest together exceed the theatre's own A-1300 WireGuard ceiling — and a real capacity question if this path ever has to carry all 12 theatres at once (e.g. a Restreamer failure). See <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a> for the full impact at per-router, per-VLAN, and mothership-NIC level.</p>
+<p><strong>Caveat, and the fix:</strong> NDI relies on mDNS multicast for discovery, which does not cross a Tailscale-routed boundary — Tailscale is point-to-point WireGuard and doesn't forward multicast/mDNS (<a href="https://github.com/tailscale/tailscale/issues/8884">still an open feature request</a>, not something MagicDNS papers over). Plain local mDNS discovery will not find BirdDog Central across theatres on its own.</p>
+<p><strong>Plan: run an NDI Discovery Server on the mothership.</strong> NDI 5+ added this specifically for WAN/VPN scenarios — it's unicast TCP (default port <strong>5959</strong>), so it works fine across the tailnet with no multicast involved:</p>
 <ul>
-<li>Run the discovery server as a small service on the mothership,
-alongside BirdDog Central.</li>
-<li>Point every NDI participant at that server's IP: the VMix node PCs
-(senders of the program feed Central redistributes), BirdDog Central
-(receiver of that feed <em>and</em> sender toward the theatres), and all
-12 BirdDog Play units (receivers). On Windows/macOS this is the NDI
-Tools Access Manager "Advanced" tab; on Linux it's
-<code>~/.ndi/ndi-config.v1.json</code>.</li>
-<li>Once a sender has a discovery server configured, it stops using mDNS
-entirely — it's visible only to finders pointed at the same server.</li>
-<li>Tailscale MagicDNS can supply a stable hostname for the discovery
-server's address instead of hardcoding its Tailscale IP, if the
-receiving device's config field accepts a hostname — a convenience, not
-a substitute for the discovery server itself.</li>
+<li>Run the discovery server as a small service on the mothership, alongside BirdDog Central.</li>
+<li>Point every NDI participant at that server's IP: the VMix node PCs (senders of the program feed Central redistributes), BirdDog Central (receiver of that feed <em>and</em> sender toward the theatres), and all 12 BirdDog Play units (receivers). On Windows/macOS this is the NDI Tools Access Manager "Advanced" tab; on Linux it's <code>~/.ndi/ndi-config.v1.json</code>.</li>
+<li>Once a sender has a discovery server configured, it stops using mDNS entirely — it's visible only to finders pointed at the same server.</li>
+<li>Tailscale MagicDNS can supply a stable hostname for the discovery server's address instead of hardcoding its Tailscale IP, if the receiving device's config field accepts a hostname — a convenience, not a substitute for the discovery server itself.</li>
 </ul>
-<p><strong>Confirmed on BirdDog Play:</strong> BirdUI (the PLAY's web
-admin — browse to its IP, default password <code>birddog</code>) has a
-Network panel with NDI-specific settings including a Discovery Server
-toggle. Switch it ON, enter a comma-delimited list of Discovery Server
-IP address(es), click APPLY. BirdDog's own docs describe this as the
-mechanism for locating NDI sources "on different subnets" — exactly this
-cross-theatre case — and it supports multiple servers for failover.
-Sources: <a
-href="https://birddog.tv/wp-content/uploads/2022/11/BirdDog-PLAY_User-Guide_231003.pdf">BirdDog
-PLAY User Guide</a>, <a
-href="https://birddog.tv/wp-content/uploads/2024/04/BirdDog_BirdUI_User-Guide.pdf">BirdUI
-User Guide</a>. Change the default admin password before the event —
-BirdUI grants full device config access.</p>
-<p>See <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/streaming-flow.svg"><code>diagrams/streaming-flow.svg</code></a>
-— primary path solid, backup path dashed. For why BirdDog Play is the
-theatre-side receiver at all (vs. a laptop</p>
+<p><strong>Confirmed on BirdDog Play:</strong> BirdUI (the PLAY's web admin — browse to its IP, default password <code>birddog</code>) has a Network panel with NDI-specific settings including a Discovery Server toggle. Switch it ON, enter a comma-delimited list of Discovery Server IP address(es), click APPLY. BirdDog's own docs describe this as the mechanism for locating NDI sources "on different subnets" — exactly this cross-theatre case — and it supports multiple servers for failover. Sources: <a href="https://birddog.tv/wp-content/uploads/2022/11/BirdDog-PLAY_User-Guide_231003.pdf">BirdDog PLAY User Guide</a>, <a href="https://birddog.tv/wp-content/uploads/2024/04/BirdDog_BirdUI_User-Guide.pdf">BirdUI User Guide</a>. Change the default admin password before the event — BirdUI grants full device config access.</p>
+<p>See <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/diagrams/streaming-flow.svg"><code>diagrams/streaming-flow.svg</code></a> — primary path solid, backup path dashed. For why BirdDog Play is the theatre-side receiver at all (vs. a laptop</p>
 <ul>
-<li>VLC), see <a
-href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>.</li>
+<li>VLC), see <a href="birddog-play-rationale.html"><code>docs/birddog-play-rationale.md</code></a>.</li>
 </ul>
 </body></html>
