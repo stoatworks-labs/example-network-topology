@@ -23,26 +23,33 @@
   router) runs as Docker containers. Chose **Unraid over TrueNAS SCALE** for its
   polished one-click container experience (the original GPU-passthrough-maturity
   tiebreaker no longer applies with the VMix VM gone),
-  accepting the $129 one-time Lifetime license cost that TrueNAS (free) doesn't have. See
-  [`docs/topology.md`](topology.md) for the full breakdown.
+  accepting a license cost that TrueNAS (free) doesn't have — as of 2026 Unraid sells
+  Starter ($49, up to 6 storage devices) and Unleashed ($109, unlimited) with one year of
+  updates then an optional $36/yr, or Lifetime ($249, updates included)
+  ([Unraid pricing](https://unraid.net/blog/new-pricing)). The old "$129 Lifetime" figure
+  was the pre-2024 Pro price. This build's pools are 6 drives with the mirrored
+  recording pool, 8 with RAID-Z1, so Starter is at or over its limit — Unleashed or
+  Lifetime. See [`docs/topology.md`](topology.md) for the full breakdown.
 
-- **Theatre router: GL-iNet A-1300 (Slate Plus).** Published client-mode WireGuard
-  throughput ≈ 170 Mbps ([GL.iNet A-1300 datasheet](https://static.gl-inet.com/www/images/products/datasheet/a1300_datasheet_20230602.pdf)).
-  Each theatre's router only ever carries *its own* theatre's traffic — one incoming SRT
-  feed to that theatre's BirdDog Play plus up to 4 laptops' rclone sync — not the
-  aggregate across all 12 theatres (that 12x aggregate converges at the mothership's WAN
-  link and Restreamer, not at any single theatre router). So the real per-router budget is
-  roughly 1× SRT bitrate (~8–50 Mbps depending on resolution/codec) + bursty rclone
-  traffic from up to 4 laptops — comfortably inside the A-1300's 170 Mbps headroom.
-  *(Caveat: that traffic list predates ATEM ISO ingest and the Overseer/Flock monitoring
-  streams, all of which now ride the same router. The current per-router model —
-  97% of the ceiling at worst-case normal load, 128% during an NDI fallback with ingest
-  running — is in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)'s "check the
-  A-1300's own ceiling" section; the router choice still stands, but "comfortably" no
-  longer describes the margin.)*
+- **Theatre router: GL-iNet Slate AX (GL-AXT1800)** *(previously the A-1300 (Slate
+  Plus); replaced 2026-10-06 — see the router-change entry below).* Qualcomm IPQ6000,
+  4× Cortex-A53 @ 1.2 GHz (64-bit), 1× WAN + 2× LAN gigabit — the same port layout as the
+  A-1300, so the LAN1 → ATEM / LAN2 → switch wiring is unchanged — WireGuard up to
+  550 Mbps (vendor, kernel WireGuard), $119.99 list
+  ([GL.iNet specs](https://www.gl-inet.com/products/gl-axt1800/specs/)). Expected Tailscale
+  throughput **~150–250 Mbps combined — an estimate** extrapolated from a Beryl AX
+  measurement, not a Slate AX benchmark (#19). Each theatre's router only ever carries
+  *its own* theatre's traffic — the incoming SRT feed to its BirdDog Play, its ATEM ISO
+  ingest, the Overseer/Flock monitoring streams and its laptops' rclone sync — not the
+  aggregate across all 12 theatres (that converges at the mothership). Per-router
+  upstream at the default live scope (camera ISO + program) is ~73 / 83 / 109 Mbps (low /
+  typical / high); camera + 2 laptops + program ~104 / 135 / 192 Mbps. Full model in
+  [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)'s "The per-router ceiling: why
+  the A-1300 was replaced by the Slate AX" section.
 
-- **VMix node routers: also GL-iNet A-1300.** Same model as the 12 theatre routers — 14
-  A-1300s total across the network. Both LAN ports bridge together (no dedicated-port
+- **VMix node routers: also GL-iNet Slate AX** (previously A-1300, replaced with the
+  theatre routers). Same model as the 12 theatre routers — 14 Slate AX units total across
+  the network. Both LAN ports bridge together (no dedicated-port
   split needed here, unlike the theatre routers' BirdDog Play case). Configs generated:
   [`config/gl-inet/vmix-node-1.uci`](../config/gl-inet/vmix-node-1.uci) and
   [`vmix-node-2.uci`](../config/gl-inet/vmix-node-2.uci).
@@ -82,7 +89,7 @@
   here since they're new, not previously confirmed:
   - **Uplink VLAN transit addressing** (`10.10.1-4.0/24`, VLAN tags 101–104) for the 4
     physical VLAN groups' GL-iNet WAN ports. Doesn't affect anything inside the theatres
-    (still NAT'd behind each A-1300) or Tailscale (rides over whatever WAN IP is handed
+    (still NAT'd behind each Slate AX) or Tailscale (rides over whatever WAN IP is handed
     out) — purely a Cloud Gateway-side detail. Change freely.
   - **Docker networking mode per mothership service**: Nextcloud/Restreamer/NDI Discovery
     Server/DERP server assigned dedicated IPs via macvlan; Tailscale subnet router uses
@@ -107,7 +114,8 @@
   goes down. See [`docs/tailscale.md`](tailscale.md) for the full setup (container flags,
   port forward, cert handling).
 
-- **Cloud Gateway assumed to support LAG.** Proceeding on that assumption rather than
+- **Cloud Gateway assumed to support LAG.** *(A working assumption, not a confirmed fact —
+  still to verify, see #17.)* Proceeding on that assumption rather than
   confirming the exact model first. Fallback already agreed if it turns out not to:
   drop an intermediate LACP-capable switch in between and bond the Unraid server's NICs
   through that instead of directly into the Cloud Gateway — the bond itself doesn't care
@@ -132,7 +140,7 @@
   `rsync --append`, targeting each PC's Windows SMB share instead of an FTP server. SMB
   is a native network filesystem protocol, so this is arguably a better fit for a
   mount-based approach than the ATEM's FTP-only case was, not a stretch of the same
-  pattern. Each VMix node has its own dedicated A-1300 uplink (not shared with the
+  pattern. Each VMix node has its own dedicated Slate AX uplink (not shared with the
   theatre it sits near), so this traffic never competes with that theatre's ATEM ingest
   or SRT feed. Full design in [`docs/vmix-record-ingest.md`](vmix-record-ingest.md),
   tooling in [`config/vmix-record-ingest/`](../config/vmix-record-ingest/).
@@ -148,7 +156,7 @@
 - **Self-hosted GLKVM-Cloud added for centralized administration of the 14 GL-iNet
   routers.** No physical KVM hardware involved — this uses GLKVM-Cloud's separately
   documented HTTP/HTTPS web-proxy and device-management support for embedded OpenWrt
-  devices (which the A-1300s are), giving one browser-based SSH terminal + web-admin
+  devices (which the Slate AX routers are), giving one browser-based SSH terminal + web-admin
   proxy for all 14 routers instead of 14 separate sessions. Same
   self-hosted-over-vendor-cloud rationale as DERP and the UniFi Controller, avoiding
   GL.iNet's own `glkvm.com`. Two containers (`rttys` on `192.168.1.20`, `coturn` on
@@ -170,15 +178,20 @@
 - **Bandwidth modeled against venue-supplied VLANs — 2 VLANs (not 4) recommended, but
   reconsider given how thin that margin has gotten.** The 4 uplink VLANs turned out to
   be venue-supplied, 1 Gbps each, with expensive ports — changes the goal from "isolate
-  cleanly" to "minimize VLAN count at adequate performance." Real numbers (last updated
-  after adding the Flock BirdDog Play preview stream, ~10.4 Mbps/theatre, on top of ATEM
-  Overseer's — see below): per-theatre upstream is dominated by ATEM ISO ingest
-  (~62 Mbps realistic of ~88 Mbps total) — at the current 3-theatres-per-VLAN split,
-  that's ~27% utilization, with room to consolidate to 2 VLANs (6 theatres each,
-  ~53% realistic / 78% worst-case) before it stops being comfortable; **1 VLAN for all 12
-  theatres now exceeds capacity even at realistic load (106%)**, not just worst case —
-  it's only viable at all if ATEM ingest is deferred to end-of-session pulls instead of
-  real-time. Full model in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
+  cleanly" to "minimize VLAN count at adequate performance." Real numbers (recomputed
+  2026-10-06 for the common input map and corrected ISO bitrates — see the entries below):
+  per-theatre upstream is ~83 Mbps typical / ~109 high at the default live scope (camera
+  ISO + program), ~135 / ~192 with both laptop inputs live. At the current
+  3-theatres-per-VLAN split that's ~250–330 Mbps per VLAN at the default scope (~405–577
+  with both laptops) — 4 VLANs are comfortable at every scope. 2 VLANs (6 theatres each)
+  run ~500 Mbps typical at the default scope and ~654 with one laptop input, viable;
+  ~810 typical with both laptop inputs is too tight. **1 VLAN for all 12 theatres is at
+  capacity (~1,000 Mbps typical) even at the default scope** — viable only if ATEM ingest
+  is deferred to end-of-session pulls instead of real-time. Full model in
+  [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
+  *(Note for the 2-VLAN option: both VMix nodes uplink next to Theatres 1 and 4, so under
+  a 2-VLAN split they both land in the Theatre 1-6 group — re-check that group, and the
+  mass-NDI-fallback case, against that doc's "VMix nodes' uplinks" section.)*
 
 - **ATEM Overseer + ATEM Fleet Admin added to the mothership.** Two of the user's own
   separate projects, deployed as Docker containers (`192.168.1.21` and `192.168.1.23`)
@@ -199,6 +212,37 @@
   — another flat per-theatre addition. Same not-built-from-source caveat as Overseer/Fleet
   Admin above.
 
+- **Theatre/VMix router changed: GL.iNet Slate AX (GL-AXT1800) ×14 replaces the A-1300
+  (2026-10-06).** The A-1300's ~170 Mbps is GL.iNet's *kernel* WireGuard figure
+  ([GL.iNet](https://www.gl-inet.com/products/gl-a1300/)); Tailscale does its crypto in
+  userspace Go (`wireguard-go`), and on the A-1300's 32-bit IPQ4018 (4× Cortex-A7
+  ~717 MHz, 256 MB RAM, firmware stuck at 4.5.x with Tailscale 1.58) Go has no optimised
+  ChaCha20-Poly1305 assembly. Comparable gaps: GL-MT1300 ~90 Mbps WireGuard vs. ~20
+  Tailscale ([tailscale#10524](https://github.com/tailscale/tailscale/issues/10524));
+  Beryl AX (64-bit) 300 WireGuard vs. ~150 Mbps each way Tailscale
+  ([GL.iNet forum](https://forum.gl-inet.com/t/max-speed-using-beryl-ax-gl-mt3000-with-tailscale/42826)).
+  Planning estimate for Tailscale on an A-1300: ~30–70 Mbps combined (unmeasured) — below
+  even the default live scope. The Slate AX (64-bit, same 1 WAN + 2 LAN layout) is
+  estimated at ~150–250 Mbps combined, pending a benchmark (#19). Rejected alternatives:
+  Slate 7 (GL-BE3600) — only one LAN port; Flint 2 (GL-MT6000, ~300–450 Mbps Tailscale
+  est.) — the headroom option, but desktop form factor. Fallback if the Slate AX can't be
+  had: the A-1300 running GL.iNet's kernel WireGuard instead of Tailscale (~120–170 Mbps
+  combined; camera + program only, no NDI fallback). Router count unchanged at 14.
+
+- **Common theatre input map + selective live ISO pull (2026-10-06).** Every ATEM is
+  patched identically: input 1 camera, 2 presenter laptop 1 (PowerPoint Main), 3 laptop 2
+  (VT Main / second presenter), 4–8 backups/spare. The ATEM records all inputs to its SSD
+  regardless (ISO recording is all-or-nothing, bitrate not user-settable), but only the
+  **program file plus the ISO inputs in `ATEM_ISO_INPUTS`** (default `1`, the camera;
+  `1,2` / `1,2,3` add the laptops where headroom allows) are pulled live; the program
+  record quality is set to ~8–10 Mbps. Everything else arrives via the physical DIT
+  offload ([`docs/live-editing.md`](live-editing.md)). Implemented in
+  [`pull-iso.py`](../config/atem-iso-ingest/pull-iso.py) (recursive walk + input filter,
+  `ATEM_ISO_INPUT_PATTERN` override) and in the `rclone-mount-rsync/` alternative (rsync
+  filters from the same variable); `docker-compose.yml` and `.env.template` carry
+  `ATEM_ISO_INPUTS=1`. Design in [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)
+  § Common theatre input map.
+
 - **Live editing subsystem added — new `192.168.22.0/24` subnet, own 10GbE LAN, not on
   the Tailscale mesh.** 2× MacBook Pro editing workstations plus dedicated fast storage
   at the mothership, editing event content as it arrives rather than after the event.
@@ -218,10 +262,27 @@
 
 ## Still open — verify before building
 
+0. **Resolved by decision (2026-10-06) — measurement still outstanding.** *(Numbered 0,
+   not 1, so the long-standing #1-#20 references across the repo stay valid.)* The old
+   model's 10 Mbps per ISO stream was wrong: Blackmagic specifies ISO files at up to
+   70 Mb/s, not user-settable (~45 Mbps at 24/25/30p, ~70 at 50/60p), with user reports
+   averaging ~30–45 Mbps. **Decided:** the common input map and a live pull of the program
+   recording plus only the ISO inputs in `ATEM_ISO_INPUTS` (default: the camera), the rest
+   by physical DIT offload, on a Slate AX router — see the two Resolved entries above.
+   Planning figures: camera ISO 35 / 45 / 70 Mbps, laptop ISO 15 / 25 / 40 Mbps
+   (*estimate*), program 10 Mbps. **Still to measure on a real unit** (`ffprobe`, or
+   size ÷ duration), at the event's frame rate and firmware (older firmware recorded at
+   90–120 Mbps): a camera ISO file, a laptop/slides ISO file, and the program file at the
+   chosen Streaming/record quality setting (target ~8–10 Mbps). The laptop figure is
+   pure estimate; one file pins it. Figures in
+   [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) § Bandwidth,
+   [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) and
+   [`docs/server-specification.md`](server-specification.md).
+
 1. **Check the existing server's real spec against the calculated target in
    [`docs/server-specification.md`](server-specification.md).** In particular: does it
-   have validated (not merely tolerated) ECC support, enough PCIe lanes for the three
-   NVMe pools, and enough RAM/cores (target: 12 cores/24 threads, 64-96 GB RAM) to
+   have validated (not merely tolerated) ECC support, enough PCIe lanes for the two
+   NVMe pools (up to 6 drives) plus the 10GbE edit-LAN NIC, and enough RAM/cores (target: 12 cores/24 threads, 64-96 GB RAM) to
    run the BirdDog Central Windows VM plus 12 Docker containers concurrently
    without contention during a live event. (GPU passthrough/IOMMU checks dropped from
    this list — nothing needs them since the VMix VM was removed, see #10.)
@@ -229,7 +290,12 @@
 2. **Actually register/point `derp.example.net`** (or substitute whatever domain/DDNS host
    you end up controlling) at the mothership's public IP, and confirm the WAN port forward
    (443/tcp, 3478/udp) is in place before relying on it — the name and port are picked,
-   but nothing resolves until the DNS record and port forward both exist.
+   but nothing resolves until the DNS record and port forward both exist. Upstream's
+   `derper` guide also says to permit **80/tcp** (the design forwards only 443 + 3478 —
+   decide whether to add it), and that there is no published `derper` package/image:
+   `config/docker-compose.yml` now builds it from source, and `-verify-clients` wants
+   `derper` and the subnet router's `tailscaled` built from the same release
+   ([derper README](https://github.com/tailscale/tailscale/blob/main/cmd/derper/README.md)).
 
 3. **Verify the DERP hairpin path doesn't get caught by the uplink-VLAN firewall block.**
    [`config/unifi/network-config.yaml`](../config/unifi/network-config.yaml) blocks the 4
@@ -239,9 +305,9 @@
    behavior is Cloud-Gateway-firmware-specific. Confirm with `tailscale netcheck` on a
    theatre router once built, before assuming the self-hosted DERP server is actually reachable.
 
-4. **Confirm the real ATEM ISO bitrate/active-channel count, and empirically verify
-   partial-file playability.** The bandwidth plan above uses 10 Mbps/stream and an
-   assumed 4-6 active channels — worth checking against actual ATEM recording settings.
+4. **Confirm the real ATEM ISO bitrates, and empirically verify partial-file
+   playability.** The live scope is now fixed by the common input map rather than an
+   assumed active-channel count; the per-source bitrates still need measuring (#0).
    Whether a file copied mid-recording is genuinely valid (rather than just "very likely,
    given Blackmagic's marketed edit-while-recording capability") should be tested against
    a real unit before relying on it operationally. See
@@ -261,9 +327,16 @@
    finalize alone. If real-time ATEM ingest turns out incompatible with the venue's final
    VLAN allocation, deferring it to end-of-session pulls is the fallback — same doc.
 
-7. **Confirm `GLKVM_ACCESS_IP`'s exact accepted format, and whether `coturn` needs its own
-   separate external-address setting**, before trusting the WAN-remapped port forwards
-   (`8443`, `3479`) to actually work end-to-end for remote GLKVM-Cloud admin access. See
+7. **Confirm the WAN-remapped GLKVM-Cloud ports (`8443`, `3479`) work end-to-end.**
+   Partly answered from upstream's own entrypoint and templates
+   ([`docker-compose/`](https://github.com/gl-inet/glkvm-cloud/tree/main/docker-compose)):
+   `GLKVM_ACCESS_IP` is written into `rttys`'s `webrtc-ip` *and* `coturn`'s
+   `external-ip`, and its auto-detect fallback only accepts IPv4 — so it should be the
+   venue's **public IPv4**, not the `kvm.example.net` hostname. `coturn` gets its
+   external address from that same variable (no separate setting needed), and `TURN_PORT`
+   is both the port `rttys` advertises and the port `coturn` listens on, so the compose
+   files now set it per container (`3479` advertised, `3478` listened). Still untested:
+   whether the web UI behaves on `:8443`, and what happens if the public IP isn't static. See
    [`docs/glkvm-cloud.md`](glkvm-cloud.md) for the fallback (second public IP or an
    SNI-routing reverse proxy) if the plain env var doesn't cover it. Also confirm whether
    `coturn` is needed at all for the SSH-terminal/web-proxy features actually in use here
@@ -273,7 +346,8 @@
 8. **New assumptions introduced by [`config/docker-compose.yml`](../config/docker-compose.yml)**,
    none confirmed against a real deployment: the NDI Discovery Server image
    (`pnxr/ndi-discovery-minimal`, a third-party community build, not NDI/NewTek-published
-   — confirm it's still maintained), the MongoDB version the UniFi Controller needs
+   — Docker Hub shows it last pushed 2022-09-18 on NDI SDK 5.5, so treat it as
+   unmaintained and pin/fork or replace it), the MongoDB version the UniFi Controller needs
    (drifts with the controller image's own version, not fixed here), and MariaDB + Redis
    as Nextcloud's DB/cache backend (chosen over SQLite — this box has a lot of concurrent
    writers across 12 theatres' rclone syncs plus both ingest pipelines, which official
@@ -282,9 +356,11 @@
 9. **Confirm actual event duration (day count × active-recording hours/day)** before
    treating the 8 TB recording pool in
    [`docs/server-specification.md`](server-specification.md) as settled — that document
-   calculates it covers roughly 15.5-23.5 hours of continuous worst-to-realistic-case
-   load (~1.5-3 typical event days), but this repo doesn't establish the event's real
-   length anywhere. If it runs longer without a periodic archive-off step, either the
+   calculates it covers roughly ~16.5-23 hours at the default live scope (camera ISO +
+   program per theatre, high to typical rates; ~1.6-2.9 typical event days), or only
+   ~8.7-12.9 hours if both laptop inputs are pulled live fleet-wide — on planning figures,
+   not measurements (#0) — but this repo doesn't establish the event's real length
+   anywhere. If it runs longer without a periodic archive-off step, either the
    pool needs to grow or an offload step needs adding to the ingest design.
 
 10. **Resolved — by removal.** This slot used to ask what the mothership's own VMix
@@ -336,7 +412,8 @@
 16. **Verify the settled NDI-redistribution feed into BirdDog Central.** The mechanism
     is decided ([`docs/streaming-flow.md`](streaming-flow.md)): the source VMix node
     PC's native NDI output → NDI Discovery Server registration → Central receives over
-    that node's uplink (fallback-only ~130 Mbps against the ~170 Mbps ceiling, with
+    that node's uplink (fallback-only ~130 Mbps against the Slate AX's estimated
+    ~150–250 Mbps Tailscale ceiling, #19, with
     that node's record ingest paused for the duration) → Central re-sends to the
     theatre PLAYs. The alternatives were researched and ruled out: Restreamer cannot
     emit NDI (upstream FFmpeg removed NDI in 2019 over a NewTek GPL violation; datarhei
@@ -350,3 +427,96 @@
     the original source, which would bypass the mothership and break both the ACL model
     and the bandwidth math); and measure the node uplink during a rehearsed fallback
     against the modelled ~130 Mbps.
+
+17. **Confirm the Cloud Gateway's exact model — LAG support *and* routing capacity.**
+    Listed as a resolved assumption above, but nothing in this repo confirms it, and
+    [`docs/deployment-runbook.md`](deployment-runbook.md) Phase 0 still treats it as a
+    to-do. Port aggregation is only supported on the UDM Pro / SE / Pro Max, UXG
+    Enterprise and EFG ([Ubiquiti](https://help.ui.com/hc/en-us/articles/360007279753)) —
+    a literal "Cloud Gateway" (UCG Ultra/Max/Fiber) has none. Separately, every theatre
+    packet is *routed* by this box from an uplink VLAN onto Mothership-LAN: on a UDM Pro
+    the LAN switch reportedly reaches the CPU over a single 1 Gbps link, capping
+    inter-VLAN routing near 1 Gbps whatever the bond does — below the ~1,120 Mbps typical /
+    ~1,430 Mbps high inbound at the default live scope in [`docs/server-specification.md`](server-specification.md). Check the real
+    unit's inter-VLAN throughput, and which ports the uplink VLANs and the server land on.
+
+18. **Finish and verify the mothership-side routing path into the tailnet, and the ACL
+    rules for it.** Everything on the mothership that talks to a theatre (both ingest containers,
+    Fleet Admin, Restreamer, Overseer, Flock, GLKVM-Cloud, and the BirdDog Central VM) does
+    so through the subnet router at `192.168.1.2`. The outbound leg is now specified
+    (gateway static routes); the rest is not yet proven:
+    - **Macvlan containers can't exchange traffic with their own host** — the same
+      isolation Unraid applies by default (the host can't reach its own macvlan containers
+      unless "Host access to custom networks" is on). A container using
+      `192.168.1.2` as its next hop, or the host forwarding a decrypted reply to a
+      container, both hit it. And by default the subnet router SNATs tailnet traffic to
+      `192.168.1.2`, so even theatre-initiated streams arrive "from the host" and the
+      container's reply has to get back to it. Candidate fixes: Unraid's "Host access to
+      custom networks" (check that it covers a compose-created macvlan network, not just
+      Unraid's own), or moving the subnet router off host networking.
+    - **Static routes on the Cloud Gateway** (`192.168.2-13.0/24`, `.20`, `.21` →
+      `192.168.1.2`) are now in
+      [`config/unifi/network-config.yaml`](../config/unifi/network-config.yaml). They solve
+      the outbound next hop, but every packet from a container or the VM crosses the bond
+      twice — see the NIC section of
+      [`docs/server-specification.md`](server-specification.md) — and they don't solve
+      the *return* leg: the host delivers replies to `192.168.1.13-.24` on-link, which
+      macvlan isolation drops unless host access is on.
+    - **ACL: now names the subnets in both directions.**
+      [`config/tailscale-acl.json`](../config/tailscale-acl.json) previously granted only
+      `tag:mothership → tag:theatre:*`; a tag matches the tagged nodes' own tailnet
+      addresses, not the `/24`s they advertise, so `192.168.1.17 → 192.168.2.2` (and a
+      theatre router registering with GLKVM-Cloud at `192.168.1.20`) would have been
+      denied. It now lists every `/24` as a host alias, as source and destination, with
+      theatre ranges only ever paired with the mothership range. Still to do: confirm
+      against current Tailscale docs, decide on `--snat-subnet-routes=false` (Tailscale's
+      site-to-site guide sets it so the far end sees real source addresses), and re-test
+      cross-theatre isolation once built.
+    - `config/docker-compose.yml`'s subnet router previously ran in the Tailscale image's
+      default **userspace** mode, which can't forward LAN → tailnet traffic at all; it is
+      now set to kernel mode (`TS_USERSPACE=false`).
+
+19. **Benchmark Tailscale on one Slate AX before buying 14.** The ~150–250 Mbps combined
+    ceiling every per-router figure in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)
+    is checked against is an *estimate* extrapolated from a Beryl AX measurement — no Slate
+    AX Tailscale benchmark was found, and GL.iNet's 550 Mbps is its kernel WireGuard
+    figure, not Tailscale's userspace `wireguard-go` (the gap that ruled out the A-1300).
+    Run `iperf3 --bidir` between a theatre LAN host and the mothership through Tailscale,
+    on a **direct** path (confirm with `tailscale status` / `tailscale ping` — not via
+    DERP). Target: **above ~160 Mbps combined** — the NDI-fallback-with-ingest-paused floor
+    is ~151–166 Mbps. If it falls short, the Flint 2 (GL-MT6000) is the headroom option.
+
+20. **Set the SRT payload size to 1128 bytes** on the VMix node PCs' SRT outputs and on
+    Restreamer's outputs. SRT's default 1316-byte payload makes a 1360-byte IP packet,
+    above Tailscale's 1280-byte tunnel MTU, so every SRT packet would fragment or drop;
+    1128 bytes (6 × 188-byte TS packets) gives a 1172-byte packet that fits — see
+    [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
+
+21. **Confirm which ATEM Mini Extreme ISO model is on site — original or G2 — and its
+    ISO file naming.** The ingest design assumes FTP is the only way in; check whether the
+    model in use exposes its recording media as a network drive as well (reported for the
+    G2), which would change the cheapest ingest path. Confirm against the unit, not the
+    product page alone. Also confirm the ISO files carry **`CAM <n>`** in their names:
+    live input selection (`ATEM_ISO_INPUTS`) depends on it, and a file that doesn't match
+    is treated as a program recording and pulled — so a naming mismatch silently pulls
+    every input. Override with `ATEM_ISO_INPUT_PATTERN` (`pull-iso.py`) or edit
+    `build_filters` (`rclone-mount-rsync/mount-and-sync.sh`) if it differs.
+
+22. **Resolved — `pull-iso.py` now recurses.** It used to list `ATEM_FTP_REMOTE_DIR`
+    only, non-recursively, while ATEM ISO recordings are written into per-recording
+    project folders. [`pull-iso.py`](../config/atem-iso-ingest/pull-iso.py) now walks the
+    tree (MLSD, falling back to NLST + a `CWD` probe; up to three levels deep) and keeps
+    the folder structure in the mirror. **Untested against a real ATEM** — check the walk
+    and depth limit when the FTP layout is confirmed on a unit (#4).
+
+23. **Reconcile the smart-bin path filter with the NAS layout.** The Resolve smart-bin
+    recipes in [`docs/live-editing.md`](live-editing.md) filter clips by record-drive
+    path, but the ingest dual-write lands them under `TheatreN/ISO/<recording folder>/` on the NAS — the
+    filter has to match the path the ingest actually writes, not the ATEM's own drive
+    name.
+
+24. **Give the Unraid server a 10GbE port and an address on `192.168.22.0/24`** for the
+    edit-suite dual-write (as [`docs/live-editing.md`](live-editing.md) and the NIC
+    section of [`docs/server-specification.md`](server-specification.md) require). Not
+    yet in [`docs/ip-address-map.md`](ip-address-map.md), and the hardware isn't
+    confirmed on the on-hand box (#1).

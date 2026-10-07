@@ -26,6 +26,8 @@ tr:nth-child(even) td { background: #fafbfc; }
 blockquote { border-left: 4px solid #d1d9e0; margin: 1em 0; padding: 0 1em;
              color: #59636e; }
 img, svg { max-width: 100%; height: auto; }
+figure { margin: 1.5em 0; }
+figcaption { color: #59636e; font-size: .85em; margin-top: .4em; }
 hr { border: none; border-top: 2px solid #e3e8ee; margin: 2em 0; }
 ul.task-list { list-style: none; padding-left: 1.2em; }
 .doc-meta { color: #59636e; font-size: .85em; border-bottom: 2px solid #e3e8ee;
@@ -41,44 +43,14 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
   th, td { padding: 3px 6px; }
   a { color: #1f2328; }
   h1, h2, h3 { page-break-after: avoid; }
-  pre, img, svg { page-break-inside: avoid; }
+  pre, img, svg, figure { page-break-inside: avoid; }
 }
 @page { size: A4; margin: 15mm 13mm; }
-</style></head><body><div class="doc-meta">Standalone export of <code>docs/live-editing.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="live-editing--post-production-at-the-mothership">Live editing —
-post-production at the mothership</h1>
-<p>A separate subsystem at the mothership: 2× MacBook Pro editing
-workstations plus dedicated fast storage, editing event content as it
-arrives rather than waiting until after the event. Deliberately
-<strong>not</strong> part of the theatre-facing network this whole repo
-otherwise documents — different traffic pattern (sustained multi-gigabit
-scrubbing/export, not the bursty low-bitrate streams everything else
-here is sized for), different security boundary (no reason for 12
-theatres to reach an editor's workstation or vice versa), and a
-genuinely different failure domain (an editing workstation crashing
-shouldn't touch the live show).</p>
-<h2
-id="why-this-needs-its-own-network-segment-not-just-a-corner-of-the-existing-one">Why
-this needs its own network segment, not just a corner of the existing
-one</h2>
-<p>Every bandwidth figure elsewhere in this repo (<a
-href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>)
-is sized around what the <em>live event</em> needs — SRT/NDI streaming,
-ATEM ISO ingest, file sync. Editing is a different animal: scrubbing or
-exporting 4K footage wants sustained throughput in the hundreds of Mbps
-to multiple Gbps <em>per editor</em>, not the tens of Mbps this design
-budgets per theatre. Putting that load on the mothership's existing 2×
-bonded 1GbE (<a
-href="server-specification.html"><code>docs/server-specification.md</code></a>)
-would mean either starving the editors or risking contention with the
-live ingest pipelines still running during the event — the one thing
-this whole design goes out of its way to avoid elsewhere (see the
-NDI-fallback mitigation's own margin concerns in
-<code>docs/bandwidth-analysis.md</code>).</p>
-<p><strong>Recommendation: a dedicated 10GbE LAN for the edit
-suite</strong>, physically separate from the mothership's theatre-facing
-network, proposed as <code>192.168.22.0/24</code> (next free block after
-the VMix nodes — see <a
-href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>):</p>
+</style></head><body><div class="doc-meta">Standalone export of <code>docs/live-editing.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="live-editing--post-production-at-the-mothership">Live editing — post-production at the mothership</h1>
+<p>A separate subsystem at the mothership: 2× MacBook Pro editing workstations plus dedicated fast storage, editing event content as it arrives rather than waiting until after the event. Deliberately <strong>not</strong> part of the theatre-facing network this whole repo otherwise documents — different traffic pattern (sustained multi-gigabit scrubbing/export, not the bursty low-bitrate streams everything else here is sized for), different security boundary (no reason for 12 theatres to reach an editor's workstation or vice versa), and a genuinely different failure domain (an editing workstation crashing shouldn't touch the live show).</p>
+<h2 id="why-this-needs-its-own-network-segment-not-just-a-corner-of-the-existing-one">Why this needs its own network segment, not just a corner of the existing one</h2>
+<p>Every bandwidth figure elsewhere in this repo (<a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>) is sized around what the <em>live event</em> needs — SRT/NDI streaming, ATEM ISO ingest, file sync. Editing is a different animal: scrubbing a multicam timeline or exporting wants sustained throughput in the hundreds of Mbps <em>per editor</em> (multiple Gbps only for 4K or intermediate codecs), not the tens of Mbps this design budgets per theatre. For scale: the ATEM Mini Extreme ISO is an HD switcher whose ISO files are H.264 at up to 70 Mb/s each (<a href="https://www.blackmagicdesign.com/products/atemmini/techspecs">Blackmagic tech specs</a>), so a full 9-angle multicam is ~630 Mbps ≈ 79 MB/s per editor at the spec ceiling. (Each theatre actually patches only a camera and up to two laptops — the <a href="atem-iso-ingest.html#common-theatre-input-map">common input map</a> — so a real session's multicam is nearer camera + 2 laptops + program, ~105 Mbps ≈ 13 MB/s typical, on planning estimates.) 4K would only enter through the VMix recordings (BirdDog P400s are 4K-capable; VMix's record settings are still unconfirmed — see <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>). Putting that load on the mothership's existing 2× bonded 1GbE (<a href="server-specification.html"><code>docs/server-specification.md</code></a>) would mean either starving the editors or risking contention with the live ingest pipelines still running during the event — the one thing this whole design goes out of its way to avoid elsewhere (see the NDI-fallback mitigation's own margin concerns in <code>docs/bandwidth-analysis.md</code>).</p>
+<p><strong>Recommendation: a dedicated 10GbE LAN for the edit suite</strong>, physically separate from the mothership's theatre-facing network, proposed as <code>192.168.22.0/24</code> (next free block after the VMix nodes — see <a href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>):</p>
 <pre><code>Theatre ATEM/VMix ──[Tailscale, existing ingest path]──&gt; Unraid ATEM ISO Ingest /
                                                           VMix Record Ingest container
                                                                   │
@@ -96,248 +68,79 @@ href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>):</p>
                     │  MacBook Pro 2 ──┼── Edit Suite NAS
                     │  [Mac mini: Project Server + Remote Render] ┘
                     └──────────────────────────────────────────────</code></pre>
-<p>Same ingest containers already documented in <a
-href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> and
-<a
-href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>,
-writing to a <strong>second destination</strong> as well as Nextcloud —
-one pull off the ATEM/VMix source, two writes, not a chained re-sync
-(see Decision 1 below). No Tailscale within the edit suite itself —
-everything in this subsystem is in the same room as the mothership,
-unlike the theatre uplinks this repo's Tailscale mesh exists to solve
-for (<a href="tailscale.html"><code>docs/tailscale.md</code></a>). A
-simple routed connection back to <code>192.168.1.x</code> is enough for
-anything that still needs it; the edit suite doesn't need to be
-reachable <em>from</em> any theatre, and vice versa.</p>
-<p>Standard MacBook Pros don't have built-in 10GbE — each needs a
-Thunderbolt-to-10GbE adapter or dock (e.g. OWC/Sonnet-class hardware) to
-actually hit these speeds; budget for that alongside whatever storage is
-chosen below.</p>
-<p>See <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/live-editing-dataflow.svg"><code>diagrams/live-editing-dataflow.svg</code></a>
-for this same dual-write path as a diagram.</p>
-<h2 id="decision-1-nextclouds-storage-vs-a-dedicated-nas">Decision 1:
-Nextcloud's storage vs. a dedicated NAS</h2>
-<p><strong>Dedicated NAS, kept in sync via the same rclone/rsync pattern
-already built for ingest.</strong> Three reasons Nextcloud's own storage
-(the Unraid recording pool) is the wrong target to edit directly
-against:</p>
+<p>Same ingest containers already documented in <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> and <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>, writing to a <strong>second destination</strong> as well as Nextcloud — one pull off the ATEM/VMix source, two writes, not a chained re-sync (see Decision 1 below). No Tailscale within the edit suite itself — everything in this subsystem is in the same room as the mothership, unlike the theatre uplinks this repo's Tailscale mesh exists to solve for (<a href="tailscale.html"><code>docs/tailscale.md</code></a>). A simple routed connection back to <code>192.168.1.x</code> is enough for anything that still needs it; the edit suite doesn't need to be reachable <em>from</em> any theatre, and vice versa. <strong>The dual-write itself must not ride that routed path</strong>: the Unraid server needs its own interface on <code>192.168.22.0/24</code> (a 10GbE NIC — see <a href="server-specification.html"><code>docs/server-specification.md</code></a> § NIC), with the NAS share mounted on the host and bind-mounted into the ingest containers, so the second write never touches the theatre-facing bond. That interface has <strong>no address assigned yet</strong> in <a href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>.</p>
+<p>MacBook Pros have no built-in Ethernet at all — each needs a Thunderbolt-to-10GbE adapter or dock (e.g. Sonnet Solo10G, MSRP <span class="math inline">199.99, </span>200-230 street as of 2026-10-06; OWC-class equivalents) to actually hit these speeds; budget for that alongside whatever storage is chosen below. The Mac mini (Decision 2) ships with 2.5GbE as standard, so order it with Apple's 10GbE build-to-order option rather than adding an adapter.</p>
+<p><strong>Throughput sanity check.</strong> A single 10GbE link delivers roughly 900+ MB/s over SMB in practice (<a href="https://www.provideocoalition.com/review-a-look-at-the-blackmagic-cloud-store-mini/">ProVideo Coalition's Cloud Store Mini review</a> measured &gt;900 MB/s read/write from a Mac). Against that: 2 editors × ~79 MB/s (9-angle HD multicam), plus the ingest dual-write (at the default live scope of camera + program per theatre, ~98 MB/s typical / ~135 MB/s high including the ~120 Mbps VMix placeholder; ~172 / ~255 MB/s if both laptop inputs are pulled live too — see <code>docs/server-specification.md</code> — and physically capped at roughly ~225–375 MB/s by the twelve Slate AX uplinks' <em>estimated</em> ~150–250 Mbps), plus Remote Render reads, is well under half of one 10GbE port. 10GbE is comfortable headroom here rather than a hard requirement; it becomes necessary only if the VMix recordings turn out to be 4K or an intermediate codec (ProRes and similar).</p>
+<p>See <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/diagrams/live-editing-dataflow.svg"><code>diagrams/live-editing-dataflow.svg</code></a> for this same dual-write path as a diagram.</p>
+<h2 id="decision-1-nextclouds-storage-vs-a-dedicated-nas">Decision 1: Nextcloud's storage vs. a dedicated NAS</h2>
+<p><strong>Dedicated NAS, kept in sync via the same rclone/rsync pattern already built for ingest.</strong> Three reasons Nextcloud's own storage (the Unraid recording pool) is the wrong target to edit directly against:</p>
 <ul>
-<li><strong>It's sized and provisioned for the ingest workload, not
-editing.</strong> The recording pool's whole design brief (<a
-href="server-specification.html"><code>docs/server-specification.md</code></a>)
-is absorbing 16 concurrent low-bitrate append streams reliably — a
-completely different I/O shape from 2 editors scrubbing/exporting
-simultaneously.</li>
-<li><strong>Contention risk during the live event.</strong> ATEM ISO
-Ingest and VMix Record Ingest are still actively writing to this same
-pool while editors would be reading from it — exactly the kind of
-shared-resource risk this repo's segmentation philosophy exists to avoid
-everywhere else.</li>
-<li><strong>Nextcloud's own serving stack (PHP/WebDAV) adds overhead a
-raw SMB/NFS-native NAS mount doesn't have</strong> — fine for occasional
-file sync, not ideal for sustained media scrubbing.</li>
+<li><strong>It's sized and provisioned for the ingest workload, not editing.</strong> The recording pool's whole design brief (<a href="server-specification.html"><code>docs/server-specification.md</code></a>) is absorbing 16 concurrent low-bitrate append streams reliably — a completely different I/O shape from 2 editors scrubbing/exporting simultaneously.</li>
+<li><strong>Contention risk during the live event.</strong> ATEM ISO Ingest and VMix Record Ingest are still actively writing to this same pool while editors would be reading from it — exactly the kind of shared-resource risk this repo's segmentation philosophy exists to avoid everywhere else.</li>
+<li><strong>Nextcloud's own serving stack (PHP/WebDAV) adds overhead a raw SMB/NFS-native NAS mount doesn't have</strong> — fine for occasional file sync, not ideal for sustained media scrubbing.</li>
 </ul>
-<p>A dedicated NAS, fed by the <strong>same pull, writing to a second
-destination</strong> — not a chained re-sync reading Nextcloud's own
-copy back out again, just the existing <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/atem-iso-ingest/"><code>config/atem-iso-ingest/</code></a>
-and <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/config/vmix-record-ingest/"><code>config/vmix-record-ingest/</code></a>
-containers' <code>rsync --append</code> step writing to both
-<code>/mnt/user/nextcloud-external/...</code> (Nextcloud's External
-Storage, for the near-real-time review path this repo already documents)
-and a second mount on the edit-suite NAS, in the same pass. One read off
-the ATEM/VMix source, two writes — cheaper and simpler than pulling
-twice, and the edit suite never has to wait on Nextcloud's own indexing
-(<code>occ files:scan</code>) to see new footage, since it's not going
-through Nextcloud at all. Same incremental-transfer reasoning as
-everywhere else in this repo: <code>rsync --append</code> only transfers
-new bytes as footage keeps growing, on both destinations. (The second
-write is a documented design, not yet a code change — the actual scripts
-currently write only the Nextcloud destination; tracked as <a
-href="open-questions.html"><code>docs/open-questions.md</code></a> item
-15.)</p>
-<p><strong>NAS options, roughly by cost:</strong></p>
+<p>A dedicated NAS, fed by the <strong>same pull, writing to a second destination</strong> — not a chained re-sync reading Nextcloud's own copy back out again, just the existing <a href="https://github.com/stoatworks-labs/example-network-topology/tree/main/config/atem-iso-ingest"><code>config/atem-iso-ingest/</code></a> and <a href="https://github.com/stoatworks-labs/example-network-topology/tree/main/config/vmix-record-ingest"><code>config/vmix-record-ingest/</code></a> containers' incremental append step (<code>pull-iso.py</code>'s FTP <code>REST</code> resume for the ATEMs by default, <code>rsync --append</code> for VMix and the ATEM alternative) writing to both <code>/mnt/user/nextcloud-external/...</code> (Nextcloud's External Storage, for the near-real-time review path this repo already documents) and a second mount on the edit-suite NAS, in the same pass. One read off the ATEM/VMix source, two writes — cheaper and simpler than pulling twice, and the edit suite never has to wait on Nextcloud's own indexing (<code>occ files:scan</code>) to see new footage, since it's not going through Nextcloud at all. Same incremental-transfer reasoning as everywhere else in this repo: the append step only transfers new bytes as footage keeps growing, on both destinations. (The second write is a documented design, not yet a code change — the actual scripts currently write only the Nextcloud destination; tracked as <a href="open-questions.html"><code>docs/open-questions.md</code></a> item 15.)</p>
+<p><strong>NAS options, roughly by cost</strong> (US prices as of 2026-10-06; Blackmagic raised Cloud Store prices more than once in 2026 on flash/DRAM costs, so re-check before ordering):</p>
 <table>
 <thead>
-<tr>
+<tr class="header">
 <th>Option</th>
 <th>~Price</th>
 <th>Notes</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>Blackmagic Cloud Dock 4 / Dock 2 / Pod (BYO drives)</td>
-<td>$445-$1,535</td>
-<td>Pure 10GbE network enclosure, no included storage — cheapest path to
-real throughput if drives are sourced separately</td>
+<tr class="odd">
+<td>Blackmagic Cloud Pod (BYO USB drives)</td>
+<td>$445</td>
+<td>1×10GbE, but it shares <strong>USB-C drives</strong> and each disk port is USB 3.0 (5 Gb/s) — the drives, not the network, set the ceiling (a few hundred MB/s per disk)</td>
 </tr>
-<tr>
-<td>Generic 10GbE NAS (Synology/QNAP-class, populate with own
-drives)</td>
+<tr class="even">
+<td>Blackmagic Cloud Dock 2 / Dock 4 (BYO drives)</td>
+<td>$649 / $1,575</td>
+<td>2× / 4× 10GbE, takes 2.5" U.2 or SATA drives (≤11 mm), <strong>exFAT/HFS+ only</strong>. Each drive is shared as its own independent volume — <strong>no RAID, so no redundancy either</strong>. Cheapest path to real throughput if drives are sourced separately</td>
+</tr>
+<tr class="odd">
+<td>Generic 10GbE NAS (Synology/QNAP-class, populate with own drives)</td>
 <td>Varies, comparable to Cloud Dock + drives</td>
-<td>Not Resolve-specific, but plain SMB/NFS works identically; more
-flexible (can also run Docker containers — relevant to Decision 2)</td>
+<td>Not Resolve-specific, but plain SMB/NFS works identically; more flexible (can also run Docker containers — relevant to Decision 2), and the only option here with real RAID redundancy</td>
 </tr>
-<tr>
+<tr class="even">
 <td><strong>Blackmagic Cloud Store Mini</strong>, 8TB</td>
-<td><strong>$4,945</strong></td>
-<td>4× M.2 NVMe, <strong>RAID 0 — no redundancy</strong>, 1×10GbE +
-1×1GbE, up to 50 concurrent connections. Confirm the RAID0 risk is
-acceptable — a drive failure mid-event means falling back to a fresh
-pull from the mothership's own recording pool, not losing anything
-permanently, but it is a real mid-event disruption</td>
+<td><strong>$5,059</strong></td>
+<td>4× M.2 NVMe, <strong>RAID 0 — no redundancy</strong>, 1×10GbE + 1×1GbE + USB-C, up to 50 concurrent SMB/NFS connections. Confirm the RAID0 risk is acceptable — a drive failure mid-event means falling back to a fresh pull from the mothership's own recording pool, not losing anything permanently, but it is a real mid-event disruption</td>
 </tr>
-<tr>
+<tr class="odd">
 <td>Blackmagic Cloud Store Mini, 16TB</td>
-<td>$8,245</td>
-<td>Same, more headroom if editing against more than a curated subset of
-the event's footage</td>
+<td>$8,435</td>
+<td>Same, more headroom if editing against more than a curated subset of the event's footage</td>
 </tr>
 </tbody>
 </table>
-<p>For 2 editors working from a curated subset of footage (not the full
-8TB recording pool — see the open question below on how much actually
-needs to be pulled), the Cloud Store Mini 8TB is a reasonable fit and
-gets Resolve-aware sync to Blackmagic Cloud "for free" if that's ever
-wanted later (see Decision 4). A generic 10GbE NAS is the cost-conscious
-or redundancy-conscious alternative. Either way, the Project Server is a
-separate dedicated Mac mini (Decision 2), not something hosted on the
-NAS itself — see below.</p>
-<h2
-id="decision-2-a-dedicated-mac-mini-running-the-project-server-and-remote-render">Decision
-2: a dedicated Mac mini running the Project Server and Remote
-Render</h2>
-<p>The workflow this section is built around (see below) has
-<strong>resolve-configurator build one shared show project</strong> — a
-single set of Theatre/Date bins and per-session timelines both editors
-work against, populated by smart bins as footage lands — not two editors
-each on their own private copy. That design choice settles the "do we
-even need Collaboration" question from an earlier draft of this doc:
-<strong>yes</strong>, because both editors need to see the same
-live-updating bin/timeline structure, not separate forks of it. So this
-is a dedicated node, not an optional one.</p>
+<p>For 2 editors working from a curated subset of footage (not the full 8TB recording pool — see the open question below on how much actually needs to be pulled), the Cloud Store Mini 8TB is a reasonable fit and gets Resolve-aware sync to Blackmagic Cloud "for free" if that's ever wanted later (see Decision 4). A generic 10GbE NAS is the cost-conscious or redundancy-conscious alternative. Either way, the Project Server is a separate dedicated Mac mini (Decision 2), not something hosted on the NAS itself — see below.</p>
+<h2 id="decision-2-a-dedicated-mac-mini-running-the-project-server-and-remote-render">Decision 2: a dedicated Mac mini running the Project Server and Remote Render</h2>
+<p>The workflow this section is built around (see below) has <strong>resolve-configurator build one shared show project</strong> — a single set of Theatre/Date bins and per-session timelines both editors work against, populated by smart bins as footage lands — not two editors each on their own private copy. That design choice settles the "do we even need Collaboration" question from an earlier draft of this doc: <strong>yes</strong>, because both editors need to see the same live-updating bin/timeline structure, not separate forks of it. So this is a dedicated node, not an optional one.</p>
 <p><strong>What that node needs to run:</strong></p>
 <ul>
-<li><strong>The DaVinci Resolve Project Server</strong> — a small
-standalone app bundling a pinned PostgreSQL version, syncing project
-metadata (bins, timelines, locks) between editors in real time.
-<strong>It does not move media</strong> — actual footage still needs to
-be reachable by both editors via shared storage regardless (the NAS from
-Decision 1).</li>
-<li><strong>Resolve's Remote Render feature</strong> — dispatches an
-export job from an editor's Deliver page to a separate networked Resolve
-Studio install, so the editor's own laptop isn't tied up rendering while
-cutting continues. Confirmed (Blackmagic's own Reference Manual): this
-is one job to one machine at a time — <strong>not</strong> a distributed
-render farm; Resolve never splits a single job's frames across multiple
-nodes.</li>
+<li><strong>The DaVinci Resolve Project Server</strong> — a small standalone app bundling a pinned PostgreSQL version, syncing project metadata (bins, timelines, locks) between editors in real time. <strong>It does not move media</strong> — actual footage still needs to be reachable by both editors via shared storage regardless (the NAS from Decision 1).</li>
+<li><strong>Resolve's Remote Render feature</strong> — dispatches an export job from an editor's Deliver page to a separate networked Resolve Studio install, so the editor's own laptop isn't tied up rendering while cutting continues. Confirmed (Blackmagic's own Reference Manual): this is one job to one machine at a time — <strong>not</strong> a distributed render farm; Resolve never splits a single job's frames across multiple nodes.</li>
 </ul>
-<p><strong>Recommendation: a single dedicated Mac mini running
-both</strong>, rather than a Docker container on a NAS (dropped from an
-earlier draft — Blackmagic ships the Project Server as a native
-macOS/Windows/Linux app, not a container image, so this isn't a
-realistic option) and rather than either editor's own laptop. The
-most-cited failure mode across DIT/post-production forum threads is
-exactly the laptop case: if that machine sleeps, reboots, or the lid
-closes, <em>both</em> editors lose the shared project, not just one.</p>
-<p><strong>Combining Project Server and Remote Render duty on one Mac
-mini — confirmed workable, but thinly documented, so flagging the
-confidence honestly:</strong></p>
+<p><strong>Recommendation: a single dedicated Mac mini running both</strong>, rather than a Docker container on a NAS (dropped from an earlier draft — Blackmagic ships the Project Server as a native macOS/Windows/Linux app, not a container image, so this isn't a realistic option) and rather than either editor's own laptop. The most-cited failure mode across DIT/post-production forum threads is exactly the laptop case: if that machine sleeps, reboots, or the lid closes, <em>both</em> editors lose the shared project, not just one.</p>
+<p><strong>Combining Project Server and Remote Render duty on one Mac mini — confirmed workable, but thinly documented, so flagging the confidence honestly:</strong></p>
 <ul>
-<li>Blackmagic's own documentation does not state a prohibition on
-co-locating the two roles, and architecturally there's no reason it
-wouldn't work — the Project Server is just a background
-PostgreSQL-backed service, Remote Render is just a licensed Resolve
-Studio instance running in a render role. But this specific combination
-isn't something Blackmagic explicitly confirms in writing, and it's a
-thin pattern in practitioner discussion — one forum thread asked this
-exact question ("could the project library be on this Mac mini as
-well?") and never got a direct answer; one real-world example found
-keeps a small Mac mini as project-server-only, separate from any render
-node. Worth treating as <strong>very likely fine for a 2-editor
-event-scale deployment, not a Blackmagic-certified pattern</strong> — a
-reasonable design decision, not a guaranteed one.</li>
-<li><strong>Both the render node and every editor's machine need DaVinci
-Resolve Studio</strong>, not the free version — confirmed directly in
-Blackmagic's manual ("remote rendering does not work with the free
-version of DaVinci Resolve"). <strong>$295 perpetual license per
-seat</strong>, one-time cost. Blackmagic's own forum states an
-activation-code license can be active on 2 machines simultaneously,
-which in principle could cover an editor's laptop plus the render node
-from one seat — but this is a general Studio licensing term applied to
-this scenario, not a Remote-Render-specific clause, so budget one
-license per machine unless that's tested and confirmed to work as
-expected.</li>
-<li><strong>Remote Render requires a Network project library
-(PostgreSQL), not a Local one</strong> — confirmed by a Blackmagic
-DaVinci support engineer on their own forum. In other words, Remote
-Render can't be added on top of two independent local projects; it only
-works once the Project Server (or Blackmagic Cloud) infrastructure
-already exists. That's further reason these two decisions are coupled
-here, not separable.</li>
-<li><strong>The media storage volume must be mounted on both the
-requesting machine and the render node</strong> — confirmed in
-Blackmagic's manual. The Mac mini needs the same Edit Suite NAS mount
-the MacBook Pros use, not just database connectivity.</li>
-<li><strong>Performance is workable for 1080p H.264 but not
-fast</strong> — no source benchmarks this exact scenario, so treat this
-as reasoned inference from adjacent data: Apple Silicon's H.264 hardware
-encode gap (base/Pro chips: one encode engine vs. two on Max, four on
-Ultra) matters far more at 4K/UHD than at 1080p, where independent
-reviews found little real difference between a Mac mini and a Mac
-Studio. But remote rendering itself runs slower than local rendering
-regardless of hardware — one documented case measured roughly half the
-fps remotely vs. locally. <strong>Spec the Mac mini at M2 Pro/M4 Pro
-tier or better</strong>, not the base chip, given it's doing double duty
-as database host and render node; a base-tier mini is a real risk for
-anything beyond light 1080p H.264 jobs.</li>
-<li><strong>Known gotcha to plan around</strong>: submitting multiple
-render jobs to the same remote node at the same time can silently fail —
-send them one at a time. Fine at 2-editor scale, worth documenting as an
-operational note rather than something to engineer around.</li>
+<li>Blackmagic's own documentation does not state a prohibition on co-locating the two roles, and architecturally there's no reason it wouldn't work — the Project Server is just a background PostgreSQL-backed service, Remote Render is just a licensed Resolve Studio instance running in a render role. But this specific combination isn't something Blackmagic explicitly confirms in writing, and it's a thin pattern in practitioner discussion — one forum thread asked this exact question ("could the project library be on this Mac mini as well?") and never got a direct answer; one real-world example found keeps a small Mac mini as project-server-only, separate from any render node. Worth treating as <strong>very likely fine for a 2-editor event-scale deployment, not a Blackmagic-certified pattern</strong> — a reasonable design decision, not a guaranteed one.</li>
+<li><strong>Both the render node and every editor's machine need DaVinci Resolve Studio</strong>, not the free version — confirmed directly in Blackmagic's manual ("remote rendering does not work with the free version of DaVinci Resolve"). <strong>$295 perpetual license per seat</strong>, one-time cost. Blackmagic's own forum states an activation-code license can be active on 2 machines simultaneously, which in principle could cover an editor's laptop plus the render node from one seat — but this is a general Studio licensing term applied to this scenario, not a Remote-Render-specific clause, so budget one license per machine unless that's tested and confirmed to work as expected.</li>
+<li><strong>Remote Render requires a Network project library (PostgreSQL), not a Local one</strong> — confirmed by a Blackmagic DaVinci support engineer on their own forum. In other words, Remote Render can't be added on top of two independent local projects; it only works once the Project Server (or Blackmagic Cloud) infrastructure already exists. That's further reason these two decisions are coupled here, not separable.</li>
+<li><strong>The media storage volume must be mounted on both the requesting machine and the render node</strong> — confirmed in Blackmagic's manual. The Mac mini needs the same Edit Suite NAS mount the MacBook Pros use, not just database connectivity.</li>
+<li><strong>Performance is workable for 1080p H.264 but not fast</strong> — no source benchmarks this exact scenario, so treat this as reasoned inference from adjacent data: Apple Silicon's H.264 hardware encode gap (base/Pro chips: one encode engine vs. two on Max, four on Ultra) matters far more at 4K/UHD than at 1080p, where independent reviews found little real difference between a Mac mini and a Mac Studio. But remote rendering itself runs slower than local rendering regardless of hardware — one documented case measured roughly half the fps remotely vs. locally. <strong>Spec the Mac mini at Pro-chip tier</strong>, not the base chip, given it's doing double duty as database host and render node; a base-tier mini is a real risk for anything beyond light 1080p H.264 jobs. Current lineup (announced 2026-08-25, <a href="https://www.apple.com/newsroom/2026/08/apple-unveils-a-more-powerful-mac-mini-featuring-the-all-new-m6-and-m5-pro/">Apple Newsroom</a>): <strong>M6 from $899, M5 Pro from $1,699</strong> (US, as of 2026-10-06), 2.5GbE standard with a 10GbE build-to-order option — so the realistic order is an <strong>M5 Pro with 10GbE</strong>. M2 Pro/M4 Pro minis are no longer current models but remain adequate if one is already on hand. (The M5 Pro still has a single video encode engine, so the base/Pro vs. Max encode-engine point above is unchanged.)</li>
+<li><strong>Known gotcha to plan around</strong>: submitting multiple render jobs to the same remote node at the same time can silently fail — send them one at a time. Fine at 2-editor scale, worth documenting as an operational note rather than something to engineer around.</li>
 </ul>
-<h2
-id="decision-3-using-blackmagic-cloud-store-as-the-project-server">Decision
-3: using Blackmagic Cloud Store as the project server</h2>
-<p><strong>No — not currently supported, and not just "not
-recommended."</strong> Blackmagic Cloud Store appliances are documented
-as SMB/NFS media storage plus a Resolve-aware sync target for the
-separate Blackmagic Cloud service (Decision 4) — nothing in Blackmagic's
-own documentation or independent DIT/post-production sources indicates
-they expose a general-purpose compute or container environment capable
-of hosting the Project Server's PostgreSQL database. Practitioner
-guidance consistently treats "where the media lives" (Cloud Store or any
-NAS) and "where the project database lives" (the dedicated Mac mini from
-Decision 2) as two separate questions with two separate answers — the
-project server needs its own host regardless of which storage option was
-picked.</p>
-<h2
-id="decision-4-the-cloud-stores-built-in-internet-sync-functionality">Decision
-4: the cloud store's built-in internet sync functionality</h2>
-<p><strong>Not needed for this design, and probably not worth turning
-on.</strong> "Blackmagic Cloud" is a genuinely separate product from the
-physical Cloud Store hardware — an internet-based sync service (own
-subscription: <strong>~$5/month per project library</strong> +
-<strong>~$15/TB/month</strong> for synced media) built for the case
-where collaborators are in <em>different physical locations</em> and
-don't want to deal with VPNs/firewalls to reach each other. Everything
-in this design is in one room at one venue — there's no second site to
-sync with, so this service would add an ongoing subscription cost and an
-internet-facing dependency for a problem this topology doesn't have.
-<strong>Worth reconsidering only if there's a genuine need for someone
-off-site (a remote producer, a head-office stakeholder) to review
-cuts</strong> — that's a real use case Blackmagic Cloud is built for,
-just a different one from what's being solved here. Track as a possible
-future need, not a current requirement.</p>
-<h2 id="workflow-from-atem-pull-to-finished-edit">Workflow: from ATEM
-pull to finished edit</h2>
-<p>Everything above (dedicated NAS, project-server decision) exists to
-support one actual pipeline — footage should already be sitting where an
-editor expects it, organized by session, by the time anyone sits down to
-cut. The pieces:</p>
+<h2 id="decision-3-using-blackmagic-cloud-store-as-the-project-server">Decision 3: using Blackmagic Cloud Store as the project server</h2>
+<p><strong>No — not currently supported, and not just "not recommended."</strong> Blackmagic Cloud Store appliances are documented as SMB/NFS media storage plus a Resolve-aware sync target for the separate Blackmagic Cloud service (Decision 4) — nothing in Blackmagic's own documentation or independent DIT/post-production sources indicates they expose a general-purpose compute or container environment capable of hosting the Project Server's PostgreSQL database. Practitioner guidance consistently treats "where the media lives" (Cloud Store or any NAS) and "where the project database lives" (the dedicated Mac mini from Decision 2) as two separate questions with two separate answers — the project server needs its own host regardless of which storage option was picked.</p>
+<h2 id="decision-4-the-cloud-stores-built-in-internet-sync-functionality">Decision 4: the cloud store's built-in internet sync functionality</h2>
+<p><strong>Not needed for this design, and probably not worth turning on.</strong> "Blackmagic Cloud" is a genuinely separate product from the physical Cloud Store hardware — an internet-based sync service (own subscription: <strong>~<span class="math inline">5/<em>m</em><em>o</em><em>n</em><em>t</em><em>h</em><em>p</em><em>e</em><em>r</em><em>p</em><em>r</em><em>o</em><em>j</em><em>e</em><em>c</em><em>t</em><em>l</em><em>i</em><em>b</em><em>r</em><em>a</em><em>r</em><em>y</em> *  *  +  * * </span>15/TB/month</strong> for synced media — the $15/TB figure is confirmed; the $5 library fee is stated by Blackmagic staff/users on Blackmagic's own forum and by third-party guides, but could not be confirmed on a Blackmagic pricing page as of 2026-10-06, so re-check before quoting it) built for the case where collaborators are in <em>different physical locations</em> and don't want to deal with VPNs/firewalls to reach each other. Everything in this design is in one room at one venue — there's no second site to sync with, so this service would add an ongoing subscription cost and an internet-facing dependency for a problem this topology doesn't have. <strong>Worth reconsidering only if there's a genuine need for someone off-site (a remote producer, a head-office stakeholder) to review cuts</strong> — that's a real use case Blackmagic Cloud is built for, just a different one from what's being solved here. Track as a possible future need, not a current requirement.</p>
+<h2 id="workflow-from-atem-pull-to-finished-edit">Workflow: from ATEM pull to finished edit</h2>
+<p>Everything above (dedicated NAS, project-server decision) exists to support one actual pipeline — footage should already be sitting where an editor expects it, organized by session, by the time anyone sits down to cut. The pieces:</p>
 <pre><code>Theatre ATEM/VMix ──[existing ingest containers]──&gt; dual write:
                                                         ├─&gt; Nextcloud (review copy)
                                                         └─&gt; Edit Suite NAS
@@ -365,54 +168,15 @@ cut. The pieces:</p>
                          Editor opens that session&#39;s pre-built timeline, drags the
                          now-populated smart bin&#39;s clips in, top-and-tails, exports
                          (optionally via Remote Render — see Decision 2).</code></pre>
-<p><strong>What <a
-href="https://github.com/stoatworks-labs/resolve-configurator">resolve-configurator</a>
-actually builds</strong> (from its own README, not assumed): project
-format settings (frame rate/resolution, or any Resolve project setting
-via passthrough), a <code>Theatre / Date</code> bin structure, an empty
-timeline per session named from a template (e.g.
-<code>Start Time - Presenter</code>), pre-imported
-background/title-slide assets (global or per-theatre), and — since
-Resolve's scripting API genuinely cannot create smart bins, confirmed
-for the versions currently in use — a written recipe
-(<code>smart-bins.md</code>/<code>smart-bins.json</code>) giving the
-exact filter rule for each session (file path contains that theatre's
-record-drive name, date created is the session date, start timecode
-falls in the session's derived window). The tool builds everything the
-API <em>can</em> do automatically; the smart bins themselves are a
-one-time manual step per session, applied once ahead of the event from
-that recipe — after which they behave exactly like any other Resolve
-smart bin, auto-filtering as matching footage arrives.</p>
-<p><strong>Once that one-time setup is done, the editor's own job is
-genuinely just</strong>: open the session's timeline (already sitting in
-the right day/theatre bin, already named), the smart bin next to it
-already shows only that session's clips (no scrubbing through a whole
-day's unsorted recordings), drag them onto the timeline, top-and-tail to
-the actual session length, export. All of the organizing work happens
-ahead of time or automatically — editors are cutting, not filing.</p>
-<p>See <a
-href="https://github.com/stoatworks-labs/example-network-topology/blob/master/diagrams/live-editing-project-structure.svg"><code>diagrams/live-editing-project-structure.svg</code></a>
-for this whole pipeline as a diagram — from the session CSV through
-resolve-configurator's build, the smart-bin recipe's one-time hand-apply
-step, and the auto-fill down to the editor's own four-step job.</p>
-<h2
-id="ingest-workflow-physical-media-master-drives-camera-cards">Ingest
-workflow: physical media (master drives, camera cards)</h2>
-<p>A separate, complementary path to the network-based ATEM ISO pull
-already built (<a
-href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>) —
-that pipeline is optimized for near-real-time <em>review</em> access,
-but the ATEM's own USB SSD (and any standalone camera's SD/CFexpress
-cards, if this event uses cameras beyond the NDI-fed BirdDog P400s)
-remains the authoritative master, same "master vs. mirror" framing as
-the network ingest doc. Physically walking a drive/card to the edit
-suite for a proper checksummed offload — not just relying on the network
-pull — is standard DIT (Digital Imaging Technician) practice for
-anything that matters enough to edit.</p>
+<p><strong>What <a href="https://github.com/stoatworks-labs/resolve-configurator">resolve-configurator</a> actually builds</strong> (from its own README, not assumed): project format settings (frame rate/resolution, or any Resolve project setting via passthrough), a <code>Theatre / Date</code> bin structure, an empty timeline per session named from a template (e.g. <code>Start Time - Presenter</code>), pre-imported background/title-slide assets (global or per-theatre), and — since Resolve's scripting API genuinely cannot create smart bins, confirmed for the versions currently in use — a written recipe (<code>smart-bins.md</code>/<code>smart-bins.json</code>) giving the exact filter rule for each session (file path contains that theatre's record-drive name, date created is the session date, start timecode falls in the session's derived window). The tool builds everything the API <em>can</em> do automatically; the smart bins themselves are a one-time manual step per session, applied once ahead of the event from that recipe — after which they behave exactly like any other Resolve smart bin, auto-filtering as matching footage arrives.</p>
+<p><strong>Once that one-time setup is done, the editor's own job is genuinely just</strong>: open the session's timeline (already sitting in the right day/theatre bin, already named), the smart bin next to it already shows only that session's clips (no scrubbing through a whole day's unsorted recordings), drag them onto the timeline, top-and-tail to the actual session length, export. All of the organizing work happens ahead of time or automatically — editors are cutting, not filing.</p>
+<p>See <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/diagrams/live-editing-project-structure.svg"><code>diagrams/live-editing-project-structure.svg</code></a> for this whole pipeline as a diagram — from the session CSV through resolve-configurator's build, the smart-bin recipe's one-time hand-apply step, and the auto-fill down to the editor's own four-step job.</p>
+<h2 id="ingest-workflow-physical-media-master-drives-camera-cards">Ingest workflow: physical media (master drives, camera cards)</h2>
+<p>A separate, complementary path to the network-based ATEM ISO pull already built (<a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>) — that pipeline is optimized for near-real-time <em>review</em> access, but the ATEM's own USB SSD (and any standalone camera's SD/CFexpress cards, if this event uses cameras beyond the NDI-fed BirdDog P400s) remains the authoritative master, same "master vs. mirror" framing as the network ingest doc. Physically walking a drive/card to the edit suite for a proper checksummed offload — not just relying on the network pull — is standard DIT (Digital Imaging Technician) practice for anything that matters enough to edit. <strong>It is also now the only route for most of the ISO footage:</strong> the network ingest pulls just the program file and the ISO inputs in <code>ATEM_ISO_INPUTS</code> (default: input 1, the camera — see <a href="atem-iso-ingest.html#common-theatre-input-map"><code>docs/atem-iso-ingest.md</code></a>). The laptop ISOs (inputs 2–3, unless enabled live), the backup inputs (4–8), and the audio <code>.wav</code>s and <code>.drp</code> project are recorded on the ATEM's SSD and reach the edit suite only through this offload — at a session break or end of day. Plan the offload cadence around when editors need the laptop angles, not just around end-of-day archiving.</p>
 <h3 id="tool-comparison">Tool comparison</h3>
 <table>
 <thead>
-<tr>
+<tr class="header">
 <th>Tool</th>
 <th>Vendor</th>
 <th>Price</th>
@@ -420,141 +184,87 @@ anything that matters enough to edit.</p>
 </tr>
 </thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td><strong>ShotPut Pro</strong></td>
 <td>Imagine Products</td>
-<td>$169 perpetual (+$59-70/yr updates after year 1), $60/30-day
-rental</td>
-<td>Industry-standard dedicated checksummed offload + verify +
-PDF/CSV/MHL report — the classic "DIT cart" tool</td>
+<td><span class="math inline">169<em>p</em><em>e</em><em>r</em><em>p</em><em>e</em><em>t</em><em>u</em><em>a</em><em>l</em>(+</span>59-70/yr updates after year 1), $60/30-day rental</td>
+<td>Industry-standard dedicated checksummed offload + verify + PDF/CSV/MHL report — the classic "DIT cart" tool</td>
 </tr>
-<tr>
+<tr class="even">
 <td><strong>OffShoot / OffShoot Pro</strong></td>
 <td>Hedge</td>
-<td>$149-249 one-time, $49/30-day rental</td>
-<td>Same core job (fast checksummed offload, multiple simultaneous
-destinations), simpler UI, no metadata/look-management layer</td>
+<td>$169 / $249 one-time per activation (incl. 1 year of updates; $79 to extend), $49/30-day rental (prices as of 2026-10-06)</td>
+<td>Same core job (fast checksummed offload, multiple simultaneous destinations), simpler UI, no metadata/look-management layer</td>
 </tr>
-<tr>
+<tr class="odd">
 <td>Silverstack Offload Manager</td>
 <td>Pomfort</td>
-<td>$139/yr, project licenses from $35</td>
-<td>Pomfort's own cut-down offload-only tier, positioned against
-ShotPut/OffShoot for smaller productions</td>
+<td>$169/yr; project licenses €45 (14 days) / €59 (1 month) — USD project price not confirmed (as of 2026-10-06)</td>
+<td>Pomfort's own cut-down offload-only tier, positioned against ShotPut/OffShoot for smaller productions</td>
 </tr>
-<tr>
+<tr class="even">
 <td>Silverstack XT / Lab</td>
 <td>Pomfort</td>
-<td>~$899/yr (project licenses ~$99-319)</td>
-<td>Full DIT station: offload+verify+metadata/lens data+look management
-(CDL/LUT), and (Lab only) audio sync + transcode/dailies — a much bigger
-tool than this event likely needs unless additional standalone cameras
-with real production metadata needs are added</td>
+<td>XT ~$899/yr; Lab $1,099/yr, Lab project licenses $159 (14 days) / $249 (1 month) / $399 (2 months) (as of 2026-10-06; plain Silverstack was folded into XT at v9)</td>
+<td>Full DIT station: offload+verify+metadata/lens data+look management (CDL/LUT), and (Lab only) audio sync + transcode/dailies — a much bigger tool than this event likely needs unless additional standalone cameras with real production metadata needs are added</td>
 </tr>
-<tr>
+<tr class="odd">
 <td><strong>FoolCat</strong></td>
 <td>Hedge</td>
 <td>$29/mo, $89-129/activation, $299 bundle</td>
-<td>Companion <strong>report generator</strong>, not a copy tool —
-HTML/PDF camera reports with thumbnails, plugs directly into OffShoot's
-offload queue</td>
+<td>Companion <strong>report generator</strong>, not a copy tool — HTML/PDF camera reports with thumbnails, plugs directly into OffShoot's offload queue</td>
 </tr>
-<tr>
+<tr class="even">
 <td><strong>o/PARASHOOT</strong></td>
 <td>OTTOMATIC GmbH</td>
 <td>Free</td>
-<td>Companion <strong>card-safety</strong> tool — confirms a card's
-files exist at the backup destination (filename+size, not checksum) then
-reversibly blanks the card so the camera prompts a clean reformat; pairs
-with OffShoot</td>
+<td>Companion <strong>card-safety</strong> tool — confirms a card's files exist at the backup destination (filename+size, not checksum) then reversibly blanks the card so the camera prompts a clean reformat; pairs with OffShoot</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Recommendation for this event's actual scale:</strong>
-<strong>ShotPut Pro or OffShoot Pro</strong> as the primary
-checksummed-copy tool — both are cheap, reliable, and exactly matched to
-"offload a drive/card, verify it, get a report" without paying for
-Silverstack's much larger metadata/look-management scope this design
-doesn't currently need (no standalone camera color pipeline in scope, no
-lens metadata being tracked). Add <strong>FoolCat</strong> only if
-stakeholders want visual per-session camera reports
-(director/producer-facing dailies-style PDFs) rather than just a
-copy-verification log. Add <strong>o/PARASHOOT</strong> (it's free) if
-any actual camera SD/CFexpress cards are in play and get
-reformatted/reused between sessions — cheap insurance against a card
-getting wiped before its footage is confirmed safe. <strong>Silverstack
-XT/Lab is the right call instead</strong> only if this event's scope
-grows to include standalone cameras needing real lens/metadata tracking
-or an in-house look/color pipeline — worth revisiting if that changes,
-not a default recommendation for the design as currently scoped.</p>
-<p>A typical chained workflow, once decided: <strong>ShotPut
-Pro/OffShoot (checksummed copy to the edit-suite NAS) → FoolCat (camera
-report, optional) → o/PARASHOOT (safe card reformat, optional)</strong>
-— not competing alternatives, a real multi-stage pipeline other
-productions run this way.</p>
-<h2 id="devices--new-addition-to-the-inventory">Devices — new addition
-to the inventory</h2>
+<p><strong>Recommendation for this event's actual scale:</strong> <strong>ShotPut Pro or OffShoot Pro</strong> as the primary checksummed-copy tool — both are cheap, reliable, and exactly matched to "offload a drive/card, verify it, get a report" without paying for Silverstack's much larger metadata/look-management scope this design doesn't currently need (no standalone camera color pipeline in scope, no lens metadata being tracked). Add <strong>FoolCat</strong> only if stakeholders want visual per-session camera reports (director/producer-facing dailies-style PDFs) rather than just a copy-verification log. Add <strong>o/PARASHOOT</strong> (it's free) if any actual camera SD/CFexpress cards are in play and get reformatted/reused between sessions — cheap insurance against a card getting wiped before its footage is confirmed safe. <strong>Silverstack XT/Lab is the right call instead</strong> only if this event's scope grows to include standalone cameras needing real lens/metadata tracking or an in-house look/color pipeline — worth revisiting if that changes, not a default recommendation for the design as currently scoped.</p>
+<p>A typical chained workflow, once decided: <strong>ShotPut Pro/OffShoot (checksummed copy to the edit-suite NAS) → FoolCat (camera report, optional) → o/PARASHOOT (safe card reformat, optional)</strong> — not competing alternatives, a real multi-stage pipeline other productions run this way.</p>
+<h2 id="devices--new-addition-to-the-inventory">Devices — new addition to the inventory</h2>
 <table>
 <thead>
-<tr>
+<tr class="header">
 <th>Device</th>
 <th>Proposed IP</th>
 <th>Notes</th>
 </tr>
 </thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td>Edit suite NAS (Cloud Store or generic 10GbE NAS)</td>
 <td><code>192.168.22.2</code></td>
 <td>See Decision 1</td>
 </tr>
-<tr>
+<tr class="even">
 <td>MacBook Pro — Editor 1</td>
 <td><code>192.168.22.11</code></td>
 <td>10GbE via Thunderbolt adapter/dock</td>
 </tr>
-<tr>
+<tr class="odd">
 <td>MacBook Pro — Editor 2</td>
 <td><code>192.168.22.12</code></td>
 <td>10GbE via Thunderbolt adapter/dock</td>
 </tr>
-<tr>
+<tr class="even">
 <td>Mac mini — Project Server + Remote Render</td>
 <td><code>192.168.22.20</code></td>
-<td>Dedicated always-on machine, not an editor's own laptop — see
-Decision 2</td>
+<td>Dedicated always-on machine, not an editor's own laptop — see Decision 2; order with the 10GbE option</td>
 </tr>
 </tbody>
 </table>
-<p>See <a
-href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> for
-how this fits the rest of the network's addressing.</p>
-<h2 id="open-questions-this-section-introduces">Open questions this
-section introduces</h2>
+<p>Not yet listed: the <strong>Unraid server's own edit-LAN interface</strong> on <code>192.168.22.0/24</code>, which the dual-write needs (see the start of this doc). It needs an address in <a href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> — not assigned here, since that file is the authoritative inventory.</p>
+<p>See <a href="ip-address-map.html"><code>docs/ip-address-map.md</code></a> for how this fits the rest of the network's addressing.</p>
+<h2 id="open-questions-this-section-introduces">Open questions this section introduces</h2>
 <ul>
-<li><strong>How much of the event's footage actually needs editing
-access</strong> — the full 8TB recording pool, or a curated/selected
-subset? Drives NAS capacity sizing in Decision 1.</li>
-<li><strong>Whether combining Project Server and Remote Render duty on
-one Mac mini holds up in practice</strong> — Decision 2 flags this as
-architecturally sound but thinly documented by Blackmagic and
-practitioners alike; worth a real test before the event, not just before
-this doc.</li>
-<li><strong>Whether this event uses any standalone cameras with
-SD/CFexpress cards</strong> beyond the NDI-fed BirdDog P400s — affects
-whether the physical-media DIT workflow has real cards to ingest beyond
-the ATEM's own USB SSD, and whether Silverstack's deeper
-metadata/lens-data features become worth their cost.</li>
-<li><strong>Whether the Cloud Store Mini's RAID 0 (no redundancy) is an
-acceptable risk</strong> given the fallback is a fresh pull from the
-mothership's recording pool, not permanent data loss — but still a real
-mid-event disruption if it happens.</li>
-<li><strong>Implementing the dual-write in the actual ingest
-scripts</strong> — <code>pull-iso.py</code> and
-<code>mount-and-sync.sh</code> currently write only the Nextcloud
-destination; the second write this whole section depends on is a real
-code change, tracked as <a
-href="open-questions.html"><code>docs/open-questions.md</code></a> item
-15.</li>
+<li><strong>How much of the event's footage actually needs editing access</strong> — the full 8TB recording pool, or a curated/selected subset? Drives NAS capacity sizing in Decision 1. Sizing now rests on the 2026-10-06 planning figures (camera ISO 35 / 45 / 70 Mbps, laptop ISO 15 / 25 / 40 Mbps <em>estimated</em>, program ~10 Mbps — see <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> § Bandwidth): the live dual-write is ~20 / 25 / 36 GB per theatre-hour at the default camera + program scope, and the physical offload adds the rest of each ATEM's recording on top (at least the two laptop ISOs, ~14–36 GB per theatre-hour between them, plus whatever the backup inputs carry). Neither is measured yet (<a href="open-questions.html"><code>docs/open-questions.md</code></a> #0).</li>
+<li><strong>Whether the smart-bin recipe's filters match what actually lands on the NAS.</strong> The recipe filters on "file path contains that theatre's record-drive name" and "date created is the session date". The ingest destination layout is now <code>TheatreN/ISO/&lt;recording folder&gt;/…</code> (<code>pull-iso.py</code> keeps the ATEM's recording-folder structure, but not the drive name), and a file's creation date on the NAS is when ingest first wrote it, not when the ATEM recorded it (normally the same day, but not for a late final pull after midnight). Either the NAS path layout should preserve a per-theatre/drive identifier the recipe can match, or the recipe should match the <code>TheatreN</code> path instead — check against resolve-configurator's actual output before the event.</li>
+<li><strong>Whether combining Project Server and Remote Render duty on one Mac mini holds up in practice</strong> — Decision 2 flags this as architecturally sound but thinly documented by Blackmagic and practitioners alike; worth a real test before the event, not just before this doc.</li>
+<li><strong>Whether this event uses any standalone cameras with SD/CFexpress cards</strong> beyond the NDI-fed BirdDog P400s — affects whether the physical-media DIT workflow has real cards to ingest beyond the ATEM's own USB SSD, and whether Silverstack's deeper metadata/lens-data features become worth their cost.</li>
+<li><strong>Whether the Cloud Store Mini's RAID 0 (no redundancy) is an acceptable risk</strong> given the fallback is a fresh pull from the mothership's recording pool, not permanent data loss — but still a real mid-event disruption if it happens.</li>
+<li><strong>Implementing the dual-write in the actual ingest scripts</strong> — <code>pull-iso.py</code> and <code>mount-and-sync.sh</code> currently write only the Nextcloud destination; the second write this whole section depends on is a real code change, tracked as <a href="open-questions.html"><code>docs/open-questions.md</code></a> item 15.</li>
 </ul>
 </body></html>

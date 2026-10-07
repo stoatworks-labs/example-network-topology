@@ -5,19 +5,28 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 
 ## Phase 0 — Before touching anything
 
+- [ ] **First:** on one real ATEM at the event frame rate and firmware, measure a camera
+      ISO file, a laptop/slides ISO file and the program file (`ffprobe`, or size ÷
+      duration) against the planning figures (camera 35 / 45 / 70 Mbps, laptop 15 / 25 /
+      40 *estimated*, program ~10) — they set the live ISO scope (`ATEM_ISO_INPUTS`) and
+      the 8 TB pool sizing — [`docs/open-questions.md`](open-questions.md) #0
 - [ ] Confirm the consolidated server's full spec (validated ECC, PCIe lanes for the
       NVMe pools, RAM/cores — no GPU/IOMMU checks needed any more) —
       [`docs/open-questions.md`](open-questions.md) #1
-- [ ] Confirm the Cloud Gateway model (LAG support assumed, not confirmed) —
-      [`docs/open-questions.md`](open-questions.md) resolved-items section
+- [ ] Confirm the Cloud Gateway model — LAG support (assumed, not confirmed) and its real
+      inter-VLAN routing throughput — [`docs/open-questions.md`](open-questions.md) #17
+- [ ] Benchmark Tailscale throughput on one Slate AX (GL-AXT1800) with `iperf3 --bidir`,
+      on a direct path (not DERP), **before buying all 14** — target above ~160 Mbps
+      combined; the ~150–250 Mbps in the bandwidth model is an estimate —
+      [`docs/open-questions.md`](open-questions.md) #19
 - [ ] Decide a real hostname/DDNS for the DERP server and confirm you can port-forward on
       the Cloud Gateway — [`docs/tailscale.md`](tailscale.md)
 - [ ] Confirm VMix's actual recording mode/bitrate and get SMB sharing set up on all 4 VMix
       PCs — [`docs/vmix-record-ingest.md`](vmix-record-ingest.md)
 - [ ] Confirm ATEM FTP credentials and recording path on a real unit —
       [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)
-- [ ] Decide a real hostname/DDNS for GLKVM-Cloud and confirm `GLKVM_ACCESS_IP`'s exact
-      format for the WAN-remapped ports — [`docs/glkvm-cloud.md`](glkvm-cloud.md)
+- [ ] Decide a real hostname/DDNS for GLKVM-Cloud, and note the venue's public IPv4 —
+      `GLKVM_ACCESS_IP` takes the IP, not the hostname — [`docs/glkvm-cloud.md`](glkvm-cloud.md)
 - [ ] Confirm ATEM Overseer's, ATEM Fleet Admin's, and Flock's real container images, and
       whether the ATEM and BirdDog Play can actually originate their monitoring/preview
       streams alongside their primary feeds — [`docs/open-questions.md`](open-questions.md) #11
@@ -34,12 +43,27 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 3. Bond the consolidated server's 2 NICs (802.3ad/LACP) into the Cloud Gateway (or an
    intermediate switch if LAG isn't supported) — [`docs/topology.md`](topology.md), watch
    the LACP rate/hash-policy gotcha with Ubiquiti gear.
+4. Configure and verify the gateway's **static routes** — all 14 theatre/VMix `/24`s
+   (`192.168.2-13.0/24`, `192.168.20.0/24`, `192.168.21.0/24`) via `192.168.1.2`, per the
+   `static_routes` block in
+   [`config/unifi/network-config.yaml`](../config/unifi/network-config.yaml) — and the
+   uplink-VLAN allow for `192.168.1.2:41641/udp`. Check the routing table in the UniFi UI
+   lists all 14; once Phase 3 is done, `traceroute` to a theatre ATEM from a ready-room PC
+   should show `192.168.1.1` then `192.168.1.2`. These routes are how the macvlan
+   containers and the BirdDog Central VM reach the tailnet; that traffic crosses the
+   server's bond twice (see
+   [`docs/server-specification.md`](server-specification.md)'s NIC section).
 
 ## Phase 2 — Consolidated services server (Unraid)
 
-1. Install Unraid.
+1. Install Unraid (Unleashed or Lifetime licence — the pools exceed Starter's 6-device
+   limit, see [`docs/open-questions.md`](open-questions.md)). In Settings → Docker, turn
+   on "Host access to custom networks" — the host has to hand tailnet replies back to
+   the macvlan containers ([`docs/open-questions.md`](open-questions.md) #18).
 2. Create the BirdDog Central Windows VM — the design's only VM, no GPU passthrough
-   needed — [`docs/topology.md`](topology.md).
+   needed — [`docs/topology.md`](topology.md). Recommended: give it its own persistent
+   routes to the theatre `/24`s via `192.168.1.2` (`route -p add`), so its NDI-fallback
+   traffic doesn't hairpin through the gateway and cross the bond twice.
 3. Bring up every Docker container in one shot with
    [`config/docker-compose.yml`](../config/docker-compose.yml) — Nextcloud, Restreamer,
    NDI Discovery Server, DERP, ATEM ISO Ingest, VMix Record Ingest, UniFi Controller,
@@ -50,7 +74,10 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
    Overseer/Fleet Admin/Flock need their real container images confirmed first (see
    [`docs/open-questions.md`](open-questions.md) #11) — DERP and GLKVM-Cloud will start
    but be non-functional without their hostnames/forwards, and the three
-   placeholder-image services won't start at all until real images are filled in.
+   placeholder-image services won't start at all until real images are filled in. Two
+   services aren't plain pulls: `derp-server` is built from source on first `up`, and
+   GLKVM-Cloud needs an upstream `gl-inet/glkvm-cloud` checkout for its entrypoint and
+   templates (`git clone https://github.com/gl-inet/glkvm-cloud.git` into `GLKVM_UPSTREAM`).
 4. Optionally adopt the Cloud Gateway into the UniFi Controller for local management —
    [`config/unifi/README.md`](../config/unifi/README.md). Purely a local console; the
    network config in Phase 1 doesn't depend on it.
@@ -61,13 +88,16 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 
 1. Load [`config/tailscale-acl.json`](../config/tailscale-acl.json) into the tailnet admin
    console — cross-theatre isolation ACLs + the self-hosted DERP region.
-2. Run the mothership's `tailscale up` (see
-   [`config/tailscale-up-all-devices.sh`](../config/tailscale-up-all-devices.sh)) from the
-   Tailscale subnet-router container.
+2. Bring up the mothership's subnet router — the `tailscale-router` container applies
+   the same flags as the mothership line in
+   [`config/tailscale-up-all-devices.sh`](../config/tailscale-up-all-devices.sh) itself
+   (routes, `tag:mothership`, `--accept-routes`, port 41641), so this is just a valid
+   `TAILSCALE_AUTHKEY` pre-tagged `tag:mothership`. Confirm the ACL allows the subnet
+   CIDRs, not just the tags ([`docs/open-questions.md`](open-questions.md) #18).
 3. Approve routes in the admin console (or configure `autoApprovers`) — nothing routes
    until approved, regardless of what's advertised.
 
-## Phase 4 — Theatre + VMix node routers (GL-iNet A-1300 ×14)
+## Phase 4 — Theatre + VMix node routers (GL-iNet Slate AX / GL-AXT1800 ×14)
 
 1. Flash/reset all 14 units, apply Wi-Fi lockdown per venue policy (not covered by the
    generated configs).
@@ -80,7 +110,7 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
    everything else (including BirdDog Play) via the Netgear switch on LAN 2 —
    [`docs/topology.md`](topology.md).
 5. Register each router against GLKVM-Cloud (brought up in Phase 2) using the connection
-   script from its web UI, run over SSH on each A-1300 — rides the tailnet already set up
+   script from its web UI, run over SSH on each Slate AX — rides the tailnet already set up
    in step 3, no WAN exposure needed for this part — [`docs/glkvm-cloud.md`](glkvm-cloud.md).
 
 ## Phase 5 — BirdDog Play + NDI discovery
@@ -89,6 +119,22 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 2. Point BirdDog Central, all 12 PLAY units, *and both VMix node PCs' NDI config* at the
    NDI Discovery Server (`192.168.1.15:5959`) — BirdUI's Network panel on the PLAYs,
    NDI Access Manager on the Windows machines — [`docs/streaming-flow.md`](streaming-flow.md).
+3. Set the SRT payload size to **1128 bytes** on every VMix node PC's SRT output and on
+   Restreamer's outputs — the 1316-byte default doesn't fit Tailscale's 1280-byte MTU —
+   [`docs/open-questions.md`](open-questions.md) #20.
+
+## Phase 5b — ATEMs (all 12)
+
+1. Patch every ATEM to the **common theatre input map** — identical on all 12: input 1
+   camera, 2 presenter laptop 1 (PowerPoint Main), 3 laptop 2 (VT Main / second
+   presenter), 4–8 backups/spare — [`docs/atem-iso-ingest.md`](atem-iso-ingest.md#common-theatre-input-map).
+   The live ingest selects inputs by number fleet-wide, so a theatre patched differently
+   pulls the wrong source.
+2. Set each ATEM's **Streaming/record quality** so the program recording is **~8–10 Mbps**
+   (ISO bitrates are fixed by frame rate and can't be set). Check one recorded program
+   file's bitrate.
+3. On one unit, record a short test and confirm the FTP folder layout and that ISO files
+   carry `CAM <n>` in their names — [`docs/open-questions.md`](open-questions.md) #21, #22.
 
 ## Phase 6 — Nextcloud external storage + ingest pipelines
 
@@ -96,8 +142,14 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
    and [`config/vmix-record-ingest/setup-nextcloud-external-storage.sh`](../config/vmix-record-ingest/setup-nextcloud-external-storage.sh)
    — mounts the External Storage folders and prints the cron lines for targeted rescans.
    Add those cron entries.
-2. Fill in real credentials and start `pull-iso.py` (or the `rclone-mount-rsync/`
-   alternative) — [`config/atem-iso-ingest/README.md`](../config/atem-iso-ingest/README.md).
+2. Fill in real credentials, set **`ATEM_ISO_INPUTS`** in `.env` (default `1` = camera +
+   program; `1,2` / `1,2,3` add the laptop inputs, for all 12 theatres at once, only if
+   router and mothership-NIC headroom allow — see
+   [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) § Bandwidth), and start `pull-iso.py`
+   (or the `rclone-mount-rsync/` alternative, which reads the same variable) —
+   [`config/atem-iso-ingest/README.md`](../config/atem-iso-ingest/README.md). Inputs not
+   pulled live stay on each ATEM's SSD — schedule the physical DIT offload of those drives
+   ([`docs/live-editing.md`](live-editing.md)).
 3. Fill in real SMB credentials/share names and start `mount-and-sync.sh` —
    [`config/vmix-record-ingest/README.md`](../config/vmix-record-ingest/README.md).
 4. Configure Nextcloud version-retention for both ingest folders — both ingest docs flag
@@ -132,6 +184,11 @@ pipelines (Phase 6) for its footage feed:
       and not blocked by the uplink-VLAN firewall rule — [`docs/open-questions.md`](open-questions.md) #3
 - [ ] Copy an ATEM file mid-recording and confirm it opens/scrubs — empirically verify the
       "safe to read mid-write" assumption — [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)
+- [ ] From inside a macvlan container, reach a theatre device and get an answer back —
+      e.g. `docker exec atem-iso-ingest python -c "import socket;
+      socket.create_connection(('192.168.2.2', 21), 5)"` — proves the gateway static
+      route, the host return leg and the subnet ACLs together
+      ([`docs/open-questions.md`](open-questions.md) #18)
 - [ ] Confirm ingested files actually appear in Nextcloud's UI (not just on disk) for both
       pipelines
 - [ ] Confirm cross-theatre isolation: from one theatre's subnet, verify you cannot reach

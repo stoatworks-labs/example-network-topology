@@ -93,4 +93,9 @@ documents in step with the topology.
 ## 6. Working on it
 
 This is a design and configuration repo. Changes mean updating documents, diagrams and config
-templates — then regenerating `export/`, and re-checking §1 before anything is pushed.
+templates — then regenerating, and re-checking §1 before anything is pushed:
+
+```sh
+python3 diagrams/generate.py   # all five SVGs; topology is built from docs/ip-address-map.md
+python3 export/build.py        # export/html + export/pdf (needs pandoc, Node + Playwright)
+```

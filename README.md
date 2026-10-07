@@ -20,11 +20,15 @@ details generalized: all domains are placeholders on the IANA-reserved `example.
 (substitute your own), and nothing here names the event, client, or venue. Product
 names, prices, and throughput figures are real and cited.
 
-**Status: design finalized, nothing built yet.** Every hardware decision is locked in,
-every device has a real IP, throughput has been checked against real-world figures and the
-venue's actual VLAN constraints, and Tailscale/GL-iNet/UniFi configs are generated and
-ready to apply — see [`docs/open-questions.md`](docs/open-questions.md) for the handful of
-things that still need real-world input before this goes from design to build, or
+**Status: design complete, nothing built yet.** Every device has a real IP and the
+Tailscale/GL-iNet/UniFi configs are generated. A review on 2026-10-06 found the ATEM ISO
+bitrate and the original router's Tailscale throughput were both far off, and the design
+changed to match: only the program recording and the camera ISO are pulled live (every
+theatre wired to one common ATEM input map), and the routers are now GL.iNet **Slate AX**
+units. Two things still want a measurement on real hardware: one Slate AX's Tailscale
+throughput, and one real laptop-input ISO file. See
+[`docs/open-questions.md`](docs/open-questions.md) for what still needs real-world input
+before this goes from design to build, or
 [`docs/deployment-runbook.md`](docs/deployment-runbook.md) for the full ordered build
 sequence.
 
@@ -81,13 +85,17 @@ they already share its LAN.
 
 ## ATEM ISO ingest: near-real-time, no manual chunking
 
-Each theatre's ATEM Mini Extreme ISO records up to 9 H.264 streams (8 camera ISOs +
-program) to a USB SSD — and, unlike most of this design, there's no laptop involved: the
-mothership pulls directly from the ATEM's **built-in FTP server** over Tailscale subnet
-routing, transferring only the bytes appended since the last check. That matters because
-the file is *constantly growing*: a naive whole-file re-sync on a schedule doesn't survive
-the math for a real session (a 3-hour, 6-stream recording is 50-80GB — re-uploading that
-*whole thing* every 10 minutes takes longer than 10 minutes, falling permanently behind).
+Each theatre's ATEM Mini Extreme ISO records 9 H.264 streams (8 input ISOs + program) to
+a USB SSD — always all of them, and the ISO files at a fixed ~35-70 Mb/s each that can't be
+turned down. So the network only carries part of it: **the program recording (set to
+~8-10 Mbps) plus the camera ISO**, pulled live; the presenter-laptop inputs are added per
+theatre where there's headroom, and everything else comes off the SSD by physical offload.
+Every theatre is wired to the same input map (1 camera, 2-3 laptops, 4-8 spare), so one
+setting (`ATEM_ISO_INPUTS`) picks the same files everywhere. There's no laptop involved in
+the pull: the mothership reads directly from the ATEM's **built-in FTP server** over
+Tailscale subnet routing, transferring only the bytes appended since the last check. That
+matters because the files are *constantly growing*: a naive whole-file re-sync on a
+schedule falls permanently behind on a multi-hour recording.
 Two documented ways to get that incremental transfer: FTP's own `REST`/resume command
 directly (the default — plain rsync can't be used for this leg, since it needs SSH or an
 rsync daemon and the ATEM only speaks FTP), or `rclone mount` (presenting the ATEM's FTP
@@ -104,7 +112,7 @@ share instead of an FTP server — SMB is a genuine network filesystem protocol,
 it is the native way to access it here, if anything a better fit than the ATEM's FTP-only
 case rather than a stretch of the same pattern. `rclone mount` presents each PC's share as
 a local path, and `rsync --append` transfers only the new tail, same reasoning as the ATEM
-ingest's alternative approach. Each VMix node has its own dedicated A-1300 uplink — not
+ingest's alternative approach. Each VMix node has its own dedicated Slate AX uplink — not
 shared with the theatre it physically sits near — so this traffic never competes with that
 theatre's ATEM ingest or SRT feed. Full design in
 [`docs/vmix-record-ingest.md`](docs/vmix-record-ingest.md).
@@ -153,31 +161,31 @@ network infrastructure — all separate projects
 The 4 uplink VLANs turned out to be **venue-supplied, not our infrastructure** — 1 Gbps
 each, with expensive ports, which flips the goal from "isolate cleanly" to "minimum VLAN
 count at adequate performance." The full model, grounded in real figures (SRT ~5.8-10.4
-Mbps via long-GOP H.264 + SRT/WireGuard overhead, ATEM ISO ingest ~62-94 Mbps plus the
+Mbps via long-GOP H.264 + SRT/WireGuard overhead, ATEM ingest ~47-83 Mbps for program +
+camera, plus the
 ATEM Overseer and Flock monitoring/preview streams — ~10.4 Mbps apiece — together
 dominating per-theatre upstream, full NDI at 1080p50 a very different ~130 Mbps roughly
 regardless of content), is in
 [`docs/bandwidth-analysis.md`](docs/bandwidth-analysis.md). Headlines:
 
-- The current 4-VLAN plan runs at 27-39% utilization under normal operation — still
-  comfortable, though real-time ATEM ingest plus both monitoring streams have eaten a
-  genuine chunk of what used to be a much wider margin.
-- **Consolidating to 2 VLANs** is still workable but has real eroded margin (53-78%,
-  down from 41-65% before either monitoring stream existed) for normal SRT-primary
-  operation — worth actively re-weighing now, not just noting. A **mass NDI fallback**
-  (e.g. a Restreamer failure pushing all 12 theatres onto NDI at once) pushes 2 VLANs to
-  90% with no room left; 3-4 VLANs stay comfortable through that same event.
-- **1 VLAN no longer works with real-time ATEM ingest, full stop** — it now exceeds
-  capacity under normal expected load (106%), not just an unlucky worst-case day.
-  Deferring ATEM ingest to end-of-session pulls (rather than real-time) is required to
-  make 1 VLAN viable at all, not just a nice-to-have lever anymore.
-- **A separate, previously-missed finding**: each theatre's own A-1300 has a tighter
-  ceiling (~170 Mbps) than the shared VLAN — a theatre running ATEM ingest and an NDI
-  fallback simultaneously can exceed *its own router's* capacity regardless of VLAN count.
-  Mitigation: pause that theatre's ATEM ingest during an NDI fallback (cheap, config-only)
-  — still works with both monitoring streams added, but with less spare margin than before.
-  A higher-throughput GL-iNet model would also fix it, but not cleanly — see the doc for
-  why.
+- **ATEM ingest is scoped to what fits.** ISO files can't be set below ~35-70 Mb/s each,
+  so pulling every input live would need 175-405 Mbps per theatre. The default live scope
+  is program + camera: ~83 Mbps typical upstream per theatre (73-109 range), with each
+  presenter-laptop input adding ~25 Mbps (an estimate until a real file is measured).
+- **4 VLANs** run at ~25-33% upstream at the default scope, and stay comfortable even with
+  both laptop inputs on in every theatre.
+- **2 VLANs (6 theatres each)** are viable at the default scope (~50-65%) or with one
+  laptop input (~65-90%), provided a mass NDI fallback (e.g. a Restreamer failure pushing
+  all 12 theatres onto NDI at once, 90% on 2 VLANs) is handled operationally. Not with
+  both laptop inputs everywhere (~81% typical, over 100% high).
+- **1 VLAN** doesn't work with any live ingest (~100-131%).
+- **The per-router ceiling decided the router.** The original GL.iNet A-1300's 170 Mbps
+  is a kernel-WireGuard figure; Tailscale does its encryption in software, and on that
+  router's 32-bit chip comparable devices manage an eighth to a half of their WireGuard
+  rate, putting it at an estimated ~30-70 Mbps. Its replacement, the **Slate AX**
+  (64-bit, 550 Mbps WireGuard), is estimated at ~150-250 Mbps under Tailscale, enough for
+  the default scope plus a single-theatre NDI fallback with that theatre's ingest paused.
+  Both Tailscale figures are estimates: benchmark one Slate AX before buying 14.
 
 ## Why Tailscale avoids DERP relay here
 
@@ -195,9 +203,9 @@ actually leaves the venue. Full reasoning in [`docs/tailscale.md`](docs/tailscal
 |---|---|---|
 | Mothership router | Ubiquiti **Cloud Gateway** | Can't run Tailscale natively — that role moves to a container on the services server instead |
 | Consolidated services server | **Unraid**, single physical box (already on hand) | Hosts BirdDog Central as the design's only Windows VM (no GPU passthrough anywhere — the mothership VMix VM was removed, its role never established; theatre program feeds originate from the VMix node PCs), plus Nextcloud/Restreamer/NDI Discovery Server/DERP/ATEM ISO Ingest/VMix Record Ingest/UniFi Controller/GLKVM-Cloud/ATEM Overseer/ATEM Fleet Admin/Flock as Docker containers. Chosen over TrueNAS SCALE for its polished container UX (Community Applications). Calculated target spec (storage pools, RAM, CPU, NIC validation — no GPU required) in [`docs/server-specification.md`](docs/server-specification.md) |
-| Theatre + VMix node routers | GL-iNet **A-1300** (Slate Plus) ×14 | 12 theatre routers + both VMix node routers, same model throughout. ~170 Mbps WireGuard, comfortable headroom for normal operation (~55% combined); 2 LAN ports let the ATEM Mini Extreme ISO sit on its own dedicated port, away from the rest of the room's traffic — it carries the heaviest sustained load (near-real-time ISO ingest). Its own ceiling is the tighter constraint during an NDI fallback though (128% combined with ATEM ingest, resolved by pausing that theatre's ingest during the fallback) — margin worth watching if any further theatre-to-mothership stream ever gets added, see [`docs/bandwidth-analysis.md`](docs/bandwidth-analysis.md). Full case for GL-iNet + Tailscale specifically — segmentation, multi-WAN, pay-per-device WiFi economics, other uses beyond this event, and the same ceiling reasoning — in [`docs/gl-inet-rationale.md`](docs/gl-inet-rationale.md) |
+| Theatre + VMix node routers | GL.iNet **Slate AX** (GL-AXT1800) ×14 | 12 theatre routers + both VMix node routers, same model throughout. 64-bit quad-core, 550 Mbps WireGuard (vendor, kernel WireGuard), estimated ~150-250 Mbps under Tailscale — to be benchmarked on one unit before buying 14. Same 1 WAN + 2 LAN layout as the A-1300 it replaces, so the ATEM Mini Extreme ISO still sits on its own dedicated port, away from the rest of the room's traffic. The A-1300 was dropped on 2026-10-06: its 170 Mbps is a kernel-WireGuard figure, and Tailscale on its 32-bit chip is estimated at only ~30-70 Mbps. During an NDI fallback, pause that theatre's ATEM ingest; see [`docs/bandwidth-analysis.md`](docs/bandwidth-analysis.md). Full case for GL-iNet + Tailscale specifically — segmentation, multi-WAN, pay-per-device WiFi economics, other uses beyond this event, and the router comparison — in [`docs/gl-inet-rationale.md`](docs/gl-inet-rationale.md) |
 | Theatre playback | **BirdDog Play** ×12 | Zero-config, native SRT+NDI, centrally fleet-managed — see above |
-| Server NICs | **Bonded**, 802.3ad/LACP | SRT bandwidth isn't constant — LACP spreads the many simultaneous flows this box handles (12 theatres' SRT fan-out, rclone, Nextcloud, DERP) across both links for real aggregate headroom |
+| Server NICs | **Bonded**, 802.3ad/LACP | SRT bandwidth isn't constant — LACP hashes flows across both links for aggregate headroom. On the wire the tailnet traffic is one WireGuard flow per router (~14), so the spread is coarser than the application-level flow count suggests, and no single flow gets faster |
 
 See [`docs/open-questions.md`](docs/open-questions.md) for the reasoning behind every one
 of these, including the couple of things assumed rather than confirmed (and the fallback
@@ -209,15 +217,18 @@ if an assumption turns out wrong).
 editing event content as it arrives rather than waiting until after the event —
 deliberately on its **own dedicated 10GbE LAN** (`192.168.22.x`), not part of the
 Tailscale mesh or the theatre-facing network the rest of this repo is sized for.
-Editing needs sustained multi-gigabit throughput per editor; putting that on the
-existing bonded 1GbE would either starve the editors or risk contention with the live
+Editing wants sustained throughput far beyond the live budget: nine HD H.264 angles at
+up to 70 Mb/s is ~80 MB/s per editor before any ProRes or 4K, and exports add to that.
+Putting that on the existing bonded 1GbE would either starve the editors or risk contention with the live
 ingest pipelines still running during the event.
 
 Key decisions, each evaluated rather than assumed:
 
-- **Dedicated NAS, not Nextcloud's own storage** — the same rclone/rsync pull that
-  ingests each theatre's ATEM/VMix footage into Nextcloud writes a second copy straight
-  to the edit-suite NAS at the same time, no chained re-sync. Decouples editing entirely
+- **Dedicated NAS, not Nextcloud's own storage** — the same pull that ingests each
+  theatre's ATEM/VMix footage into Nextcloud (FTP for the ATEMs, SMB for VMix) writes a
+  second copy straight to the edit-suite NAS at the same time, no chained re-sync. Designed
+  but not yet implemented in the ingest scripts, and it needs a 10GbE port on the Unraid
+  box on the edit LAN. Decouples editing entirely
   from the live show's infrastructure.
 - **A dedicated Mac mini running both the Resolve Project Server and Remote Render** —
   needed because the whole workflow below is one shared show project both editors work
@@ -287,10 +298,15 @@ Three docs turn the design into something an on-site crew can actually execute:
 
 Design is finalized; these are the headline items still needing real-world input before the config in this repo gets applied (the complete list, including a few smaller ones, lives in [`docs/open-questions.md`](docs/open-questions.md); the ordered build sequence is [`docs/deployment-runbook.md`](docs/deployment-runbook.md)).
 
+- [ ] Benchmark Tailscale on one Slate AX (iperf3, both directions at once, direct path not DERP) before buying 14 — target above ~160 Mbps combined — [`docs/open-questions.md`](docs/open-questions.md) #19.
+- [ ] Patch every ATEM to the common input map, set the program recording to ~8-10 Mbps, and measure one real camera ISO and one laptop ISO file to pin the planning figures — [`docs/atem-iso-ingest.md`](docs/atem-iso-ingest.md), #0.
+- [ ] Confirm the Cloud Gateway model (LAG support, routing capacity), and prove the mothership → tailnet routing path end to end — static routes, macvlan host access, ACL — #17, #18.
+- [ ] Set the SRT payload size to 1128 bytes on the VMix PCs and Restreamer to fit Tailscale's 1280-byte MTU — #20.
+- [ ] Smaller build items: which ATEM model (original or G2) and its ISO file naming, testing `pull-iso.py`'s new folder walk against a real unit, smart-bin path rule vs the NAS layout, and an Unraid address on the edit LAN — #21–24.
 - [ ] Check the existing consolidated services server against the calculated target spec in [`docs/server-specification.md`](docs/server-specification.md) (CPU/RAM headroom, storage pool layout — no GPU requirement any more).
 - [ ] Add the `derp.example.net` DNS record for the self-hosted DERP server.
 - [ ] Verify the DERP hairpin isn't caught by the uplink-VLAN firewall block before relying on it.
-- [ ] Confirm the real ATEM ISO bitrate/active-channel count and empirically verify partial-file playability.
+- [ ] Empirically verify that a file copied mid-recording plays.
 - [ ] Confirm what VMix is actually recording and set up real SMB shares/credentials on all 4 VMix PCs.
 - [ ] Confirm the final VLAN count with the venue, and decide whether a mass-NDI-fallback event needs to survive at full quality (drives 3-4 vs. 2 VLANs) — [`docs/bandwidth-analysis.md`](docs/bandwidth-analysis.md).
 - [ ] Add the `kvm.example.net` DNS record and confirm `GLKVM_ACCESS_IP`'s exact format for the WAN-remapped GLKVM-Cloud ports — [`docs/glkvm-cloud.md`](docs/glkvm-cloud.md).

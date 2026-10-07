@@ -16,6 +16,16 @@ External Storage folders:**
 Both are genuinely incremental (only new bytes cross the theatre's uplink each cycle) —
 they just get there differently. See `docs/atem-iso-ingest.md` for the full comparison.
 
+**Only the program file and the chosen ISO inputs are pulled live.** Every theatre's ATEM
+is patched to the same input map (1 = camera, 2–3 = laptops, 4–8 = backups — see
+[`docs/atem-iso-ingest.md`](../../docs/atem-iso-ingest.md), "Common theatre input map").
+`ATEM_ISO_INPUTS` (comma-separated, default `1`; empty = program only) picks which ISO
+inputs cross the network, for both approaches and all 12 theatres at once; the ATEM still
+records everything to its SSD for the physical offload. ISO files are recognised by
+`CAM <n>` in the file name — unconfirmed on a real unit; `pull-iso.py` takes a regex
+override in `ATEM_ISO_INPUT_PATTERN`, `rclone-mount-rsync/` needs its `build_filters`
+edited.
+
 **Second destination — documented, not yet implemented.** The settled design dual-writes
 each growing file to the edit-suite NAS (`192.168.22.x`) alongside Nextcloud, in the
 same pull — see [`docs/live-editing.md`](../../docs/live-editing.md). As shipped, both
@@ -25,9 +35,10 @@ tracked as [`docs/open-questions.md`](../../docs/open-questions.md) item 15.
 ## Files
 
 - [`pull-iso.py`](pull-iso.py) — the default ingest loop. For each theatre, connects to
-  the ATEM's built-in FTP server over Tailscale subnet routing (`192.168.X.2`), and pulls
-  only the bytes appended since the last check (FTP `REST`), writing directly into the
-  folder mounted into Nextcloud as External Storage.
+  the ATEM's built-in FTP server over Tailscale subnet routing (`192.168.X.2`), walks the
+  recording folders recursively, and pulls only the bytes appended since the last check
+  (FTP `REST`), writing directly into the folder mounted into Nextcloud as External
+  Storage (keeping the ATEM's folder structure under `TheatreN/ISO/`).
 - [`rclone-mount-rsync/`](rclone-mount-rsync/) — the alternative described above, with its
   own setup instructions.
 - [`setup-nextcloud-external-storage.sh`](setup-nextcloud-external-storage.sh) — one-time
@@ -56,7 +67,7 @@ Restreamer/NDI Discovery Server/DERP are already run there):
 
 ```sh
 docker run -d --name atem-iso-ingest \
-  -e ATEM_FTP_USER=... -e ATEM_FTP_PASS=... \
+  -e ATEM_FTP_USER=... -e ATEM_FTP_PASS=... -e ATEM_ISO_INPUTS=1 \
   -v /mnt/user/nextcloud-external:/mnt/user/nextcloud-external \
   -v /mnt/user/appdata/atem-iso-ingest:/mnt/user/appdata/atem-iso-ingest \
   python:3-slim python /app/pull-iso.py

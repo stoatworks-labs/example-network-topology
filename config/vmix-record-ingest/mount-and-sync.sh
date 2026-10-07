@@ -14,6 +14,10 @@
 # `rclone mount` for SMB specifically, since it needs no FUSE bridge at all — this
 # script uses rclone anyway to reuse the exact same tooling/config pattern as the ATEM
 # ingest. See docs/vmix-record-ingest.md for that trade-off.
+#
+# --dir-cache-time 30s: SMB has no change notification in rclone, so a growing file's
+# size on the mount only refreshes when the directory cache expires (default 5m, which
+# would silently stretch the 90s sync interval to ~5 minutes).
 set -euo pipefail
 
 RCLONE_CONFIG="$(dirname "$0")/rclone.conf"
@@ -41,6 +45,7 @@ mount_pc() {
 		rclone mount "${remote}:${VMIX_SHARE_NAME}" "$mount_point" \
 			--config "$RCLONE_CONFIG" \
 			--vfs-cache-mode off \
+			--dir-cache-time 30s \
 			--read-only \
 			--daemon
 		echo "[vmix-node${node}-pc${pc}] mounted at ${mount_point}"
@@ -53,15 +58,19 @@ sync_pc() {
 	local dest="${DEST_BASE}/VMixNode${node}/PC${pc}/"
 	mkdir -p "$dest"
 
-	local append_flag="--append"
-	[ "$VERIFY" = "1" ] && append_flag="--append-verify"   # full checksum pass — run occasionally, not every cycle
+	# --append never corrects bytes rewritten in place (e.g. an MP4 header patched at
+	# stop). VERIFY=1 runs a full --checksum pass that repairs differing blocks in place —
+	# not --append-verify, which SKIPS files already the same size on both sides. It
+	# reads every file in full over the SMB mount, so run it once per finished session.
+	local mode_flags=(--append)
+	[ "$VERIFY" = "1" ] && mode_flags=(--checksum --inplace --no-whole-file)
 
-	rsync -a "$append_flag" --itemize-changes "${mount_point}/" "$dest" \
+	rsync -a "${mode_flags[@]}" --itemize-changes "${mount_point}/" "$dest" \
 		|| echo "[vmix-node${node}-pc${pc}] rsync pass failed (will retry next cycle)"
 }
 
 if [ "$VERIFY" = "1" ]; then
-	echo "VMix record ingest — one-shot --append-verify integrity pass"
+	echo "VMix record ingest — one-shot --checksum integrity pass"
 else
 	echo "VMix record ingest (rclone mount + rsync --append) starting"
 	echo "Mounts under ${MOUNT_BASE}, syncing into ${DEST_BASE}, every ${SYNC_INTERVAL_SECONDS}s"

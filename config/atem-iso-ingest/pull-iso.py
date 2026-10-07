@@ -3,8 +3,9 @@
 ATEM ISO ingest — incremental FTP pull into Nextcloud's local external storage.
 
 For each theatre's ATEM (built-in FTP server, reachable via Tailscale subnet routing),
-lists the recording drive and pulls only the bytes appended since the last check,
-using FTP's REST command (the same "resume from byte offset" mechanism curl/wget/lftp
+walks the recording drive's folders and, for the program recording plus the ISO inputs
+in ATEM_ISO_INPUTS, pulls only the bytes appended since the last check, using FTP's REST
+command (the same "resume from byte offset" mechanism curl/wget/lftp
 use for resumable downloads). Writes directly into the folder Nextcloud has mounted as
 External Storage (Local) — see setup-nextcloud-external-storage.sh — so there's no
 separate upload step and no need to chunk/slice the video file at all.
@@ -20,6 +21,8 @@ box) — it loops internally rather than expecting to be invoked fresh each cycl
 import ftplib
 import json
 import os
+import posixpath
+import re
 import sys
 import time
 
@@ -33,6 +36,39 @@ LOCAL_BASE = os.environ.get("ATEM_ISO_LOCAL_BASE", "/mnt/user/nextcloud-external
 STATE_FILE = os.environ.get("ATEM_ISO_STATE_FILE", "/mnt/user/appdata/atem-iso-ingest/state.json")
 POLL_INTERVAL_SECONDS = int(os.environ.get("ATEM_ISO_POLL_INTERVAL", "90"))
 MEDIA_EXTENSIONS = (".mp4", ".mov")
+MAX_DEPTH = 3  # a recording is <root>/<recording>/Video ISO Files/<file>
+
+# Which ISO inputs to pull live. The ATEM always records every input to its own SSD (ISO
+# recording is all-or-nothing); this only chooses which of those files cross the network.
+# Every theatre is built to the same input map (docs/atem-iso-ingest.md, "Common theatre
+# input map"), so one setting covers all 12. Empty = program recording only. The program
+# file is always pulled. Everything not pulled stays on the SSD for the physical offload.
+def parse_inputs(value):
+    return {int(n) for n in value.split(",") if n.strip()}
+
+
+ISO_INPUTS = parse_inputs(os.environ.get("ATEM_ISO_INPUTS", "1"))
+
+
+def inputs_for(theatre_num):
+    """ATEM_ISO_INPUTS_T<n> (e.g. ATEM_ISO_INPUTS_T3="1,2") overrides the fleet-wide
+    setting for one theatre, so laptop inputs go live only where the router has room.
+    Empty means no override (docker compose passes unset variables as ""); use "0" for
+    program only."""
+    override = os.environ.get(f"ATEM_ISO_INPUTS_T{theatre_num}", "").strip()
+    return parse_inputs(override) if override else ISO_INPUTS
+# How an ISO file names its input. "CAM 1" is Blackmagic's naming as far as we know;
+# confirm against a real unit (docs/open-questions.md #21) and override if it differs.
+ISO_INPUT_RE = re.compile(os.environ.get("ATEM_ISO_INPUT_PATTERN", r"\bCAM\s*(\d+)\b"), re.I)
+
+
+def wanted(path, inputs=None):
+    """Program recordings always; ISO files only for the chosen inputs."""
+    inputs = ISO_INPUTS if inputs is None else inputs
+    if not path.lower().endswith(MEDIA_EXTENSIONS):
+        return False
+    m = ISO_INPUT_RE.search(posixpath.basename(path))
+    return m is None or int(m.group(1)) in inputs
 
 
 def theatre_atem_ip(theatre_num):
@@ -77,6 +113,30 @@ def pull_new_bytes(ftp, remote_name, remote_size, local_path, known_offset):
     return os.path.getsize(local_path)
 
 
+def walk(ftp, top, depth=0):
+    """Yield file paths under top. Uses MLSD where the server has it, else NLST + a CWD
+    probe to tell directories from files (the ATEM's FTP command set is unconfirmed)."""
+    try:
+        entries = [(posixpath.join(top, n), f.get("type") == "dir")
+                   for n, f in ftp.mlsd(top, facts=["type"]) if n not in (".", "..")]
+    except ftplib.error_perm:
+        entries = []
+        for n in ftp.nlst(top):
+            path = n if n.startswith("/") else posixpath.join(top, posixpath.basename(n))
+            try:
+                ftp.cwd(path)
+                ftp.cwd(top)
+                entries.append((path, True))
+            except ftplib.error_perm:
+                entries.append((path, False))
+    for path, is_dir in entries:
+        if is_dir:
+            if depth < MAX_DEPTH:
+                yield from walk(ftp, path, depth + 1)
+        else:
+            yield path
+
+
 def sync_theatre(theatre_num, state):
     ip = theatre_atem_ip(theatre_num)
     key_prefix = f"theatre-{theatre_num}"
@@ -86,21 +146,25 @@ def sync_theatre(theatre_num, state):
         ftp = ftplib.FTP()
         ftp.connect(ip, timeout=15)
         ftp.login(FTP_USER, FTP_PASS)
+        # Binary mode before SIZE, not just before RETR: many FTP servers refuse SIZE (or
+        # report a different size) in the default ASCII mode.
+        ftp.voidcmd("TYPE I")
         ftp.cwd(FTP_REMOTE_DIR)
     except (ftplib.all_errors, OSError) as e:
         print(f"[theatre-{theatre_num}] FTP connect/login failed ({ip}): {e}", file=sys.stderr)
         return
 
+    # Blackmagic recordings are a folder per recording ("Video ISO Files/", "Audio Source
+    # Files/" .wav, a .drp project), so walk the tree rather than listing one directory.
     try:
-        names = ftp.nlst()
+        inputs = inputs_for(theatre_num)
+        names = [p for p in walk(ftp, FTP_REMOTE_DIR) if wanted(p, inputs)]
     except ftplib.all_errors as e:
         print(f"[theatre-{theatre_num}] directory listing failed: {e}", file=sys.stderr)
         ftp.quit()
         return
 
     for name in names:
-        if not name.lower().endswith(MEDIA_EXTENSIONS):
-            continue
 
         try:
             remote_size = ftp.size(name)
@@ -112,7 +176,7 @@ def sync_theatre(theatre_num, state):
 
         state_key = f"{key_prefix}/{name}"
         known_offset = state.get(state_key, 0)
-        local_path = os.path.join(local_dir, name)
+        local_path = os.path.join(local_dir, posixpath.relpath(name, FTP_REMOTE_DIR))
 
         if remote_size <= known_offset:
             continue
@@ -129,6 +193,7 @@ def sync_theatre(theatre_num, state):
 
 def main():
     print(f"ATEM ISO ingest starting — {len(list(THEATRES))} theatres, "
+          f"ISO inputs {sorted(ISO_INPUTS) or 'none'} + program, "
           f"poll every {POLL_INTERVAL_SECONDS}s, writing under {LOCAL_BASE}")
     while True:
         state = load_state()

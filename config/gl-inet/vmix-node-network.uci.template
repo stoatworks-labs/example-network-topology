@@ -1,4 +1,4 @@
-# GL-iNet A-1300 — VMix Node __NODE__ — 192.168.__X__.0/24 (off Theatre __THEATRE__)
+# GL-iNet Slate AX (GL-AXT1800) — VMix Node __NODE__ — 192.168.__X__.0/24 (off Theatre __THEATRE__)
 #
 # Generated from vmix-node-network.uci.template — do not hand-edit, edit the template
 # and re-run generate-configs.sh instead.

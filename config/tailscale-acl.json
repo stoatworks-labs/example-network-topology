@@ -4,10 +4,38 @@
     "tag:theatre":     ["autogroup:admin"],
     "tag:vmix":        ["autogroup:admin"]
   },
+  "hosts": {
+    "mothership-lan": "192.168.1.0/24",
+    "theatre-1-lan":  "192.168.2.0/24",
+    "theatre-2-lan":  "192.168.3.0/24",
+    "theatre-3-lan":  "192.168.4.0/24",
+    "theatre-4-lan":  "192.168.5.0/24",
+    "theatre-5-lan":  "192.168.6.0/24",
+    "theatre-6-lan":  "192.168.7.0/24",
+    "theatre-7-lan":  "192.168.8.0/24",
+    "theatre-8-lan":  "192.168.9.0/24",
+    "theatre-9-lan":  "192.168.10.0/24",
+    "theatre-10-lan": "192.168.11.0/24",
+    "theatre-11-lan": "192.168.12.0/24",
+    "theatre-12-lan": "192.168.13.0/24",
+    "vmix-node-1-lan": "192.168.20.0/24",
+    "vmix-node-2-lan": "192.168.21.0/24"
+  },
   "acls": [
-    { "action": "accept", "src": ["tag:mothership"], "dst": ["tag:theatre:*", "tag:vmix:*"] },
-    { "action": "accept", "src": ["tag:theatre"],     "dst": ["tag:mothership:*"] },
-    { "action": "accept", "src": ["tag:vmix"],        "dst": ["tag:mothership:*"] }
+    { "action": "accept", "src": ["tag:mothership", "mothership-lan"], "dst": [
+        "tag:theatre:*", "tag:vmix:*",
+        "theatre-1-lan:*", "theatre-2-lan:*", "theatre-3-lan:*", "theatre-4-lan:*",
+        "theatre-5-lan:*", "theatre-6-lan:*", "theatre-7-lan:*", "theatre-8-lan:*",
+        "theatre-9-lan:*", "theatre-10-lan:*", "theatre-11-lan:*", "theatre-12-lan:*",
+        "vmix-node-1-lan:*", "vmix-node-2-lan:*"
+    ] },
+    { "action": "accept", "src": ["tag:theatre",
+        "theatre-1-lan", "theatre-2-lan", "theatre-3-lan", "theatre-4-lan",
+        "theatre-5-lan", "theatre-6-lan", "theatre-7-lan", "theatre-8-lan",
+        "theatre-9-lan", "theatre-10-lan", "theatre-11-lan", "theatre-12-lan"
+    ], "dst": ["tag:mothership:*", "mothership-lan:*"] },
+    { "action": "accept", "src": ["tag:vmix", "vmix-node-1-lan", "vmix-node-2-lan"],
+      "dst": ["tag:mothership:*", "mothership-lan:*"] }
   ],
   "derpMap": {
     "OmitDefaultRegions": false,

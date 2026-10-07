@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Alternative to GL-iNet A-1300 for Theatre 11 — generic Linux box (mini-PC or
+# Alternative to GL-iNet Slate AX for Theatre 11 — generic Linux box (mini-PC or
 # the control laptop) + plain switch, using nftables/dnsmasq instead of a router
 # appliance's built-in NAT/DHCP. Tailscale invocation is unchanged from
 # ../tailscale-up-all-devices.sh — Tailscale doesn't care what hardware runs it.
@@ -14,10 +14,18 @@ set -euo pipefail
 LAN_IP="192.168.12.1/24"
 
 # --- Interfaces (adjust names to match the actual box's NICs) -------------
-ip addr add "$LAN_IP" dev lan0   # ATEM Mini Extreme ISO, direct
-ip addr add "$LAN_IP" dev lan1   # switch -> BirdDog Play, PowerPoint/VT laptops, control laptop
+# Both LAN NICs bridged into one br-lan holding the gateway IP — same as GL-iNet's
+# 'lan1 lan2' bridge. (Putting the same /24 address on two separate NICs instead
+# gives two competing connected routes, and one port's devices become unreachable.)
+ip link add br-lan type bridge
+ip link set lan0 master br-lan   # ATEM Mini Extreme ISO, direct
+ip link set lan1 master br-lan   # switch -> BirdDog Play, PowerPoint/VT laptops, control laptop
+ip addr add "$LAN_IP" dev br-lan
 ip link set lan0 up
 ip link set lan1 up
+ip link set br-lan up
+# Routing between LAN, WAN and tailscale0 — required for NAT and for Tailscale subnet routing
+sysctl -w net.ipv4.ip_forward=1
 # wan0: DHCP client to the mothership's Cloud Gateway VLAN — same as GL-iNet's WAN port
 dhclient wan0
 
@@ -31,7 +39,7 @@ nft add rule inet nat postrouting oifname "wan0" masquerade
 # that device's real MAC address before applying — same requirement as the GL-iNet
 # configs in ../gl-inet/.
 cat > /etc/dnsmasq.d/theatre11.conf <<EOF
-interface=lan0,lan1
+interface=br-lan
 dhcp-range=192.168.12.100,192.168.12.149,12h
 dhcp-host=REPLACE_WITH_MAC_01,192.168.12.20   # birddog-play
 dhcp-host=REPLACE_WITH_MAC_02,192.168.12.2    # atem-mini-extreme-iso

@@ -3,7 +3,7 @@
 # Run the relevant block on each device. Routes must still be approved in the
 # Tailscale admin console (or via autoApprovers) before they take effect.
 
-# --- Theatre routers (×12, GL-iNet A-1300 / Slate Plus) -----------------
+# --- Theatre routers (×12, GL-iNet Slate AX / GL-AXT1800) -------------
 # X = subnet octet per the map in ../README.md, e.g. Theatre 1 -> 2, Theatre 12 -> 13
 tailscale up --advertise-routes=192.168.X.0/24 --accept-routes --advertise-tags=tag:theatre
 
@@ -17,4 +17,8 @@ tailscale up --advertise-routes=192.168.21.0/24 --accept-routes --advertise-tags
 # container (host networking) on the consolidated Unraid services server on
 # 192.168.1.x, alongside Nextcloud/Restreamer/NDI Discovery Server (see
 # ../docs/topology.md and ../docs/open-questions.md).
-tailscale up --advertise-routes=192.168.1.0/24 --advertise-tags=tag:mothership
+# In practice config/docker-compose.yml's tailscale-router service applies these same
+# flags itself (TS_ROUTES / TS_EXTRA_ARGS); tailscaled there is also pinned to
+# --port=41641 (a tailscaled flag, not a `tailscale up` one) to match the firewall allow
+# in config/unifi/network-config.yaml.
+tailscale up --advertise-routes=192.168.1.0/24 --accept-routes --advertise-tags=tag:mothership

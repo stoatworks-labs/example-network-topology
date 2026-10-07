@@ -2,7 +2,7 @@
 
 **Self-hosted GLKVM-Cloud** ([`gl-inet/glkvm-cloud`](https://github.com/gl-inet/glkvm-cloud)),
 run as Docker containers on the consolidated services server, gives centralized remote
-access to all **14 GL-iNet A-1300 routers** (12 theatres + 2 VMix nodes) — their web admin
+access to all **14 GL-iNet Slate AX routers** (12 theatres + 2 VMix nodes) — their web admin
 UI and an SSH terminal, both reachable through one browser session, without exposing any
 individual router's admin interface to the WAN or needing 14 separate tunnels. Same
 self-hosted-over-vendor-cloud rationale already used for the DERP server and the UniFi
@@ -13,13 +13,13 @@ party in the path when administering the router fleet during a live event.
 KVM-over-IP hardware line (the Comet/GL-RM1) for out-of-band access to bare-metal servers
 — not used here. What's actually in scope is the platform's separately-documented
 **HTTP/HTTPS web proxy and device-management capability for embedded devices like OpenWrt
-and Raspberry Pi** — the A-1300s already run OpenWrt/UCI (see
+and Raspberry Pi** — the Slate AX routers already run OpenWrt/UCI (see
 [`config/gl-inet/`](../config/gl-inet/)), which puts them squarely in that supported
 category.
 
 ## Why centralize router administration at all
 
-14 identical GL-iNet A-1300s (12 theatre routers, 2 VMix node routers) is exactly the
+14 identical GL-iNet Slate AX routers (12 theatre routers, 2 VMix node routers) is exactly the
 kind of fleet that benefits from one console instead of 14 separate admin logins — same
 motivation as [Flock](https://github.com/stoatworks-labs/flock) for the BirdDog Play fleet
 (see [`docs/birddog-play-rationale.md`](birddog-play-rationale.md)). GLKVM-Cloud's
@@ -52,14 +52,22 @@ deployed anyway as the standard reference stack rather than assuming it's safe t
 not confirmed whether `rttys`'s SSH-terminal/web-proxy features have any dependency on it
 internally. Revisit once actually running.
 
+**The image needs upstream's entrypoint and templates mounted.** The
+`glzhitong/glkvm-cloud` image's own entrypoint is bare `rttys` with no config; upstream's
+compose overrides it with a bind-mounted `docker-entrypoint.sh` that renders `rttys.conf`
+and `turnserver.conf` from templates using the `RTTYS_*`/`TURN_*`/`GLKVM_ACCESS_IP`
+variables. Without those mounts the token and password are silently ignored. This repo's
+compose files now do the same, mounting from an upstream checkout.
+
 Manual Docker/docker-compose deployment supports both x86_64 and arm64
 ([deployment docs](https://github.com/gl-inet/glkvm-cloud/blob/main/docker-compose/README.md)).
 Minimum self-host requirements per GL.iNet: 1 CPU core, ≥1 GB RAM, ≥40 GB storage,
-≥3 Mbps — trivial next to what VMix/BirdDog Central already need on this box.
+≥3 Mbps — trivial next to what BirdDog Central and the rest of the stack already need on
+this box.
 
 ## Registering the 14 routers
 
-Each A-1300 registers to the self-hosted instance by running a connection script copied
+Each Slate AX registers to the self-hosted instance by running a connection script copied
 from the GLKVM-Cloud web UI (OpenWrt supports SSH/shell, so this is a normal
 `opkg`/script-based install, same mechanism as any other device type GLKVM-Cloud
 supports). Since every router already runs Tailscale and accepts routes back to
@@ -86,14 +94,21 @@ WAN-side port numbers to GLKVM-Cloud's real (internal, unchanged) ports —
 | 3479 | TCP+UDP | `192.168.1.22:3478` | WAN 3478/udp already goes to DERP's STUN; kept TCP alongside it on the same alternate port for one consistent "DERP = 3478, GLKVM-Cloud = 3479" mental model, even though 3478/tcp alone was actually free |
 
 Suggested hostname: **`kvm.example.net`**, same domain as `derp.example.net`, pointed at the
-same public IP — reached as `https://kvm.example.net:8443`, with `GLKVM_ACCESS_IP` set to
-match so `rttys` advertises the right address/port back to the browser rather than its
-own LAN IP.
+same public IP — reached as `https://kvm.example.net:8443`.
+
+**What `GLKVM_ACCESS_IP` and `TURN_PORT` actually do** (from upstream's
+`scripts/docker-entrypoint.sh` and `templates/`): `GLKVM_ACCESS_IP` is written into
+`rttys`'s `webrtc-ip` and `coturn`'s `external-ip`, and the auto-detect fallback only
+accepts an IPv4 address — so set it to the venue's **public IPv4**, not the hostname (and
+expect to update it if that IP isn't static). `TURN_PORT` is both the port `rttys`
+advertises for TURN and the port `coturn` listens on; since they're separate containers,
+this repo sets it to `3479` on `rttys` (the WAN-side port) and `3478` on `coturn` (where
+the WAN 3479 forward lands). The web UI port isn't advertised anywhere — the browser just
+uses `:8443` — and `10443` is forwarded unchanged.
 
 **Not fully verified against a real deployment — confirm before relying on it:** the
-existence and general purpose of `GLKVM_ACCESS_IP` is documented upstream, but its exact
-accepted format (hostname only vs. `host:port`) isn't confirmed here. If a plain env var
-doesn't cover the WAN-side port remap cleanly, the fallback is a second public IP or an
+end-to-end behaviour of the `:8443` web UI and the remapped TURN port. If the remap
+doesn't work cleanly, the fallback is a second public IP or an
 SNI-routing reverse proxy in front of both DERP and GLKVM-Cloud on the literal 443 — more
 moving parts, only worth it if the simple remap doesn't work. Tracked in
 [`docs/open-questions.md`](open-questions.md) (question 7).

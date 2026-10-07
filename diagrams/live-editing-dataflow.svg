@@ -1,61 +1,78 @@
-<svg viewBox="0 0 1400 720" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
-  <rect x="0" y="0" width="1400" height="720" fill="#ffffff"/>
-  <text x="700" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1a2e">Live Editing — Data Flow</text>
-  <text x="700" y="52" text-anchor="middle" font-size="11" fill="#666">One pull off the ATEM/VMix source, two writes — not a chained re-sync</text>
-  <defs>
-    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#2a6f97"/>
-    </marker>
-    <marker id="arrowDark" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#3a3a5a"/>
-    </marker>
-    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#6a4c93"/>
-    </marker>
-  </defs>
-  <rect x="40" y="90" width="260" height="150" rx="8" fill="#2a6f97" stroke="#1c4d69" stroke-width="2"/>
-  <text x="170" y="118" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Theatre ATEM / VMix</text>
-  <line x1="60" y1="130" x2="280" y2="130" stroke="#e0eefc"/>
-  <text x="170" y="152" text-anchor="middle" font-size="12" fill="#e0eefc">ATEM Mini ISO (FTP)</text>
-  <text x="170" y="172" text-anchor="middle" font-size="12" fill="#e0eefc">VMix PC (SMB)</text>
-  <text x="170" y="198" text-anchor="middle" font-size="10" fill="#bcd8f0">×12 theatres + 4 VMix PCs</text>
-  <text x="170" y="216" text-anchor="middle" font-size="10" fill="#bcd8f0">via Tailscale subnet routing</text>
-  <rect x="440" y="90" width="260" height="150" rx="8" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
-  <text x="570" y="118" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Ingest containers</text>
-  <line x1="460" y1="130" x2="680" y2="130" stroke="#cfd3e6"/>
-  <text x="570" y="152" text-anchor="middle" font-size="12" fill="#cfd3e6">ATEM ISO Ingest — .1.17</text>
-  <text x="570" y="172" text-anchor="middle" font-size="12" fill="#cfd3e6">VMix Record Ingest — .1.18</text>
-  <text x="570" y="198" text-anchor="middle" font-size="10" fill="#9aa0c0">rsync --append, incremental</text>
-  <text x="570" y="216" text-anchor="middle" font-size="10" fill="#9aa0c0">not yet dual-write — see open-questions #15</text>
-  <rect x="880" y="30" width="260" height="120" rx="8" fill="#1a1a2e" stroke="#0d0d17" stroke-width="2"/>
-  <text x="1010" y="60" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Nextcloud</text>
-  <text x="1010" y="82" text-anchor="middle" font-size="12" fill="#cfd3e6">mothership — 192.168.1.13</text>
-  <text x="1010" y="106" text-anchor="middle" font-size="11" fill="#9aa0c0">near-real-time review copy</text>
-  <text x="1010" y="126" text-anchor="middle" font-size="11" fill="#9aa0c0">(existing ingest path)</text>
-  <rect x="880" y="180" width="260" height="120" rx="8" fill="#6a4c93" stroke="#453163" stroke-width="2"/>
-  <text x="1010" y="210" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Edit Suite NAS</text>
-  <text x="1010" y="232" text-anchor="middle" font-size="12" fill="#e8ddf5">192.168.22.2</text>
-  <text x="1010" y="256" text-anchor="middle" font-size="11" fill="#d8c8ec">10GbE, own subnet</text>
-  <text x="1010" y="276" text-anchor="middle" font-size="11" fill="#d8c8ec">second write, same pull</text>
-  <rect x="820" y="380" width="440" height="260" rx="8" fill="#6a4c93" stroke="#453163" stroke-width="2"/>
-  <text x="1040" y="410" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">Edit Suite — 192.168.22.x (10GbE)</text>
-  <line x1="840" y1="422" x2="1240" y2="422" stroke="#e8ddf5"/>
-  <text x="1040" y="448" text-anchor="middle" font-size="12" fill="#e8ddf5">MacBook Pro — Editor 1 (.22.11)</text>
-  <text x="1040" y="472" text-anchor="middle" font-size="12" fill="#e8ddf5">MacBook Pro — Editor 2 (.22.12)</text>
-  <text x="1040" y="500" text-anchor="middle" font-size="12" fill="#e8ddf5">Mac mini — Project Server +</text>
-  <text x="1040" y="518" text-anchor="middle" font-size="12" fill="#e8ddf5">Remote Render (.22.20)</text>
-  <text x="1040" y="548" text-anchor="middle" font-size="10" fill="#d8c8ec">Thunderbolt-to-10GbE adapters</text>
-  <text x="1040" y="566" text-anchor="middle" font-size="10" fill="#d8c8ec">no Tailscale — same room as mothership</text>
-  <text x="1040" y="596" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">pre-built project structure from</text>
-  <text x="1040" y="614" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">resolve-configurator — see the</text>
-  <text x="1040" y="632" text-anchor="middle" font-size="10" fill="#d8c8ec" font-style="italic">project-structure diagram</text>
-  <path d="M300,165 L440,165" fill="none" stroke="#2a6f97" stroke-width="2.5" marker-end="url(#arrowBlue)"/>
-  <text x="330" y="155" font-size="11" fill="#2a6f97" font-weight="bold">FTP / SMB pull</text>
-  <path d="M700,140 L880,90" fill="none" stroke="#0d0d17" stroke-width="2.5" marker-end="url(#arrowDark)"/>
-  <text x="740" y="105" font-size="11" fill="#0d0d17" font-weight="bold">write 1: Nextcloud</text>
-  <path d="M700,190 L880,240" fill="none" stroke="#453163" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
-  <text x="740" y="245" font-size="11" fill="#453163" font-weight="bold">write 2: Edit Suite NAS</text>
-  <path d="M1010,300 L1010,380" fill="none" stroke="#453163" stroke-width="2.5" marker-end="url(#arrowPurple)"/>
-  <text x="700" y="680" text-anchor="middle" font-size="11" fill="#888">The edit suite never waits on Nextcloud's own occ files:scan indexing — its copy arrives independently, same pull cycle.</text>
-  <text x="700" y="698" text-anchor="middle" font-size="11" fill="#888">See docs/live-editing.md for the storage/project-server decisions and docs/atem-iso-ingest.md / docs/vmix-record-ingest.md for the ingest containers themselves.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 615" width="1400" height="615" font-family="Helvetica, Arial, sans-serif">
+<title>Live Editing — Data Flow</title>
+<defs><marker id="m1e2235" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1e2235"/></marker><marker id="m24668f" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#24668f"/></marker><marker id="m64458f" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#64458f"/></marker><marker id="m64458fs" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M10,0 L0,5 L10,10 z" fill="#64458f"/></marker><marker id="m6b7280" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker></defs>
+<rect width="1400" height="615" fill="#ffffff"/>
+<text x="700.0" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1d2b">Live Editing — Data Flow</text>
+<text x="700.0" y="58" text-anchor="middle" font-size="13" fill="#5b6170">One pull off each ATEM/VMix source, written twice — never a chained re-sync</text>
+<rect x="20.0" y="80.0" width="330.0" height="360.0" rx="10" fill="#eaf2f8" stroke="#d5d9e2" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="185.0" y="102.0" font-size="12" fill="#5b6170" text-anchor="middle" font-weight="bold">Theatres + VMix nodes (via tailnet)</text>
+<rect x="380.0" y="80.0" width="560.0" height="360.0" rx="10" fill="#eceef4" stroke="#d5d9e2" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="660.0" y="102.0" font-size="12" fill="#5b6170" text-anchor="middle" font-weight="bold">Mothership LAN — 192.168.1.0/24</text>
+<rect x="970.0" y="80.0" width="410.0" height="520.0" rx="10" fill="#f2eef8" stroke="#d5d9e2" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="1175.0" y="102.0" font-size="12" fill="#5b6170" text-anchor="middle" font-weight="bold">Edit suite LAN — 192.168.22.0/24, 10GbE</text>
+<g><rect x="40" y="120" width="290" height="120" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M40,166 V128 a8,8 0 0 1 8,-8 H322 a8,8 0 0 1 8,8 V166 Z" fill="#24668f"/></g>
+<text x="185.0" y="141.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">ATEM Mini Extreme ISO ×12</text>
+<text x="185.0" y="158.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.X.2 · FTP (G2: network share)</text>
+<text x="185.0" y="190.0" font-size="12" fill="#1a1d2b" text-anchor="middle">pulled live: program + input 1</text>
+<text x="185.0" y="208.0" font-size="11.5" fill="#5b6170" text-anchor="middle">(camera; + 2/3 laptops if headroom)</text>
+<text x="185.0" y="226.0" font-size="11.5" fill="#5b6170" text-anchor="middle">every input stays on its SSD</text>
+<g><rect x="40" y="280" width="290" height="120" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M40,326 V288 a8,8 0 0 1 8,-8 H322 a8,8 0 0 1 8,8 V326 Z" fill="#b03a48"/></g>
+<text x="185.0" y="301.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix PCs ×4</text>
+<text x="185.0" y="318.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.20/21.21–.22 · SMB share</text>
+<text x="185.0" y="352.0" font-size="12" fill="#1a1d2b" text-anchor="middle">recordings on local disk</text>
+<text x="185.0" y="371.0" font-size="12" fill="#5b6170" text-anchor="middle">(the master copy)</text>
+<g><rect x="410" y="190" width="260" height="140" rx="8" fill="#eef0f5" stroke="#3d4a63" stroke-width="1.5"/><path d="M410,236 V198 a8,8 0 0 1 8,-8 H662 a8,8 0 0 1 8,8 V236 Z" fill="#3d4a63"/></g>
+<text x="540.0" y="211.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Ingest containers</text>
+<text x="540.0" y="228.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">Unraid</text>
+<text x="540.0" y="260.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">ATEM ISO Ingest — .1.17</text>
+<text x="540.0" y="279.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">VMix Record Ingest — .1.18</text>
+<text x="540.0" y="302.0" font-size="11.5" fill="#5b6170" text-anchor="middle" font-style="italic">incremental copy of growing files</text>
+<g><rect x="720" y="130" width="200" height="110" rx="8" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/><path d="M720,176 V138 a8,8 0 0 1 8,-8 H912 a8,8 0 0 1 8,8 V176 Z" fill="#1e2235"/></g>
+<text x="820.0" y="151.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Nextcloud</text>
+<text x="820.0" y="168.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.1.13</text>
+<text x="820.0" y="202.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">review copy</text>
+<text x="820.0" y="221.0" font-size="12" fill="#5b6170" text-anchor="middle">(External Storage)</text>
+<g><rect x="1000" y="130" width="350" height="110" rx="8" fill="#f2eef8" stroke="#64458f" stroke-width="1.5"/><path d="M1000,176 V138 a8,8 0 0 1 8,-8 H1342 a8,8 0 0 1 8,8 V176 Z" fill="#64458f"/></g>
+<text x="1175.0" y="151.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Edit Suite NAS</text>
+<text x="1175.0" y="168.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.22.2 · 10GbE</text>
+<text x="1175.0" y="202.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">editing copy, same pull</text>
+<text x="1175.0" y="221.0" font-size="12" fill="#5b6170" text-anchor="middle">(see live-editing.md Decision 1)</text>
+<g><rect x="1000" y="300" width="350" height="170" rx="8" fill="#f2eef8" stroke="#64458f" stroke-width="1.5"/><path d="M1000,346 V308 a8,8 0 0 1 8,-8 H1342 a8,8 0 0 1 8,8 V346 Z" fill="#64458f"/></g>
+<text x="1175.0" y="321.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Edit suite machines</text>
+<text x="1175.0" y="338.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">MacBooks via Thunderbolt adapters · Mac mini 10GbE option</text>
+<text x="1016.0" y="372.0" font-size="12.5" fill="#1a1d2b">MacBook Pro — Editor 1</text>
+<text x="1334.0" y="372.0" font-size="12.5" fill="#1a1d2b" text-anchor="end" font-weight="bold">.22.11</text>
+<text x="1016.0" y="393.0" font-size="12.5" fill="#1a1d2b">MacBook Pro — Editor 2</text>
+<text x="1334.0" y="393.0" font-size="12.5" fill="#1a1d2b" text-anchor="end" font-weight="bold">.22.12</text>
+<text x="1016.0" y="414.0" font-size="12.5" fill="#1a1d2b">Mac mini — Project Server</text>
+<text x="1334.0" y="414.0" font-size="12.5" fill="#1a1d2b" text-anchor="end" font-weight="bold">.22.20</text>
+<text x="1016.0" y="435.0" font-size="12.5" fill="#1a1d2b">   + Resolve Remote Render</text>
+<text x="1334.0" y="435.0" font-size="12.5" fill="#1a1d2b" text-anchor="end" font-weight="bold"></text>
+<text x="1175.0" y="462.0" font-size="11.5" fill="#5b6170" text-anchor="middle" font-style="italic">shared Resolve project (resolve-configurator)</text>
+<path d="M330.0,180.0 L370.0,180.0 L370.0,240.0 L410.0,240.0" fill="none" stroke="#24668f" stroke-width="2.4" stroke-linejoin="round" marker-end="url(#m24668f)"/>
+<path d="M330.0,340.0 L370.0,340.0 L370.0,280.0 L410.0,280.0" fill="none" stroke="#24668f" stroke-width="2.4" stroke-linejoin="round" marker-end="url(#m24668f)"/>
+<rect x="339.5" y="204.0" width="61.0" height="17.0" rx="4" fill="#ffffff"/>
+<text x="370.0" y="215.0" font-size="11" fill="#24668f" text-anchor="middle" font-weight="bold">FTP pull</text>
+<rect x="339.5" y="302.0" width="61.0" height="17.0" rx="4" fill="#ffffff"/>
+<text x="370.0" y="313.0" font-size="11" fill="#24668f" text-anchor="middle" font-weight="bold">SMB pull</text>
+<path d="M670.0,230.0 L695.0,230.0 L695.0,185.0 L720.0,185.0" fill="none" stroke="#1e2235" stroke-width="2.4" stroke-linejoin="round" marker-end="url(#m1e2235)"/>
+<rect x="667.7" y="150.0" width="54.7" height="17.0" rx="4" fill="#ffffff"/>
+<text x="695.0" y="161.0" font-size="11" fill="#1e2235" text-anchor="middle" font-weight="bold">write 1</text>
+<path d="M670.0,290.0 L955.0,290.0 L955.0,215.0 L1000.0,215.0" fill="none" stroke="#64458f" stroke-width="2.4" stroke-linejoin="round" marker-end="url(#m64458f)"/>
+<rect x="693.8" y="268.0" width="252.4" height="17.0" rx="4" fill="#ffffff"/>
+<text x="820.0" y="279.0" font-size="11" fill="#64458f" text-anchor="middle" font-weight="bold">write 2 (Unraid&#x27;s 10GbE edit-LAN port)</text>
+<path d="M1175.0,240.0 L1175.0,300.0" fill="none" stroke="#64458f" stroke-width="2.4" stroke-linejoin="round" marker-end="url(#m64458f)" marker-start="url(#m64458fs)"/>
+<rect x="1154.0" y="264.0" width="41.9" height="17.0" rx="4" fill="#ffffff"/>
+<text x="1175.0" y="275.0" font-size="11" fill="#64458f" text-anchor="middle" font-weight="bold">10GbE</text>
+<g><rect x="1000" y="500" width="350" height="80" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><path d="M1000,532 V508 a8,8 0 0 1 8,-8 H1342 a8,8 0 0 1 8,8 V532 Z" fill="#6b7280"/></g>
+<text x="1175.0" y="521.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Physical media (DIT offload)</text>
+<text x="1175.0" y="556.0" font-size="12" fill="#1a1d2b" text-anchor="middle">ATEM SSDs (all ISOs not pulled live) walked to</text>
+<text x="1175.0" y="574.0" font-size="12" fill="#1a1d2b" text-anchor="middle">the edit suite · checksummed copy to the NAS</text>
+<path d="M1350.0,540.0 L1368.0,540.0 L1368.0,200.0 L1350.0,200.0" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#m6b7280)"/>
+<text x="480.0" y="480.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle" font-weight="bold">Why two writes, not Nextcloud → NAS:</text>
+<text x="480.0" y="502.0" font-size="12" fill="#5b6170" text-anchor="middle">the edit suite never waits on Nextcloud&#x27;s own files:scan,</text>
+<text x="480.0" y="521.0" font-size="12" fill="#5b6170" text-anchor="middle">and editors never read from the pool ingest is writing to.</text>
+<text x="480.0" y="540.0" font-size="12" fill="#5b6170" text-anchor="middle">ISOs run ~35–70 Mb/s each and can&#x27;t be turned down,</text>
+<text x="480.0" y="559.0" font-size="12" fill="#5b6170" text-anchor="middle">so only program + camera go live; the second write</text>
+<text x="480.0" y="578.0" font-size="12" fill="#5b6170" text-anchor="middle">is not yet implemented in the ingest scripts.</text>
 </svg>

@@ -9,6 +9,12 @@ VMix PCs (both nodes) --SRT--> Restreamer (mothership) --SRT (fan-out)--> BirdDo
 SRT is unicast-by-IP, so this path has no discovery dependency and should route cleanly
 over the tailnet.
 
+**Set the SRT payload size to 1128 bytes on every sender** (VMix's SRT outputs and each
+Restreamer SRT output). SRT's default 1316B payload makes a 1360B IP packet, which is
+larger than Tailscale's 1280B tunnel MTU, so default-sized SRT packets would be fragmented
+(or dropped if DF is set) entering the tunnel. 1128B (6 × 188B MPEG-TS packets) gives a
+1172B packet that fits. See [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
+
 ## Backup path (NDI)
 
 ```
@@ -17,8 +23,8 @@ BirdDog Central (mothership) --NDI--> BirdDog Play ×12 (one per theatre)
 
 **How Central gets the program — NDI redistribution (settled).** Central works as an
 NDI *redistributor*: the source VMix node PC's native NDI output registers with the NDI
-Discovery Server, Central receives it over that node's own uplink (~130 Mbps of the
-node's ~170 Mbps ceiling, a **fallback-only** load — pausing that node's VMix record
+Discovery Server, Central receives it over that node's own uplink (~130 Mbps against the
+node's Slate AX ceiling — estimated ~150-250 Mbps under Tailscale, unbenchmarked — a **fallback-only** load — pausing that node's VMix record
 ingest for the duration keeps it under the ceiling, the same lever the theatre side
 already uses), and Central re-sends it to the theatre PLAYs. Two researched facts pin
 this shape:
@@ -40,8 +46,9 @@ retained for this sender role when its fleet-management duties moved to Flock �
 **Bandwidth note:** full NDI (not HX) at 1080p50 is ~125 Mbps per stream, roughly constant
 regardless of content — 12-22x SRT's figures, and without SRT's "static content is cheap"
 discount. Fine for a single theatre falling back — *provided that theatre's ATEM ISO
-ingest is paused for the duration*, since NDI plus the ingest together exceed the
-theatre's own A-1300 WireGuard ceiling — and a real capacity question if this path ever
+ingest is paused for the duration*, since NDI plus even the default camera + program
+ingest (~213 Mbps combined) is over the bottom of the theatre's own Slate AX Tailscale
+estimate (~150-250 Mbps) — and a real capacity question if this path ever
 has to carry all 12 theatres at once (e.g. a Restreamer failure). See
 [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) for the full impact at per-router,
 per-VLAN, and mothership-NIC level.

@@ -13,8 +13,8 @@ Tailscale rides over whatever address they get.
 
 | VLAN | 802.1Q tag | Subnet | Cloud Gateway address | Serves |
 |---|---|---|---|---|
-| Uplink 1 | 101 | 10.10.1.0/24 | 10.10.1.1 | Theatre 1–3 GL-iNet WAN ports |
-| Uplink 2 | 102 | 10.10.2.0/24 | 10.10.2.1 | Theatre 4–6 GL-iNet WAN ports |
+| Uplink 1 | 101 | 10.10.1.0/24 | 10.10.1.1 | Theatre 1–3 + VMix Node 1 GL-iNet WAN ports |
+| Uplink 2 | 102 | 10.10.2.0/24 | 10.10.2.1 | Theatre 4–6 + VMix Node 2 GL-iNet WAN ports |
 | Uplink 3 | 103 | 10.10.3.0/24 | 10.10.3.1 | Theatre 7–9 GL-iNet WAN ports |
 | Uplink 4 | 104 | 10.10.4.0/24 | 10.10.4.1 | Theatre 10–12 GL-iNet WAN ports |
 
@@ -44,7 +44,7 @@ Tailscale rides over whatever address they get.
 
 ## Theatres 1–12
 
-Same 8-device pattern in every theatre; only the subnet octet (X) changes. GL-iNet A-1300
+Same 8-device pattern in every theatre; only the subnet octet (X) changes. GL-iNet Slate AX
 LAN 1 goes directly to the ATEM Mini Extreme ISO, LAN 2 feeds the Netgear switch carrying
 the rest (including BirdDog Play) — see [`docs/topology.md`](topology.md) for the physical
 wiring.
@@ -53,7 +53,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.2.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.2.1 |
 | BirdDog Play | 192.168.2.20 |
 | ATEM Mini Extreme ISO | 192.168.2.2 |
 | PowerPoint Main | 192.168.2.5 |
@@ -66,7 +66,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.3.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.3.1 |
 | BirdDog Play | 192.168.3.20 |
 | ATEM Mini Extreme ISO | 192.168.3.2 |
 | PowerPoint Main | 192.168.3.5 |
@@ -79,7 +79,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.4.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.4.1 |
 | BirdDog Play | 192.168.4.20 |
 | ATEM Mini Extreme ISO | 192.168.4.2 |
 | PowerPoint Main | 192.168.4.5 |
@@ -92,7 +92,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.5.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.5.1 |
 | BirdDog Play | 192.168.5.20 |
 | ATEM Mini Extreme ISO | 192.168.5.2 |
 | PowerPoint Main | 192.168.5.5 |
@@ -105,7 +105,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.6.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.6.1 |
 | BirdDog Play | 192.168.6.20 |
 | ATEM Mini Extreme ISO | 192.168.6.2 |
 | PowerPoint Main | 192.168.6.5 |
@@ -118,7 +118,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.7.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.7.1 |
 | BirdDog Play | 192.168.7.20 |
 | ATEM Mini Extreme ISO | 192.168.7.2 |
 | PowerPoint Main | 192.168.7.5 |
@@ -131,7 +131,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.8.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.8.1 |
 | BirdDog Play | 192.168.8.20 |
 | ATEM Mini Extreme ISO | 192.168.8.2 |
 | PowerPoint Main | 192.168.8.5 |
@@ -144,7 +144,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.9.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.9.1 |
 | BirdDog Play | 192.168.9.20 |
 | ATEM Mini Extreme ISO | 192.168.9.2 |
 | PowerPoint Main | 192.168.9.5 |
@@ -157,7 +157,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.10.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.10.1 |
 | BirdDog Play | 192.168.10.20 |
 | ATEM Mini Extreme ISO | 192.168.10.2 |
 | PowerPoint Main | 192.168.10.5 |
@@ -170,7 +170,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.11.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.11.1 |
 | BirdDog Play | 192.168.11.20 |
 | ATEM Mini Extreme ISO | 192.168.11.2 |
 | PowerPoint Main | 192.168.11.5 |
@@ -183,7 +183,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.12.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.12.1 |
 | BirdDog Play | 192.168.12.20 |
 | ATEM Mini Extreme ISO | 192.168.12.2 |
 | PowerPoint Main | 192.168.12.5 |
@@ -196,7 +196,7 @@ wiring.
 
 | Device | IP |
 |---|---|
-| GL-iNet A-1300 (LAN gateway) | 192.168.13.1 |
+| GL-iNet Slate AX (LAN gateway) | 192.168.13.1 |
 | BirdDog Play | 192.168.13.20 |
 | ATEM Mini Extreme ISO | 192.168.13.2 |
 | PowerPoint Main | 192.168.13.5 |
@@ -207,14 +207,14 @@ wiring.
 
 ## VMix nodes
 
-Each has its own router — GL-iNet A-1300, same model as the theatre routers — and its
+Each has its own router — GL-iNet Slate AX (GL-AXT1800), same model as the theatre routers — and its
 own Tailscale connection, not part of the theatre it physically sits next to.
 
 ### VMix Node 1 — 192.168.20.0/24 (off Theatre 1)
 
 | Device | IP |
 |---|---|
-| Node 1 router (GL-iNet A-1300) | 192.168.20.1 |
+| Node 1 router (GL-iNet Slate AX) | 192.168.20.1 |
 | BirdDog P400 Camera 1 | 192.168.20.11 |
 | BirdDog P400 Camera 2 | 192.168.20.12 |
 | BirdDog P400 Camera 3 | 192.168.20.13 |
@@ -226,7 +226,7 @@ own Tailscale connection, not part of the theatre it physically sits next to.
 
 | Device | IP |
 |---|---|
-| Node 2 router (GL-iNet A-1300) | 192.168.21.1 |
+| Node 2 router (GL-iNet Slate AX) | 192.168.21.1 |
 | BirdDog P400 Camera 1 | 192.168.21.11 |
 | BirdDog P400 Camera 2 | 192.168.21.12 |
 | BirdDog P400 Camera 3 | 192.168.21.13 |
