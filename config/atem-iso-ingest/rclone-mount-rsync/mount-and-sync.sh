@@ -23,6 +23,15 @@
 # size on the mount only refreshes when the directory cache expires (default 5m, which
 # would silently stretch the 90s sync interval to ~5 minutes). Keep it below the
 # sync interval.
+#
+# ATEM_ISO_INPUTS (default "1", same variable and meaning as pull-iso.py): which ISO inputs
+# cross the network live. The ATEM records every input to its own SSD regardless; this
+# only filters what rsync pulls. Program recording always; ISO files only for the listed
+# inputs; .mp4/.mov only (audio .wav and the .drp project come with the physical DIT
+# offload). Empty = program only. See docs/atem-iso-ingest.md, "Common theatre input map".
+# Matches ISO files on "CAM <n>" / "CAM<n>" in the file name (glob, case-insensitive) —
+# pull-iso.py's ATEM_ISO_INPUT_PATTERN regex does NOT apply here; if a real unit names
+# its ISO files differently (docs/open-questions.md #21), edit build_filters below.
 set -euo pipefail
 
 RCLONE_CONFIG="$(dirname "$0")/rclone.conf"
@@ -30,6 +39,38 @@ MOUNT_BASE="${ATEM_MOUNT_BASE:-/mnt/atem-mounts}"
 DEST_BASE="${ATEM_ISO_LOCAL_BASE:-/mnt/user/nextcloud-external}"
 SYNC_INTERVAL_SECONDS="${ATEM_ISO_SYNC_INTERVAL:-90}"
 VERIFY="${VERIFY:-0}"
+ISO_INPUTS="${ATEM_ISO_INPUTS-1}"
+
+# rsync filter rules: first match wins. Directories are always traversed (-m prunes the
+# ones left empty); a chosen input's media files are included; every other CAM file is
+# excluded; remaining media (the program recording) is included; everything else excluded.
+build_filters() {
+	FILTERS=(--include='*/')
+	local n ext sep cam
+	local -a inputs
+	IFS=',' read -r -a inputs <<< "$1"
+	for n in "${inputs[@]}"; do
+		n="${n//[[:space:]]/}"
+		[[ "$n" =~ ^[0-9]+$ ]] || continue
+		for sep in ' ' ''; do
+			cam="*[Cc][Aa][Mm]${sep}${n}"
+			for ext in '[Mm][Pp]4' '[Mm][Oo][Vv]'; do
+				# "...CAM 1.mp4" and "...CAM 1 01.mp4", but never "...CAM 10 01.mp4"
+				FILTERS+=(--include="${cam}.${ext}" --include="${cam}[!0-9]*.${ext}")
+			done
+		done
+	done
+	FILTERS+=(--exclude='*[Cc][Aa][Mm] [0-9]*' --exclude='*[Cc][Aa][Mm][0-9]*'
+	          --include='*.[Mm][Pp]4' --include='*.[Mm][Oo][Vv]' --exclude='*')
+}
+
+# Per-theatre override: ATEM_ISO_INPUTS_T<n> (e.g. ATEM_ISO_INPUTS_T3="1,2") replaces
+# ATEM_ISO_INPUTS for that theatre only, so laptop inputs can be turned on where there's
+# router headroom rather than fleet-wide. Empty means no override; "0" = program only.
+inputs_for() {
+	local var="ATEM_ISO_INPUTS_T$1"
+	printf '%s' "${!var:-$ISO_INPUTS}"
+}
 
 mount_theatre() {
 	local theatre="$1"
@@ -53,13 +94,15 @@ sync_theatre() {
 	local dest="${DEST_BASE}/Theatre${theatre}/ISO/"
 	mkdir -p "$dest"
 
+	build_filters "$(inputs_for "$theatre")"
+
 	local mode_flags=(--append)
 	if [ "$VERIFY" = "1" ]; then
 		# full checksum pass, repairs differing blocks in place — run once per finished session
 		mode_flags=(--checksum --inplace --no-whole-file)
 	fi
 
-	rsync -a "${mode_flags[@]}" --itemize-changes "${mount_point}/" "$dest" \
+	rsync -a -m "${mode_flags[@]}" "${FILTERS[@]}" --itemize-changes "${mount_point}/" "$dest" \
 		|| echo "[theatre-${theatre}] rsync pass failed (will retry next cycle)"
 }
 
@@ -68,6 +111,7 @@ if [ "$VERIFY" = "1" ]; then
 else
 	echo "ATEM ISO ingest (rclone mount + rsync --append) starting"
 	echo "Mounts under ${MOUNT_BASE}, syncing into ${DEST_BASE}, every ${SYNC_INTERVAL_SECONDS}s"
+	echo "ISO inputs: ${ISO_INPUTS:-none} + program (per-theatre ATEM_ISO_INPUTS_T<n> overrides apply)"
 fi
 
 for theatre in $(seq 1 12); do

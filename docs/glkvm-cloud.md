@@ -2,7 +2,7 @@
 
 **Self-hosted GLKVM-Cloud** ([`gl-inet/glkvm-cloud`](https://github.com/gl-inet/glkvm-cloud)),
 run as Docker containers on the consolidated services server, gives centralized remote
-access to all **14 GL-iNet A-1300 routers** (12 theatres + 2 VMix nodes) — their web admin
+access to all **14 GL-iNet Slate AX routers** (12 theatres + 2 VMix nodes) — their web admin
 UI and an SSH terminal, both reachable through one browser session, without exposing any
 individual router's admin interface to the WAN or needing 14 separate tunnels. Same
 self-hosted-over-vendor-cloud rationale already used for the DERP server and the UniFi
@@ -13,13 +13,13 @@ party in the path when administering the router fleet during a live event.
 KVM-over-IP hardware line (the Comet/GL-RM1) for out-of-band access to bare-metal servers
 — not used here. What's actually in scope is the platform's separately-documented
 **HTTP/HTTPS web proxy and device-management capability for embedded devices like OpenWrt
-and Raspberry Pi** — the A-1300s already run OpenWrt/UCI (see
+and Raspberry Pi** — the Slate AX routers already run OpenWrt/UCI (see
 [`config/gl-inet/`](../config/gl-inet/)), which puts them squarely in that supported
 category.
 
 ## Why centralize router administration at all
 
-14 identical GL-iNet A-1300s (12 theatre routers, 2 VMix node routers) is exactly the
+14 identical GL-iNet Slate AX routers (12 theatre routers, 2 VMix node routers) is exactly the
 kind of fleet that benefits from one console instead of 14 separate admin logins — same
 motivation as [Flock](https://github.com/stoatworks-labs/flock) for the BirdDog Play fleet
 (see [`docs/birddog-play-rationale.md`](birddog-play-rationale.md)). GLKVM-Cloud's
@@ -67,7 +67,7 @@ this box.
 
 ## Registering the 14 routers
 
-Each A-1300 registers to the self-hosted instance by running a connection script copied
+Each Slate AX registers to the self-hosted instance by running a connection script copied
 from the GLKVM-Cloud web UI (OpenWrt supports SSH/shell, so this is a normal
 `opkg`/script-based install, same mechanism as any other device type GLKVM-Cloud
 supports). Since every router already runs Tailscale and accepts routes back to

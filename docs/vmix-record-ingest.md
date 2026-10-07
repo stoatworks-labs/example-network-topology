@@ -25,7 +25,7 @@ Same shape as the ATEM ingest, reusing the identical tools
 as its own Unraid container (`192.168.1.18`):
 
 ```
-VMix PC (192.168.2X.2X, SMB share) --[Tailscale, via that VMix node's own A-1300]--> Unraid
+VMix PC (192.168.2X.2X, SMB share) --[Tailscale, via that VMix node's own Slate AX]--> Unraid
                                                               |
                                                     rclone mount (SMB backend)
                                                               |
@@ -71,12 +71,13 @@ mechanism. Worth reconsidering if operational simplicity outweighs consistency.
 
 ## Why bandwidth isn't a shared concern with the ATEM ingest
 
-Each VMix node has **its own dedicated GL-iNet A-1300 uplink and its own Tailscale
+Each VMix node has **its own dedicated GL-iNet Slate AX (GL-AXT1800) uplink and its own Tailscale
 connection** — it is not part of the theatre subnet it physically sits near (see
 [`docs/topology.md`](topology.md)). So VMix Node 1's record-ingest traffic rides over
 Node 1's own link, entirely separate from Theatre 1's ATEM ISO ingest and SRT traffic.
 There's no contention between the two ingest pipelines sharing a link — each just needs
-to fit inside its own node's ~170 Mbps ceiling.
+to fit inside its own node's ceiling — an estimated ~150–250 Mbps combined under Tailscale,
+not yet benchmarked ([`docs/open-questions.md`](open-questions.md) #19).
 
 ## Open items
 

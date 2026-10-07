@@ -91,17 +91,17 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <thead>
 <tr class="header">
 <th>Source</th>
-<th>Per-unit worst case</th>
+<th>Per-unit high case</th>
 <th>Count</th>
 <th>Total</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>ATEM ISO ingest</td>
-<td>~90.4 Mbps (94 Mbps incl. WireGuard tax)</td>
+<td>ATEM ISO ingest, default live scope (camera ISO + program)</td>
+<td>~80 Mbps (~83 Mbps incl. WireGuard tax)</td>
 <td>12 theatres</td>
-<td>~1,085 Mbps</td>
+<td>~960 Mbps</td>
 </tr>
 <tr class="even">
 <td>VMix Record ingest</td>
@@ -113,38 +113,50 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <td><strong>Combined</strong></td>
 <td></td>
 <td></td>
-<td><strong>~1,205 Mbps ≈ 151 MB/s</strong></td>
+<td><strong>~1,080 Mbps ≈ 135 MB/s</strong></td>
+</tr>
+<tr class="even">
+<td><em>If both laptop inputs are also pulled live (<code>ATEM_ISO_INPUTS=1,2,3</code>)</em></td>
+<td><em>~160 Mbps</em></td>
+<td><em>12 theatres</em></td>
+<td><em>~2,040 Mbps ≈ 255 MB/s combined</em></td>
 </tr>
 </tbody>
 </table>
-<p>151 MB/s sustained is well within a single 7200 RPM HDD's <em>rated sequential</em> throughput on paper — so the case for flash isn't the aggregate number, it's the <strong>access pattern</strong>. That 151 MB/s isn't one stream, it's <strong>16 independent files being appended to concurrently</strong> (12 ATEM + 4 VMix, each on its own ~60-90s poll cycle — see <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> and <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>), with Nextcloud's own targeted <code>occ files:scan</code> indexing calls layered on top of that. A spinning disk pays a real seek penalty (~5-15ms) every time it switches between those 16+ scattered write targets — under this specific concurrent-scattered pattern, achievable HDD throughput collapses to a small fraction of its rated sequential number, while any flash drive (no seek penalty) handles 151 MB/s of concurrent random-ish writes without strain. The "all-flash" requirement is about the write <em>pattern</em> this design creates, not the volume.</p>
+<p>(ATEM figures are the 2026-10-06 planning figures — camera ISO 35 / 45 / 70 Mbps, laptop ISO 15 / 25 / 40 Mbps <em>estimated</em>, program ~10 Mbps — for the program file plus only the ISO inputs pulled live; see <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> § Common theatre input map. The pool stores payload, so WireGuard overhead isn't counted.)</p>
+<p>135-255 MB/s sustained is within a single 7200 RPM HDD's <em>rated sequential</em> throughput on paper — so the case for flash isn't the aggregate number, it's the <strong>access pattern</strong>. That load isn't one stream, it's <strong>~28 independent files being appended to concurrently</strong> (12 theatres × camera ISO + program, plus 4 VMix — ~52 with both laptop inputs live), each on its own ~60-90s poll cycle — see <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> and <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>), with Nextcloud's own targeted <code>occ files:scan</code> indexing calls layered on top of that. A spinning disk pays a real seek penalty (~5-15ms) every time it switches between those ~28+ scattered write targets — under this specific concurrent-scattered pattern, achievable HDD throughput collapses to a small fraction of its rated sequential number, while any flash drive (no seek penalty) handles 135-255 MB/s of concurrent random-ish writes without strain. The "all-flash" requirement is about the write <em>pattern</em> this design creates, not the volume.</p>
 <p><strong>Does 8 TB actually cover the event?</strong> This is the one figure genuinely blocked on an input this repo doesn't have: <strong>actual event duration (days × active-recording hours/day) isn't established anywhere in this design.</strong> Working from the same combined-load figures:</p>
 <table>
 <thead>
 <tr class="header">
-<th></th>
-<th>Combined rate</th>
+<th>Live scope (all 12 theatres)</th>
+<th>Combined rate, typical / high</th>
 <th>8 TB covers</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Realistic (5-7 active ATEM channels/theatre, per <code>docs/bandwidth-analysis.md</code>)</td>
-<td>~104 MB/s ≈ 376 GB/hr</td>
-<td><strong>~21 hours</strong></td>
+<td><strong>Camera + program (default)</strong></td>
+<td>~98 / 135 MB/s ≈ 351 / 486 GB/hr</td>
+<td><strong>~23 / ~16.5 hours</strong></td>
 </tr>
 <tr class="even">
-<td>Worst case (all 9 ATEM channels/theatre)</td>
-<td>~150.6 MB/s ≈ 542 GB/hr</td>
-<td><strong>~15 hours</strong></td>
+<td>Camera + 1 laptop + program</td>
+<td>~135 / 195 MB/s ≈ 486 / 702 GB/hr</td>
+<td>~16.5 / ~11.4 hours</td>
+</tr>
+<tr class="odd">
+<td>Camera + 2 laptops + program</td>
+<td>~173 / 255 MB/s ≈ 621 / 918 GB/hr</td>
+<td>~12.9 / ~8.7 hours</td>
 </tr>
 </tbody>
 </table>
-<p>(Decimal units throughout — 8 TB = 8,000 GB, as drives are sold. Realistic rate = 12 × ~59.6 Mbps ATEM payload (the ~62 Mbps tunnel figure minus WireGuard) + the same ~120 Mbps VMix, ÷ 8. An earlier revision mixed 1,024-based GB with decimal MB/s and scaled the VMix share down with the ATEM channel count, which overstated coverage by ~5-10%. Both figures are also to a <em>completely</em> full pool; ZFS performance degrades well before 100%, so treat roughly 85-90% of each as the practical figure.)</p>
+<p>(Decimal units throughout — 8 TB = 8,000 GB, as drives are sold. Rate = 12 × the per-theatre ATEM payload (camera + program: 55 typical / 80 high Mbps; each laptop adds 25 / 40) + the same ~120 Mbps VMix placeholder, ÷ 8. Low-case figures (camera ISO at ~35 Mbps) stretch the default-scope coverage to ~27 hours. All figures are to a <em>completely</em> full pool; ZFS performance degrades well before 100%, so treat roughly 85-90% of each as the practical figure.)</p>
 <blockquote>
-<p><strong>Caveat — this whole table rests on 10 Mbps per ATEM ISO stream.</strong> Blackmagic's spec for the ATEM Mini Extreme ISO records each ISO input as H.264 at up to 70 Mb/s (1080p60, VBR). At ~58-70 Mbps per stream, 12 theatres × 6 streams fill the pool at ~1.9-2.3 TB/hr — <strong>8 TB lasts roughly 3.5-4 hours, not 15-21</strong>, and the write-rate, endurance and NIC figures in this document scale up with it. Not redesigned here; see the callout in <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a> and <a href="open-questions.html"><code>docs/open-questions.md</code></a> #0 — one measured ISO file settles it.</p>
+<p><strong>Basis — planning figures, not measurements.</strong> The old ~10 Mbps-per-ISO basis was replaced on 2026-10-06 (Blackmagic: ISO files up to 70 Mb/s, not user-settable); the table above instead assumes only the program file and the chosen ISO inputs are pulled live, at the per-source planning figures in <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> § Bandwidth. The camera figure rests on user reports and the laptop figure is an unmeasured estimate — one measured file of each settles it (<a href="open-questions.html"><code>docs/open-questions.md</code></a> #0). The ISOs <em>not</em> pulled live arrive via the physical DIT offload to the edit-suite NAS (<a href="live-editing.html"><code>docs/live-editing.md</code></a>), not this pool; if they are also to be archived here, add each ATEM's full recording (at least ~14-36 GB per theatre-hour more for the two laptop ISOs) to the rate.</p>
 </blockquote>
-<p>At a typical ~8-10 hour active-program day, that's roughly <strong>1.5-2.5 days</strong> of continuous worst-to-realistic-case recording before the pool fills — workable for a short event, tight for a longer one, and this assumes every theatre is actually near its "realistic" active-channel count for the whole day, which per the original design intent ("likely only 4-6 [channels] will actually have any data") may be conservative. <strong>Confirm actual event length against this table before treating 8 TB as settled</strong> — if it's a multi-day event without a periodic archive-off step already planned, either the day count needs to fit the budget above, or a nightly archive-to-cold-storage step needs adding to free capacity for the next day. The ingest pipelines write directly into Nextcloud's External Storage location and, in the same pull, the edit-suite NAS (<a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>, <a href="live-editing.html"><code>docs/live-editing.md</code></a>) — neither write has an offload stage that frees <em>this</em> pool. Tracked in <code>docs/open-questions.md</code>.</p>
+<p>At a typical ~8-10 hour active-program day, that's roughly <strong>1.6-2.9 days</strong> of recording at the default scope (high to typical rates) before the pool fills — workable for a short event, tight for a longer one — and only **~0.9-1.6 days** if both laptop inputs are pulled live fleet-wide. <strong>Confirm actual event length against this table before treating 8 TB as settled</strong> — if it's a multi-day event without a periodic archive-off step already planned, either the day count needs to fit the budget above, or a nightly archive-to-cold-storage step needs adding to free capacity for the next day. The ingest pipelines write directly into Nextcloud's External Storage location and, in the same pull, the edit-suite NAS (<a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>, <a href="live-editing.html"><code>docs/live-editing.md</code></a>) — neither write has an offload stage that frees <em>this</em> pool. Tracked in <code>docs/open-questions.md</code>.</p>
 <p><strong>Redundancy — worth adding capacity for, not assumed in the 8 TB figure.</strong> This pool is the authoritative archive: the dual-write to the edit-suite NAS (<a href="live-editing.html"><code>docs/live-editing.md</code></a>) does give the footage a second landing spot at ingest time, but that copy may be a curated subset (open-questions #12) and one of the candidate NAS units is RAID 0 — so a failure here still risks footage that can't be re-shot. Two ways to get 8 TB <em>usable</em> with 1-drive fault tolerance:</p>
 <table>
 <thead>
@@ -169,10 +181,10 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </table>
 <p><strong>Real drive sizes don't land on these numbers.</strong> Enterprise NVMe in the ~1 DWPD tier is sold in 1.92 / 3.84 / 7.68 / 15.36 TB steps (e.g. Samsung PM9A3), so "2× 8 TB mirrored" is in practice <strong>2× 7.68 TB ≈ 7.7 TB usable</strong> (a few percent under 8 TB before ZFS's own reserve), and there is no ~2.7 TB SKU — the realistic RAID-Z1 build is <strong>4× 3.84 TB ≈ 11.5 TB usable</strong> (15.36 TB raw). If 8 TB usable is a hard floor, the mirror needs 2× 15.36 TB; otherwise 2× 7.68 TB is the honest reading of "8 TB" and the coverage table above shrinks by ~4%.</p>
 <p>Recommend the mirror for the same reason Unraid was chosen over TrueNAS SCALE elsewhere in this design (<code>docs/topology.md</code>) — operational simplicity, since this may be maintained by AV staff rather than a storage specialist, matters more here than squeezing out the last few TB of efficiency.</p>
-<p><strong>Endurance.</strong> Since this repo already treats the router hardware as reusable across events (see <a href="gl-inet-rationale.html"><code>docs/gl-inet-rationale.md</code></a>), the same applies here — a full pool fill is roughly 8 TB of actual flash writes (these are byte-range <em>appends</em>, not whole-file rewrites, so total written ≈ total recorded, not a multiple of it), and a mirrored pair each independently absorb that same 8 TB per event. Even a deliberately-generous worst-case estimate — ~540 GB/hr sustained for a full 24 h/day across ~20 event-days a year, beyond what the pool could even hold without nightly archive-off — comes to roughly 260 TB/year of actual writes to the pool — comfortably inside what even the <em>lower</em> enterprise endurance tier (see below) is rated for over a normal warranty period, so endurance headroom isn't actually the tight constraint here once the right drive class is picked.</p>
+<p><strong>Endurance.</strong> Since this repo already treats the router hardware as reusable across events (see <a href="gl-inet-rationale.html"><code>docs/gl-inet-rationale.md</code></a>), the same applies here — a full pool fill is roughly 8 TB of actual flash writes (these are byte-range <em>appends</em>, not whole-file rewrites, so total written ≈ total recorded, not a multiple of it), and a mirrored pair each independently absorb that same 8 TB per event. Even a deliberately-generous worst-case estimate — ~920 GB/hr sustained (both laptop inputs live, high rates) for a full 24 h/day across ~20 event-days a year, beyond what the pool could even hold without nightly archive-off — comes to roughly 440 TB/year of actual writes to the pool — comfortably inside what even the <em>lower</em> enterprise endurance tier (see below) is rated for over a normal warranty period, so endurance headroom isn't actually the tight constraint here once the right drive class is picked.</p>
 <p><strong>Drive class: this is the one pool where consumer-grade flash — even a good, DRAM-cached, high-TBW consumer drive — isn't the right call, and endurance isn't the reason.</strong> The deciding factor is <strong>power-loss protection (PLP)</strong>: capacitor-backed circuitry that flushes a drive's write cache to permanent storage if power drops mid-write. Consumer/prosumer NVMe drives don't have this. A generator hiccup, a tripped breaker, or a UPS transfer glitch mid-event — exactly the kind of thing a live event's own power setup can produce — risks losing whatever was sitting in the drive's write cache at that instant, on the one pool in this whole design with no second copy of the data anywhere else. That's the actual argument for <strong>enterprise-class NVMe</strong> here specifically (not "enterprise is always better," which isn't true for the other two pools above) — server-validated drives with capacitor-backed PLP, provisioned for sustained high-queue-depth writes without the cache-cliff behavior consumer drives show once their fast write cache fills under prolonged concurrent load. Enterprise drives are also sold in more than one endurance tier (commonly around 1 drive-write-per-day vs. 3× that for a heavier-duty tier) — the lighter of the two tiers already has large margin over this workload's realistic annual write volume, so there's no need to pay for the heavier tier's endurance on top of the PLP requirement that's actually driving this choice.</p>
 <h2 id="write-caching">Write caching</h2>
-<p>With every pool already flash (no legacy spinning array behind anything), the classic Unraid "SSD cache pool absorbing writes before the overnight mover" pattern doesn't apply here — there's no slow array for it to shield. What actually buffers the bursty, 16-concurrent-stream ingest pattern described above is:</p>
+<p>With every pool already flash (no legacy spinning array behind anything), the classic Unraid "SSD cache pool absorbing writes before the overnight mover" pattern doesn't apply here — there's no slow array for it to shield. What actually buffers the bursty, ~28-concurrent-stream ingest pattern described above is:</p>
 <ul>
 <li><strong>RAM</strong> — the OS page cache smooths write bursts before they hit the drives (see the RAM section below, which already budgets for this).</li>
 <li><strong>The drives' own onboard DRAM cache</strong> — a real purchasing consideration: choose NVMe drives with onboard DRAM (not DRAM-less/QLC-only budget drives), since sustained multi-stream concurrent writes are exactly the workload DRAM-less drives handle worst.</li>
@@ -189,23 +201,28 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </thead>
 <tbody>
 <tr class="odd">
-<td>Inbound (theatres → mothership)</td>
-<td>ATEM ingest worst case (~1,123 Mbps) + VMix ingest (~120 Mbps) + ATEM Overseer (~125 Mbps) + Flock (~125 Mbps)</td>
-<td>~1,493 Mbps</td>
+<td>Inbound (theatres → mothership), default live scope (camera + program)</td>
+<td>ATEM ingest incl. WireGuard (~686 typical / ~998 high Mbps) + VMix ingest (~120 Mbps) + ATEM Overseer (~125 Mbps) + Flock (~125 Mbps) + rclone (~60 Mbps)</td>
+<td><strong>~1,120 typical / ~1,430 high Mbps</strong></td>
 </tr>
 <tr class="even">
+<td>Inbound, camera + 2 laptops + program everywhere</td>
+<td>ATEM ingest ~1,310 typical / ~1,997 high Mbps + the same ~430 Mbps</td>
+<td>~1,740 typical / ~2,430 high Mbps</td>
+</tr>
+<tr class="odd">
 <td>Outbound (mothership → theatres), all 12 theatres on NDI fallback simultaneously</td>
 <td>12 × ~130 Mbps</td>
 <td>~1,560 Mbps</td>
 </tr>
 </tbody>
 </table>
-<p>(Inbound total updated from an earlier ~1,205 Mbps once ATEM Overseer's and Flock's monitoring/preview streams were added — see <a href="topology.html"><code>docs/topology.md</code></a> — each contributing ~125 Mbps fleet-wide on top of what was already accounted for.)</p>
+<p>(Recomputed 2026-10-06 from the per-source planning figures in <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a> § Bandwidth, replacing the earlier ~1,493 Mbps that rested on ~10 Mbps per ISO stream; rclone's ~5 Mbps per theatre is now counted too. Matches <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.)</p>
 <p>Both directions run independently over a full-duplex link, so they don't stack against each other — but each direction needs to fit across the bond's two physical 1 Gbps links via LACP's per-flow hashing (each <em>individual</em> flow is capped at 1 Gbps, since LACP doesn't split one flow across both links).</p>
-<p><strong>How many flows the hash actually sees is the catch.</strong> Everything to and from the theatres crosses the wire as <strong>WireGuard</strong>, and the bond hashes the <em>outer</em> packet — so each theatre's ATEM ingest + Overseer + Flock + rclone (and, outbound, its SRT or NDI) collapse into <strong>one UDP flow per tailnet peer</strong>: ~14 flows in each direction, not 36+. Each is still far under 1 Gbps (~114 Mbps per theatre inbound at worst case, ~130 Mbps outbound during NDI fallback), so no <em>single</em> flow is the problem — but 12-14 roughly equal flows split 2 ways by an effectively random hash are often uneven. Worked out exhaustively for the worst cases above (scratch calculation, treating each flow's link as a coin flip): **~33-39% of possible hash assignments put more than ~940 Mbps of usable payload on one link** (8 of 12 NDI flows × 130 Mbps = 1,040 Mbps). Real hashes are deterministic per peer address/port, so the result is "fine or not, for the whole event," not random per minute — and can't be predicted on paper.</p>
-<p>So: <strong>the aggregate fits (~1,493 Mbps inbound, ~1,560 outbound, vs. ~2,000), and normal operation (~1,110 Mbps realistic inbound, no NDI fallback — ~1% of hash assignments overload a link) is comfortable — but the worst-case disaster scenario is only "probably fits," not "checks out,"</strong> on 2× 1GbE — and that is <em>before</em> the mothership-side routing hairpin described below, which on its own breaks the NDI-fallback case unless the VM is routed directly. It does check out once ATEM ingest is paused fleet-wide during a mass NDI fallback (the mitigation below), and it checks out unconditionally on 2× 2.5GbE (see below). Margin has narrowed since this was first validated (~1,205 → ~1,493 Mbps inbound), the same erosion <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a> tracks everywhere else Overseer and Flock touch this design — see that doc's own worked-through comparison of this exact disaster scenario with and without pausing ATEM ingest fleet-wide, which is the more consequential mitigation than the NIC choice itself.</p>
-<p><strong>One load deliberately NOT counted against this bond: the dual-write to the edit-suite NAS.</strong> The same ingest containers that produce the inbound figures above also write every recording out again to the edit-suite NAS at <code>192.168.22.2</code> (<a href="live-editing.html"><code>docs/live-editing.md</code></a>) — up to another ~1,243 Mbps of outbound at worst case. If that leg transited the theatre-facing bond it would stack on top of the NDI-fallback outbound and break the conclusion above — so it must <strong>not</strong>: the edit suite is its own 10GbE LAN, and this box needs a separate edit-LAN-facing interface (a 10GbE NIC, or at minimum its own dedicated port) for that traffic, counted in the spec alongside the 2× bonded theatre-facing GbE.</p>
-<p><strong>Worth it: 2× 2.5GbE, if the box and whatever terminates the bond support it.</strong> This is the one change that removes the hash-imbalance risk above outright — even the worst possible split (all ~1.5 Gbps on one link) fits inside a single 2.5 Gbps link. Many current motherboards ship 2.5GbE onboard already; the constraint is more likely the far end of the bond than the server.</p>
+<p><strong>How many flows the hash actually sees is the catch.</strong> Everything to and from the theatres crosses the wire as <strong>WireGuard</strong>, and the bond hashes the <em>outer</em> packet — so each theatre's ATEM ingest + Overseer + Flock + rclone (and, outbound, its SRT or NDI) collapse into <strong>one UDP flow per tailnet peer</strong>: ~14 flows in each direction, not 36+. Each is still far under 1 Gbps (~109 Mbps per theatre inbound at the default scope's high case, ~130 Mbps outbound during NDI fallback), so no <em>single</em> flow is the problem — but 12-14 roughly equal flows split 2 ways by an effectively random hash are often uneven. Worked out exhaustively for the high cases above (scratch calculation over all 2^14 assignments, treating each flow's link as a coin flip): **~21% of possible hash assignments put more than ~940 Mbps of usable payload on one link inbound at the default scope's high rates, and ~39% for the NDI outbound case** (8 of 12 NDI flows × 130 Mbps = 1,040 Mbps). With both laptop inputs live fleet-wide it is ~77% inbound even at typical rates — effectively "doesn't fit" on 2× 1GbE, and the high case (~2,430 Mbps) exceeds the bond's aggregate outright. Real hashes are deterministic per peer address/port, so the result is "fine or not, for the whole event," not random per minute — and can't be predicted on paper.</p>
+<p>So, at the default live scope: <strong>the aggregate fits (~1,430 Mbps inbound at high rates, ~1,560 outbound, vs. ~2,000), and normal operation (~1,120 Mbps typical inbound, no NDI fallback — ~1% of hash assignments overload a link) is comfortable — but the worst-case disaster scenario is only "probably fits," not "checks out,"</strong> on 2× 1GbE — and that is <em>before</em> the mothership-side routing hairpin described below, which on its own breaks the NDI-fallback case unless the VM is routed directly. It does check out once ATEM ingest is paused fleet-wide during a mass NDI fallback (the mitigation below), and it checks out unconditionally on 2× 2.5GbE (see below). Pulling the laptop inputs live fleet-wide does <em>not</em> fit 2× 1GbE (see above) — it needs 2× 2.5GbE, or the laptop inputs enabled for only some theatres (<code>ATEM_ISO_INPUTS</code> is currently one fleet-wide setting). The inbound figure has moved each time this was revalidated (~1,205 → ~1,493 → now ~1,430 Mbps at the default scope's high case) as Overseer, Flock and the ISO bitrate correction landed — see <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>'s own worked-through comparison of this exact disaster scenario with and without pausing ATEM ingest fleet-wide, which is the more consequential mitigation than the NIC choice itself.</p>
+<p><strong>One load deliberately NOT counted against this bond: the dual-write to the edit-suite NAS.</strong> The same ingest containers that produce the inbound figures above also write every recording out again to the edit-suite NAS at <code>192.168.22.2</code> (<a href="live-editing.html"><code>docs/live-editing.md</code></a>) — another ~1,080 Mbps of outbound at the default scope's high case, up to ~2,040 Mbps with both laptop inputs live. If that leg transited the theatre-facing bond it would stack on top of the NDI-fallback outbound and break the conclusion above — so it must <strong>not</strong>: the edit suite is its own 10GbE LAN, and this box needs a separate edit-LAN-facing interface (a 10GbE NIC, or at minimum its own dedicated port) for that traffic, counted in the spec alongside the 2× bonded theatre-facing GbE.</p>
+<p><strong>Worth it: 2× 2.5GbE, if the box and whatever terminates the bond support it.</strong> This is the one change that removes the hash-imbalance risk above outright at the default scope — even the worst possible split (all ~1.4-1.6 Gbps on one link) fits inside a single 2.5 Gbps link — and it is what makes pulling both laptop inputs live fleet-wide viable (~2.4 Gbps worst split at high rates: just inside one link, no headroom). Many current motherboards ship 2.5GbE onboard already; the constraint is more likely the far end of the bond than the server.</p>
 <p><strong>Two things upstream of the bond can cap this before the NIC does</strong> — neither is about the server, both are worth checking before trusting any figure in this section:</p>
 <ul>
 <li><strong>The Cloud Gateway's own routing capacity.</strong> Every theatre packet arrives on an uplink VLAN and is <em>routed</em> onto Mothership-LAN by the gateway. On a UDM Pro, the 8-port LAN switch is reported to reach the CPU over a single 1 Gbps link on current hardware revisions, capping inter-VLAN routing at ~1 Gbps regardless of LAG (<a href="https://ubntwiki.com/products/unifi/unifi_dream_machine_pro">community wiki</a> — not a Ubiquiti spec sheet, verify against the actual unit). The exact model is still unconfirmed — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #17.</li>
@@ -369,8 +386,8 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </tr>
 <tr class="even">
 <td>Network</td>
-<td>2× 1GbE, bonded LACP (already decided) — <strong>2× 2.5GbE strongly preferred</strong> — <strong>plus a separate edit-LAN-facing interface (10GbE) for the dual-write leg</strong></td>
-<td>2× 1GbE fits normal operation comfortably; the mass-NDI-fallback worst case fits in aggregate but depends on the LACP hash splitting ~14 WireGuard flows evenly (or on pausing ATEM ingest fleet-wide). 2× 2.5GbE removes that dependency. Either way, the edit-suite dual-write must never ride the theatre-facing bond, and the gateway's routing capacity and the mothership-side routing path (open-questions #17, #18) must be checked</td>
+<td>2× 1GbE, bonded LACP (already decided) — <strong>2× 2.5GbE strongly preferred, required if laptop ISO inputs are pulled live fleet-wide</strong> — <strong>plus a separate edit-LAN-facing interface (10GbE) for the dual-write leg</strong></td>
+<td>2× 1GbE fits normal operation at the default live scope (camera + program) comfortably; the mass-NDI-fallback worst case fits in aggregate but depends on the LACP hash splitting ~14 WireGuard flows evenly (or on pausing ATEM ingest fleet-wide). 2× 2.5GbE removes that dependency. Either way, the edit-suite dual-write must never ride the theatre-facing bond, and the gateway's routing capacity and the mothership-side routing path (open-questions #17, #18) must be checked</td>
 </tr>
 </tbody>
 </table>

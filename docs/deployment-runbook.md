@@ -5,16 +5,20 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 
 ## Phase 0 — Before touching anything
 
-- [ ] **First:** measure a real ATEM ISO file's bitrate at the event frame rate — if it's
-      near Blackmagic's up-to-70 Mb/s spec rather than the modelled 10 Mbps, real-time ISO
-      ingest and the 8 TB pool sizing don't hold — [`docs/open-questions.md`](open-questions.md) #0
+- [ ] **First:** on one real ATEM at the event frame rate and firmware, measure a camera
+      ISO file, a laptop/slides ISO file and the program file (`ffprobe`, or size ÷
+      duration) against the planning figures (camera 35 / 45 / 70 Mbps, laptop 15 / 25 /
+      40 *estimated*, program ~10) — they set the live ISO scope (`ATEM_ISO_INPUTS`) and
+      the 8 TB pool sizing — [`docs/open-questions.md`](open-questions.md) #0
 - [ ] Confirm the consolidated server's full spec (validated ECC, PCIe lanes for the
       NVMe pools, RAM/cores — no GPU/IOMMU checks needed any more) —
       [`docs/open-questions.md`](open-questions.md) #1
 - [ ] Confirm the Cloud Gateway model — LAG support (assumed, not confirmed) and its real
       inter-VLAN routing throughput — [`docs/open-questions.md`](open-questions.md) #17
-- [ ] Benchmark Tailscale throughput on one A-1300 with `iperf3 --bidir` before trusting
-      the per-router bandwidth figures — [`docs/open-questions.md`](open-questions.md) #19
+- [ ] Benchmark Tailscale throughput on one Slate AX (GL-AXT1800) with `iperf3 --bidir`,
+      on a direct path (not DERP), **before buying all 14** — target above ~160 Mbps
+      combined; the ~150–250 Mbps in the bandwidth model is an estimate —
+      [`docs/open-questions.md`](open-questions.md) #19
 - [ ] Decide a real hostname/DDNS for the DERP server and confirm you can port-forward on
       the Cloud Gateway — [`docs/tailscale.md`](tailscale.md)
 - [ ] Confirm VMix's actual recording mode/bitrate and get SMB sharing set up on all 4 VMix
@@ -93,7 +97,7 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
 3. Approve routes in the admin console (or configure `autoApprovers`) — nothing routes
    until approved, regardless of what's advertised.
 
-## Phase 4 — Theatre + VMix node routers (GL-iNet A-1300 ×14)
+## Phase 4 — Theatre + VMix node routers (GL-iNet Slate AX / GL-AXT1800 ×14)
 
 1. Flash/reset all 14 units, apply Wi-Fi lockdown per venue policy (not covered by the
    generated configs).
@@ -106,7 +110,7 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
    everything else (including BirdDog Play) via the Netgear switch on LAN 2 —
    [`docs/topology.md`](topology.md).
 5. Register each router against GLKVM-Cloud (brought up in Phase 2) using the connection
-   script from its web UI, run over SSH on each A-1300 — rides the tailnet already set up
+   script from its web UI, run over SSH on each Slate AX — rides the tailnet already set up
    in step 3, no WAN exposure needed for this part — [`docs/glkvm-cloud.md`](glkvm-cloud.md).
 
 ## Phase 5 — BirdDog Play + NDI discovery
@@ -119,14 +123,33 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
    Restreamer's outputs — the 1316-byte default doesn't fit Tailscale's 1280-byte MTU —
    [`docs/open-questions.md`](open-questions.md) #20.
 
+## Phase 5b — ATEMs (all 12)
+
+1. Patch every ATEM to the **common theatre input map** — identical on all 12: input 1
+   camera, 2 presenter laptop 1 (PowerPoint Main), 3 laptop 2 (VT Main / second
+   presenter), 4–8 backups/spare — [`docs/atem-iso-ingest.md`](atem-iso-ingest.md#common-theatre-input-map).
+   The live ingest selects inputs by number fleet-wide, so a theatre patched differently
+   pulls the wrong source.
+2. Set each ATEM's **Streaming/record quality** so the program recording is **~8–10 Mbps**
+   (ISO bitrates are fixed by frame rate and can't be set). Check one recorded program
+   file's bitrate.
+3. On one unit, record a short test and confirm the FTP folder layout and that ISO files
+   carry `CAM <n>` in their names — [`docs/open-questions.md`](open-questions.md) #21, #22.
+
 ## Phase 6 — Nextcloud external storage + ingest pipelines
 
 1. Run [`config/atem-iso-ingest/setup-nextcloud-external-storage.sh`](../config/atem-iso-ingest/setup-nextcloud-external-storage.sh)
    and [`config/vmix-record-ingest/setup-nextcloud-external-storage.sh`](../config/vmix-record-ingest/setup-nextcloud-external-storage.sh)
    — mounts the External Storage folders and prints the cron lines for targeted rescans.
    Add those cron entries.
-2. Fill in real credentials and start `pull-iso.py` (or the `rclone-mount-rsync/`
-   alternative) — [`config/atem-iso-ingest/README.md`](../config/atem-iso-ingest/README.md).
+2. Fill in real credentials, set **`ATEM_ISO_INPUTS`** in `.env` (default `1` = camera +
+   program; `1,2` / `1,2,3` add the laptop inputs, for all 12 theatres at once, only if
+   router and mothership-NIC headroom allow — see
+   [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) § Bandwidth), and start `pull-iso.py`
+   (or the `rclone-mount-rsync/` alternative, which reads the same variable) —
+   [`config/atem-iso-ingest/README.md`](../config/atem-iso-ingest/README.md). Inputs not
+   pulled live stay on each ATEM's SSD — schedule the physical DIT offload of those drives
+   ([`docs/live-editing.md`](live-editing.md)).
 3. Fill in real SMB credentials/share names and start `mount-and-sync.sh` —
    [`config/vmix-record-ingest/README.md`](../config/vmix-record-ingest/README.md).
 4. Configure Nextcloud version-retention for both ingest folders — both ingest docs flag

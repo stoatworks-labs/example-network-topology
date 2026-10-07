@@ -18,7 +18,7 @@
 <text x="230.0" y="391.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">they share the mothership LAN</text>
 <rect x="540.0" y="140.0" width="300.0" height="70.0" rx="35" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="690.0" y="170.0" font-size="13" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale mesh</text>
-<text x="690.0" y="189.0" font-size="11" fill="#5b6170" text-anchor="middle">theatre A-1300 → mothership subnet router</text>
+<text x="690.0" y="189.0" font-size="11" fill="#5b6170" text-anchor="middle">theatre Slate AX → mothership subnet router</text>
 <g><rect x="960" y="170" width="400" height="170" rx="8" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/><path d="M960,216 V178 a8,8 0 0 1 8,-8 H1352 a8,8 0 0 1 8,8 V216 Z" fill="#1e2235"/></g>
 <text x="1160.0" y="191.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Nextcloud</text>
 <text x="1160.0" y="208.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">container · 192.168.1.13</text>

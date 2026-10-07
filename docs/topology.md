@@ -2,17 +2,21 @@
 
 ## Theatre nodes (×12)
 
-Each theatre is its own subnet, NAT'd by its own GL-iNet **A-1300 (Slate Plus)** router.
+Each theatre is its own subnet, NAT'd by its own GL-iNet **Slate AX (GL-AXT1800)** router
+(previously the A-1300 / Slate Plus; replaced 2026-10-06 because Tailscale's userspace
+WireGuard on the A-1300's 32-bit CPU was estimated at only ~30-70 Mbps — see
+[`docs/bandwidth-analysis.md`](bandwidth-analysis.md)).
 The router runs Tailscale as a subnet router (LAN + WAN side routing enabled), advertising
 the theatre's `/24`.
 
-**Physical wiring:** the A-1300 has 1 WAN + 2 LAN gigabit ports. Both LAN ports are used:
+**Physical wiring:** the Slate AX has 1 WAN + 2 LAN gigabit ports (the same layout the
+A-1300 had, so the wiring is unchanged). Both LAN ports are used:
 
 - **LAN 1 → ATEM Mini Extreme ISO directly.** Dedicated port, so the router's other LAN
   traffic (rclone syncs, control laptop, etc.) never shares a switch segment with it. The
   ATEM carries the heaviest sustained traffic of any theatre device — the near-real-time
-  ISO ingest pull (see [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)) is a continuous
-  50-90 Mbps flow, well above BirdDog Play's — so it gets the dedicated port.
+  ingest pull (see [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)) — camera ISO + program by
+  default — is a continuous ~47-83 Mbps flow, well above BirdDog Play's — so it gets the dedicated port.
 - **LAN 2 → 8-port unmanaged Netgear switch**, which fans out to everything else: BirdDog
   Play, PowerPoint Main/Backup, VT Main/Backup, Control laptop (6 devices + 1 uplink port,
   1 spare switch port).
@@ -22,14 +26,14 @@ separation, not a VLAN/subnet split.
 
 | Role | Address | Physical connection |
 |---|---|---|
-| GL-iNet A-1300 router (LAN gateway) | `192.168.X.1` | — |
-| ATEM Mini Extreme ISO | `192.168.X.2` | A-1300 LAN 1 (direct) |
-| BirdDog Play | `192.168.X.20` | Netgear switch → A-1300 LAN 2 |
-| PowerPoint Main | `192.168.X.5` | Netgear switch → A-1300 LAN 2 |
-| PowerPoint Backup | `192.168.X.6` | Netgear switch → A-1300 LAN 2 |
-| VT Main | `192.168.X.7` | Netgear switch → A-1300 LAN 2 |
-| VT Backup | `192.168.X.8` | Netgear switch → A-1300 LAN 2 |
-| Control laptop | `192.168.X.10` | Netgear switch → A-1300 LAN 2 |
+| GL-iNet Slate AX router (LAN gateway) | `192.168.X.1` | — |
+| ATEM Mini Extreme ISO | `192.168.X.2` | Slate AX LAN 1 (direct) |
+| BirdDog Play | `192.168.X.20` | Netgear switch → Slate AX LAN 2 |
+| PowerPoint Main | `192.168.X.5` | Netgear switch → Slate AX LAN 2 |
+| PowerPoint Backup | `192.168.X.6` | Netgear switch → Slate AX LAN 2 |
+| VT Main | `192.168.X.7` | Netgear switch → Slate AX LAN 2 |
+| VT Backup | `192.168.X.8` | Netgear switch → Slate AX LAN 2 |
+| Control laptop | `192.168.X.10` | Netgear switch → Slate AX LAN 2 |
 
 `X` per the subnet map in the [top-level README](../README.md#subnet-map): Theatre 1
 → `2`, Theatre 2 → `3`, ... Theatre 12 → `13`.
@@ -45,15 +49,16 @@ Tailscale on generic Linux — see
 
 Theatres are grouped 3-per-physical-VLAN purely to organize uplink cabling back to the
 mothership — **this grouping does not itself provide cross-theatre isolation**. Each
-GL-iNet A-1300 already NATs its own theatre LAN, and once every router joins the same
+GL-iNet Slate AX already NATs its own theatre LAN, and once every router joins the same
 tailnet, routes are reachable tailnet-wide unless Tailscale ACLs restrict them (see
 [`config/tailscale-acl.json`](../config/tailscale-acl.json)).
 
 **These VLANs are venue-supplied, not our infrastructure** — each capped at 1 Gbps, each
-port expensive. The 4-VLAN/3-theatres-each split below is safe but conservative; the
-bandwidth math allows consolidating to 2 VLANs (6 theatres each) for normal SRT-primary
-operation, but with eroded margin (53% realistic / 78% worst case, higher in the group
-carrying both VMix nodes) and only ~10% headroom in a mass NDI fallback — see
+port expensive. The 4-VLAN/3-theatres-each split below is comfortable at every live-ingest
+scope; the bandwidth math allows consolidating to 2 VLANs (6 theatres each) for normal
+SRT-primary operation at the default camera + program scope (~50% typical / ~65% high
+upstream, higher in the group carrying both VMix nodes) or camera + 1 laptop at typical
+rates (~65%), but only ~10% headroom in a mass NDI fallback — see
 [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) for the full model and
 recommendation.
 
@@ -111,7 +116,7 @@ across both links by destination-IP/port hash — giving real aggregate headroom
 traffic, not just failover. Note this does **not** speed up any single flow; the benefit
 comes from having many distinct flows to hash across. On the wire, though, everything
 bound for one theatre leaves the Tailscale container inside a single WireGuard UDP flow to
-that theatre's A-1300, so the bond actually hashes ~14 tunnel flows (one per router), not
+that theatre's Slate AX, so the bond actually hashes ~14 tunnel flows (one per router), not
 dozens of application flows — still enough to spread, but coarse: one link can end up
 carrying noticeably more than half.
 
@@ -147,7 +152,7 @@ container on the Unraid box instead of the Cloud Gateway itself. See
 
 ## VMix nodes (×2)
 
-Each has its own **GL-iNet A-1300** router (same model as the theatre routers) and its
+Each has its own **GL-iNet Slate AX** router (same model as the theatre routers) and its
 own Tailscale connection — a separate node on the tailnet, not part of the theatre it
 physically sits next to, just uplinked near it:
 
@@ -156,7 +161,7 @@ physically sits next to, just uplinked near it:
 | VMix Node 1 | Theatre 1 | `192.168.20.x` | 4× BirdDog P400 cameras, 2× VMix PCs |
 | VMix Node 2 | Theatre 4 | `192.168.21.x` | 4× BirdDog P400 cameras, 2× VMix PCs |
 
-That makes **14 GL-iNet A-1300s total** across the network — 12 theatre routers plus these
+That makes **14 GL-iNet Slate AX routers total** across the network — 12 theatre routers plus these
 2. Both LAN ports are bridged together on the VMix node routers (unlike the theatre
 routers, there's no single traffic-sensitive device here that needs its own dedicated
 port the way the ATEM does).

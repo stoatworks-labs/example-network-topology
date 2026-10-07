@@ -13,8 +13,9 @@
 <g><rect x="40" y="120" width="290" height="120" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M40,166 V128 a8,8 0 0 1 8,-8 H322 a8,8 0 0 1 8,8 V166 Z" fill="#24668f"/></g>
 <text x="185.0" y="141.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">ATEM Mini Extreme ISO ×12</text>
 <text x="185.0" y="158.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.X.2 · FTP (G2: network share)</text>
-<text x="185.0" y="192.0" font-size="12" fill="#1a1d2b" text-anchor="middle">ISO recordings on its USB SSD</text>
-<text x="185.0" y="211.0" font-size="12" fill="#5b6170" text-anchor="middle">(the master copy)</text>
+<text x="185.0" y="190.0" font-size="12" fill="#1a1d2b" text-anchor="middle">pulled live: program + input 1</text>
+<text x="185.0" y="208.0" font-size="11.5" fill="#5b6170" text-anchor="middle">(camera; + 2/3 laptops if headroom)</text>
+<text x="185.0" y="226.0" font-size="11.5" fill="#5b6170" text-anchor="middle">every input stays on its SSD</text>
 <g><rect x="40" y="280" width="290" height="120" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M40,326 V288 a8,8 0 0 1 8,-8 H322 a8,8 0 0 1 8,8 V326 Z" fill="#b03a48"/></g>
 <text x="185.0" y="301.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix PCs ×4</text>
 <text x="185.0" y="318.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.20/21.21–.22 · SMB share</text>
@@ -65,13 +66,13 @@
 <text x="1175.0" y="275.0" font-size="11" fill="#64458f" text-anchor="middle" font-weight="bold">10GbE</text>
 <g><rect x="1000" y="500" width="350" height="80" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/><path d="M1000,532 V508 a8,8 0 0 1 8,-8 H1342 a8,8 0 0 1 8,8 V532 Z" fill="#6b7280"/></g>
 <text x="1175.0" y="521.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Physical media (DIT offload)</text>
-<text x="1175.0" y="556.0" font-size="12" fill="#1a1d2b" text-anchor="middle">master SSDs / camera cards walked to the</text>
-<text x="1175.0" y="574.0" font-size="12" fill="#1a1d2b" text-anchor="middle">edit suite · checksummed copy to the NAS</text>
+<text x="1175.0" y="556.0" font-size="12" fill="#1a1d2b" text-anchor="middle">ATEM SSDs (all ISOs not pulled live) walked to</text>
+<text x="1175.0" y="574.0" font-size="12" fill="#1a1d2b" text-anchor="middle">the edit suite · checksummed copy to the NAS</text>
 <path d="M1350.0,540.0 L1368.0,540.0 L1368.0,200.0 L1350.0,200.0" fill="none" stroke="#6b7280" stroke-width="1.8" stroke-linejoin="round" stroke-dasharray="6 4" marker-end="url(#m6b7280)"/>
 <text x="480.0" y="480.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle" font-weight="bold">Why two writes, not Nextcloud → NAS:</text>
 <text x="480.0" y="502.0" font-size="12" fill="#5b6170" text-anchor="middle">the edit suite never waits on Nextcloud&#x27;s own files:scan,</text>
 <text x="480.0" y="521.0" font-size="12" fill="#5b6170" text-anchor="middle">and editors never read from the pool ingest is writing to.</text>
-<text x="480.0" y="540.0" font-size="12" fill="#5b6170" text-anchor="middle">Not yet implemented in the ingest scripts, and the</text>
-<text x="480.0" y="559.0" font-size="12" fill="#5b6170" text-anchor="middle">ISO bitrate (vendor: up to 70 Mb/s per stream) decides</text>
-<text x="480.0" y="578.0" font-size="12" fill="#5b6170" text-anchor="middle">how much of this can run live: see open-questions.md.</text>
+<text x="480.0" y="540.0" font-size="12" fill="#5b6170" text-anchor="middle">ISOs run ~35–70 Mb/s each and can&#x27;t be turned down,</text>
+<text x="480.0" y="559.0" font-size="12" fill="#5b6170" text-anchor="middle">so only program + camera go live; the second write</text>
+<text x="480.0" y="578.0" font-size="12" fill="#5b6170" text-anchor="middle">is not yet implemented in the ingest scripts.</text>
 </svg>

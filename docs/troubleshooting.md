@@ -7,7 +7,7 @@ Known gotchas surfaced during design — check here before assuming something's 
 - **Routes not approved.** Advertising a route with `--advertise-routes` isn't enough —
   it must be approved in the Tailscale admin console (or via `autoApprovers`). Check
   first; this is the single most common reason a fresh subnet router doesn't work.
-- **Check `tailscale status`** on the theatre's A-1300 — confirms whether the peer
+- **Check `tailscale status`** on the theatre's Slate AX — confirms whether the peer
   connection is up at all before debugging further.
 
 ## "Two theatres can talk to each other" (should be impossible)
@@ -103,8 +103,9 @@ Known gotchas surfaced during design — check here before assuming something's 
   (`192.168.1.21` for Overseer, `192.168.1.24` for Flock — see
   [`docs/ip-address-map.md`](ip-address-map.md)) over the tailnet, same routing path as
   every other theatre-to-mothership stream in this design.
-- If every other theatre works but one doesn't, suspect that theatre's own A-1300 hitting
-  its combined-load ceiling rather than anything Overseer/Flock-side — see the per-router
+- If every other theatre works but one doesn't, suspect that theatre's own Slate AX hitting
+  its combined-load ceiling (Tailscale throughput estimated ~150-250 Mbps, unbenchmarked —
+  check `ATEM_ISO_INPUTS` for laptop ISOs enabled on that theatre) rather than anything Overseer/Flock-side — see the per-router
   finding in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
 
 ## "GL-iNet static DHCP leases aren't applying"

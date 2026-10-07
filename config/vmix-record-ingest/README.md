@@ -43,9 +43,10 @@ Covers all 4 VMix PCs: VMix Node 1 (`192.168.20.21`/`.22`) and VMix Node 2
   `REPLACE_WITH_OBSCURED_PASSWORD`), not assumed defaults.
 - **Confirm what VMix is actually recording** (program mix vs. per-input ISO, resolution,
   codec/bitrate) — this determines the real bandwidth load, not assumed here. Each VMix
-  node has its own dedicated GL-iNet A-1300 uplink (not shared with the theatre it sits
+  node has its own dedicated GL-iNet Slate AX uplink (not shared with the theatre it sits
   near), so this traffic doesn't compete with that theatre's ATEM ingest or SRT feed —
-  but it still needs to fit inside that node's own ~170 Mbps ceiling.
+  but it still needs to fit inside that node's own ceiling (an estimated, not yet benchmarked,
+  ~150–250 Mbps under Tailscale).
 - **Run `setup-nextcloud-external-storage.sh` once** before starting `mount-and-sync.sh`.
 
 ## Native CIFS mount alternative

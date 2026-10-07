@@ -51,7 +51,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <h2 id="theatre-cant-reach-the-mothership-at-all">"Theatre can't reach the mothership at all"</h2>
 <ul>
 <li><strong>Routes not approved.</strong> Advertising a route with <code>--advertise-routes</code> isn't enough — it must be approved in the Tailscale admin console (or via <code>autoApprovers</code>). Check first; this is the single most common reason a fresh subnet router doesn't work.</li>
-<li><strong>Check <code>tailscale status</code></strong> on the theatre's A-1300 — confirms whether the peer connection is up at all before debugging further.</li>
+<li><strong>Check <code>tailscale status</code></strong> on the theatre's Slate AX — confirms whether the peer connection is up at all before debugging further.</li>
 </ul>
 <h2 id="two-theatres-can-talk-to-each-other-should-be-impossible">"Two theatres can talk to each other" (should be impossible)</h2>
 <ul>
@@ -99,7 +99,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <ul>
 <li>Confirm the ATEM/BirdDog Play in that theatre is actually configured to originate its second monitoring/preview stream, not just its primary program feed — this is a genuinely unconfirmed capability, not assumed working out of the box, see <a href="open-questions.html"><code>docs/open-questions.md</code></a> #11.</li>
 <li>Check the stream is actually reaching the container's IP (<code>192.168.1.21</code> for Overseer, <code>192.168.1.24</code> for Flock — see <a href="ip-address-map.html"><code>docs/ip-address-map.md</code></a>) over the tailnet, same routing path as every other theatre-to-mothership stream in this design.</li>
-<li>If every other theatre works but one doesn't, suspect that theatre's own A-1300 hitting its combined-load ceiling rather than anything Overseer/Flock-side — see the per-router finding in <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.</li>
+<li>If every other theatre works but one doesn't, suspect that theatre's own Slate AX hitting its combined-load ceiling (Tailscale throughput estimated ~150-250 Mbps, unbenchmarked — check <code>ATEM_ISO_INPUTS</code> for laptop ISOs enabled on that theatre) rather than anything Overseer/Flock-side — see the per-router finding in <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.</li>
 </ul>
 <h2 id="gl-inet-static-dhcp-leases-arent-applying">"GL-iNet static DHCP leases aren't applying"</h2>
 <ul>

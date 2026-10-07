@@ -31,24 +31,25 @@
   recording pool, 8 with RAID-Z1, so Starter is at or over its limit — Unleashed or
   Lifetime. See [`docs/topology.md`](topology.md) for the full breakdown.
 
-- **Theatre router: GL-iNet A-1300 (Slate Plus).** Published client-mode WireGuard
-  throughput ≈ 170 Mbps ([GL.iNet A-1300 datasheet](https://static.gl-inet.com/www/images/products/datasheet/a1300_datasheet_20230602.pdf)).
-  Each theatre's router only ever carries *its own* theatre's traffic — one incoming SRT
-  feed to that theatre's BirdDog Play plus up to 4 laptops' rclone sync — not the
-  aggregate across all 12 theatres (that 12x aggregate converges at the mothership's WAN
-  link and Restreamer, not at any single theatre router). So the real per-router budget is
-  roughly 1× SRT bitrate (~8–50 Mbps depending on resolution/codec) + bursty rclone
-  traffic from up to 4 laptops — comfortably inside the A-1300's 170 Mbps headroom.
-  *(Caveat: that traffic list predates ATEM ISO ingest and the Overseer/Flock monitoring
-  streams, all of which now ride the same router. The current per-router model —
-  ~55% of the ceiling in normal operation, 128% during an NDI fallback with ingest
-  running, and 98% at worst case during an NDI fallback *with that theatre's ingest
-  paused* (the mitigation) — is in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)'s "check the
-  A-1300's own ceiling" section; the router choice still stands, but "comfortably" no
-  longer describes the margin.)*
+- **Theatre router: GL-iNet Slate AX (GL-AXT1800)** *(previously the A-1300 (Slate
+  Plus); replaced 2026-10-06 — see the router-change entry below).* Qualcomm IPQ6000,
+  4× Cortex-A53 @ 1.2 GHz (64-bit), 1× WAN + 2× LAN gigabit — the same port layout as the
+  A-1300, so the LAN1 → ATEM / LAN2 → switch wiring is unchanged — WireGuard up to
+  550 Mbps (vendor, kernel WireGuard), $119.99 list
+  ([GL.iNet specs](https://www.gl-inet.com/products/gl-axt1800/specs/)). Expected Tailscale
+  throughput **~150–250 Mbps combined — an estimate** extrapolated from a Beryl AX
+  measurement, not a Slate AX benchmark (#19). Each theatre's router only ever carries
+  *its own* theatre's traffic — the incoming SRT feed to its BirdDog Play, its ATEM ISO
+  ingest, the Overseer/Flock monitoring streams and its laptops' rclone sync — not the
+  aggregate across all 12 theatres (that converges at the mothership). Per-router
+  upstream at the default live scope (camera ISO + program) is ~73 / 83 / 109 Mbps (low /
+  typical / high); camera + 2 laptops + program ~104 / 135 / 192 Mbps. Full model in
+  [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)'s "The per-router ceiling: why
+  the A-1300 was replaced by the Slate AX" section.
 
-- **VMix node routers: also GL-iNet A-1300.** Same model as the 12 theatre routers — 14
-  A-1300s total across the network. Both LAN ports bridge together (no dedicated-port
+- **VMix node routers: also GL-iNet Slate AX** (previously A-1300, replaced with the
+  theatre routers). Same model as the 12 theatre routers — 14 Slate AX units total across
+  the network. Both LAN ports bridge together (no dedicated-port
   split needed here, unlike the theatre routers' BirdDog Play case). Configs generated:
   [`config/gl-inet/vmix-node-1.uci`](../config/gl-inet/vmix-node-1.uci) and
   [`vmix-node-2.uci`](../config/gl-inet/vmix-node-2.uci).
@@ -88,7 +89,7 @@
   here since they're new, not previously confirmed:
   - **Uplink VLAN transit addressing** (`10.10.1-4.0/24`, VLAN tags 101–104) for the 4
     physical VLAN groups' GL-iNet WAN ports. Doesn't affect anything inside the theatres
-    (still NAT'd behind each A-1300) or Tailscale (rides over whatever WAN IP is handed
+    (still NAT'd behind each Slate AX) or Tailscale (rides over whatever WAN IP is handed
     out) — purely a Cloud Gateway-side detail. Change freely.
   - **Docker networking mode per mothership service**: Nextcloud/Restreamer/NDI Discovery
     Server/DERP server assigned dedicated IPs via macvlan; Tailscale subnet router uses
@@ -139,7 +140,7 @@
   `rsync --append`, targeting each PC's Windows SMB share instead of an FTP server. SMB
   is a native network filesystem protocol, so this is arguably a better fit for a
   mount-based approach than the ATEM's FTP-only case was, not a stretch of the same
-  pattern. Each VMix node has its own dedicated A-1300 uplink (not shared with the
+  pattern. Each VMix node has its own dedicated Slate AX uplink (not shared with the
   theatre it sits near), so this traffic never competes with that theatre's ATEM ingest
   or SRT feed. Full design in [`docs/vmix-record-ingest.md`](vmix-record-ingest.md),
   tooling in [`config/vmix-record-ingest/`](../config/vmix-record-ingest/).
@@ -155,7 +156,7 @@
 - **Self-hosted GLKVM-Cloud added for centralized administration of the 14 GL-iNet
   routers.** No physical KVM hardware involved — this uses GLKVM-Cloud's separately
   documented HTTP/HTTPS web-proxy and device-management support for embedded OpenWrt
-  devices (which the A-1300s are), giving one browser-based SSH terminal + web-admin
+  devices (which the Slate AX routers are), giving one browser-based SSH terminal + web-admin
   proxy for all 14 routers instead of 14 separate sessions. Same
   self-hosted-over-vendor-cloud rationale as DERP and the UniFi Controller, avoiding
   GL.iNet's own `glkvm.com`. Two containers (`rttys` on `192.168.1.20`, `coturn` on
@@ -177,18 +178,20 @@
 - **Bandwidth modeled against venue-supplied VLANs — 2 VLANs (not 4) recommended, but
   reconsider given how thin that margin has gotten.** The 4 uplink VLANs turned out to
   be venue-supplied, 1 Gbps each, with expensive ports — changes the goal from "isolate
-  cleanly" to "minimize VLAN count at adequate performance." Real numbers (last updated
-  after adding the Flock BirdDog Play preview stream, ~10.4 Mbps/theatre, on top of ATEM
-  Overseer's — see below): per-theatre upstream is dominated by ATEM ISO ingest
-  (~62 Mbps realistic of ~88 Mbps total) — at the current 3-theatres-per-VLAN split,
-  that's ~27% utilization, with room to consolidate to 2 VLANs (6 theatres each,
-  ~53% realistic / 78% worst-case) before it stops being comfortable; **1 VLAN for all 12
-  theatres now exceeds capacity even at realistic load (106%)**, not just worst case —
-  it's only viable at all if ATEM ingest is deferred to end-of-session pulls instead of
-  real-time. Full model in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
+  cleanly" to "minimize VLAN count at adequate performance." Real numbers (recomputed
+  2026-10-06 for the common input map and corrected ISO bitrates — see the entries below):
+  per-theatre upstream is ~83 Mbps typical / ~109 high at the default live scope (camera
+  ISO + program), ~135 / ~192 with both laptop inputs live. At the current
+  3-theatres-per-VLAN split that's ~250–330 Mbps per VLAN at the default scope (~405–577
+  with both laptops) — 4 VLANs are comfortable at every scope. 2 VLANs (6 theatres each)
+  run ~500 Mbps typical at the default scope and ~654 with one laptop input, viable;
+  ~810 typical with both laptop inputs is too tight. **1 VLAN for all 12 theatres is at
+  capacity (~1,000 Mbps typical) even at the default scope** — viable only if ATEM ingest
+  is deferred to end-of-session pulls instead of real-time. Full model in
+  [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
   *(Note for the 2-VLAN option: both VMix nodes uplink next to Theatres 1 and 4, so under
-  a 2-VLAN split they both land in the Theatre 1-6 group, which then runs ~86-90% at
-  worst case rather than 78% — see that doc's "VMix nodes' uplinks" section.)*
+  a 2-VLAN split they both land in the Theatre 1-6 group — re-check that group, and the
+  mass-NDI-fallback case, against that doc's "VMix nodes' uplinks" section.)*
 
 - **ATEM Overseer + ATEM Fleet Admin added to the mothership.** Two of the user's own
   separate projects, deployed as Docker containers (`192.168.1.21` and `192.168.1.23`)
@@ -209,6 +212,37 @@
   — another flat per-theatre addition. Same not-built-from-source caveat as Overseer/Fleet
   Admin above.
 
+- **Theatre/VMix router changed: GL.iNet Slate AX (GL-AXT1800) ×14 replaces the A-1300
+  (2026-10-06).** The A-1300's ~170 Mbps is GL.iNet's *kernel* WireGuard figure
+  ([GL.iNet](https://www.gl-inet.com/products/gl-a1300/)); Tailscale does its crypto in
+  userspace Go (`wireguard-go`), and on the A-1300's 32-bit IPQ4018 (4× Cortex-A7
+  ~717 MHz, 256 MB RAM, firmware stuck at 4.5.x with Tailscale 1.58) Go has no optimised
+  ChaCha20-Poly1305 assembly. Comparable gaps: GL-MT1300 ~90 Mbps WireGuard vs. ~20
+  Tailscale ([tailscale#10524](https://github.com/tailscale/tailscale/issues/10524));
+  Beryl AX (64-bit) 300 WireGuard vs. ~150 Mbps each way Tailscale
+  ([GL.iNet forum](https://forum.gl-inet.com/t/max-speed-using-beryl-ax-gl-mt3000-with-tailscale/42826)).
+  Planning estimate for Tailscale on an A-1300: ~30–70 Mbps combined (unmeasured) — below
+  even the default live scope. The Slate AX (64-bit, same 1 WAN + 2 LAN layout) is
+  estimated at ~150–250 Mbps combined, pending a benchmark (#19). Rejected alternatives:
+  Slate 7 (GL-BE3600) — only one LAN port; Flint 2 (GL-MT6000, ~300–450 Mbps Tailscale
+  est.) — the headroom option, but desktop form factor. Fallback if the Slate AX can't be
+  had: the A-1300 running GL.iNet's kernel WireGuard instead of Tailscale (~120–170 Mbps
+  combined; camera + program only, no NDI fallback). Router count unchanged at 14.
+
+- **Common theatre input map + selective live ISO pull (2026-10-06).** Every ATEM is
+  patched identically: input 1 camera, 2 presenter laptop 1 (PowerPoint Main), 3 laptop 2
+  (VT Main / second presenter), 4–8 backups/spare. The ATEM records all inputs to its SSD
+  regardless (ISO recording is all-or-nothing, bitrate not user-settable), but only the
+  **program file plus the ISO inputs in `ATEM_ISO_INPUTS`** (default `1`, the camera;
+  `1,2` / `1,2,3` add the laptops where headroom allows) are pulled live; the program
+  record quality is set to ~8–10 Mbps. Everything else arrives via the physical DIT
+  offload ([`docs/live-editing.md`](live-editing.md)). Implemented in
+  [`pull-iso.py`](../config/atem-iso-ingest/pull-iso.py) (recursive walk + input filter,
+  `ATEM_ISO_INPUT_PATTERN` override) and in the `rclone-mount-rsync/` alternative (rsync
+  filters from the same variable); `docker-compose.yml` and `.env.template` carry
+  `ATEM_ISO_INPUTS=1`. Design in [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)
+  § Common theatre input map.
+
 - **Live editing subsystem added — new `192.168.22.0/24` subnet, own 10GbE LAN, not on
   the Tailscale mesh.** 2× MacBook Pro editing workstations plus dedicated fast storage
   at the mothership, editing event content as it arrives rather than after the event.
@@ -228,18 +262,21 @@
 
 ## Still open — verify before building
 
-0. **Measure a real ATEM ISO file's bitrate at the event frame rate — before anything
-   else in this list.** *(Numbered 0, not 1, so the long-standing #1-#20 references
-   across the repo stay valid.)* The bandwidth model uses 10 Mbps per ISO stream; Blackmagic
-   specifies the ATEM Mini Extreme ISO's ISO recordings as H.264 at up to 70 Mb/s (1080p60,
-   VBR). If a real file (`ffprobe`, or size ÷ duration) comes in anywhere near that,
-   **real-time ISO ingest doesn't fit**: ~364-437 Mbps per theatre for 6 streams (229-272%
-   of the A-1300's ~170 Mbps), ~1.2-1.4 Gbps per 3-theatre VLAN, and the 8 TB recording
-   pool fills in ~3.5-4 hours. Then decide between: a live pull of the program recording
-   only (plus at most one or two key ISOs) with the rest by physical DIT offload
-   ([`docs/live-editing.md`](live-editing.md)); ISO pulls between sessions; or faster
-   routers and more VLANs. Full recomputed table in the callout in
-   [`docs/bandwidth-analysis.md`](bandwidth-analysis.md); knock-on caveat in
+0. **Resolved by decision (2026-10-06) — measurement still outstanding.** *(Numbered 0,
+   not 1, so the long-standing #1-#20 references across the repo stay valid.)* The old
+   model's 10 Mbps per ISO stream was wrong: Blackmagic specifies ISO files at up to
+   70 Mb/s, not user-settable (~45 Mbps at 24/25/30p, ~70 at 50/60p), with user reports
+   averaging ~30–45 Mbps. **Decided:** the common input map and a live pull of the program
+   recording plus only the ISO inputs in `ATEM_ISO_INPUTS` (default: the camera), the rest
+   by physical DIT offload, on a Slate AX router — see the two Resolved entries above.
+   Planning figures: camera ISO 35 / 45 / 70 Mbps, laptop ISO 15 / 25 / 40 Mbps
+   (*estimate*), program 10 Mbps. **Still to measure on a real unit** (`ffprobe`, or
+   size ÷ duration), at the event's frame rate and firmware (older firmware recorded at
+   90–120 Mbps): a camera ISO file, a laptop/slides ISO file, and the program file at the
+   chosen Streaming/record quality setting (target ~8–10 Mbps). The laptop figure is
+   pure estimate; one file pins it. Figures in
+   [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) § Bandwidth,
+   [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) and
    [`docs/server-specification.md`](server-specification.md).
 
 1. **Check the existing server's real spec against the calculated target in
@@ -268,10 +305,9 @@
    behavior is Cloud-Gateway-firmware-specific. Confirm with `tailscale netcheck` on a
    theatre router once built, before assuming the self-hosted DERP server is actually reachable.
 
-4. **Confirm the real ATEM ISO bitrate/active-channel count, and empirically verify
-   partial-file playability.** The bandwidth plan above uses 10 Mbps/stream and an
-   assumed 4-6 active channels — the bitrate is now the top open item (#0, vendor spec is
-   up to 70 Mb/s per ISO); the active-channel count still needs checking here.
+4. **Confirm the real ATEM ISO bitrates, and empirically verify partial-file
+   playability.** The live scope is now fixed by the common input map rather than an
+   assumed active-channel count; the per-source bitrates still need measuring (#0).
    Whether a file copied mid-recording is genuinely valid (rather than just "very likely,
    given Blackmagic's marketed edit-while-recording capability") should be tested against
    a real unit before relying on it operationally. See
@@ -320,10 +356,11 @@
 9. **Confirm actual event duration (day count × active-recording hours/day)** before
    treating the 8 TB recording pool in
    [`docs/server-specification.md`](server-specification.md) as settled — that document
-   calculates it covers roughly 15-21 hours of continuous worst-to-realistic-case
-   load (~1.5-2.5 typical event days) — at the 10 Mbps/stream basis; only ~3.5-4 hours if
-   ISO files are near Blackmagic's spec (#0), but this repo doesn't establish the event's real
-   length anywhere. If it runs longer without a periodic archive-off step, either the
+   calculates it covers roughly ~16.5-23 hours at the default live scope (camera ISO +
+   program per theatre, high to typical rates; ~1.6-2.9 typical event days), or only
+   ~8.7-12.9 hours if both laptop inputs are pulled live fleet-wide — on planning figures,
+   not measurements (#0) — but this repo doesn't establish the event's real length
+   anywhere. If it runs longer without a periodic archive-off step, either the
    pool needs to grow or an offload step needs adding to the ingest design.
 
 10. **Resolved — by removal.** This slot used to ask what the mothership's own VMix
@@ -375,7 +412,8 @@
 16. **Verify the settled NDI-redistribution feed into BirdDog Central.** The mechanism
     is decided ([`docs/streaming-flow.md`](streaming-flow.md)): the source VMix node
     PC's native NDI output → NDI Discovery Server registration → Central receives over
-    that node's uplink (fallback-only ~130 Mbps against the ~170 Mbps ceiling, with
+    that node's uplink (fallback-only ~130 Mbps against the Slate AX's estimated
+    ~150–250 Mbps Tailscale ceiling, #19, with
     that node's record ingest paused for the duration) → Central re-sends to the
     theatre PLAYs. The alternatives were researched and ruled out: Restreamer cannot
     emit NDI (upstream FFmpeg removed NDI in 2019 over a NewTek GPL violation; datarhei
@@ -398,8 +436,8 @@
     a literal "Cloud Gateway" (UCG Ultra/Max/Fiber) has none. Separately, every theatre
     packet is *routed* by this box from an uplink VLAN onto Mothership-LAN: on a UDM Pro
     the LAN switch reportedly reaches the CPU over a single 1 Gbps link, capping
-    inter-VLAN routing near 1 Gbps whatever the bond does — below the ~1,493 Mbps worst-case
-    inbound in [`docs/server-specification.md`](server-specification.md). Check the real
+    inter-VLAN routing near 1 Gbps whatever the bond does — below the ~1,120 Mbps typical /
+    ~1,430 Mbps high inbound at the default live scope in [`docs/server-specification.md`](server-specification.md). Check the real
     unit's inter-VLAN throughput, and which ports the uplink VLANs and the server land on.
 
 18. **Finish and verify the mothership-side routing path into the tailnet, and the ACL
@@ -438,14 +476,15 @@
       default **userspace** mode, which can't forward LAN → tailnet traffic at all; it is
       now set to kernel mode (`TS_USERSPACE=false`).
 
-19. **Benchmark Tailscale's real throughput on an A-1300.** The ~170 Mbps every
-    per-router figure in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) is checked
-    against is GL.iNet's *kernel* WireGuard client figure; Tailscale on GL.iNet firmware
-    runs its own userspace `wireguard-go` engine, historically well below that on this
-    class of CPU. Run `iperf3` bidirectionally (`--bidir`) between a theatre LAN host and
-    the mothership, through Tailscale, before trusting any of the 92-128% per-router
-    utilization figures — if the real ceiling is lower, the NDI-fallback mitigation may
-    not be enough.
+19. **Benchmark Tailscale on one Slate AX before buying 14.** The ~150–250 Mbps combined
+    ceiling every per-router figure in [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)
+    is checked against is an *estimate* extrapolated from a Beryl AX measurement — no Slate
+    AX Tailscale benchmark was found, and GL.iNet's 550 Mbps is its kernel WireGuard
+    figure, not Tailscale's userspace `wireguard-go` (the gap that ruled out the A-1300).
+    Run `iperf3 --bidir` between a theatre LAN host and the mothership through Tailscale,
+    on a **direct** path (confirm with `tailscale status` / `tailscale ping` — not via
+    DERP). Target: **above ~160 Mbps combined** — the NDI-fallback-with-ingest-paused floor
+    is ~151–166 Mbps. If it falls short, the Flint 2 (GL-MT6000) is the headroom option.
 
 20. **Set the SRT payload size to 1128 bytes** on the VMix node PCs' SRT outputs and on
     Restreamer's outputs. SRT's default 1316-byte payload makes a 1360-byte IP packet,
@@ -453,20 +492,26 @@
     1128 bytes (6 × 188-byte TS packets) gives a 1172-byte packet that fits — see
     [`docs/bandwidth-analysis.md`](bandwidth-analysis.md).
 
-21. **Confirm which ATEM Mini Extreme ISO model is on site — original or G2.** The ingest
-    design assumes FTP is the only way in; check whether the model in use exposes its
-    recording media as a network drive as well (reported for the G2), which would change
-    the cheapest ingest path. Confirm against the unit, not the product page alone.
+21. **Confirm which ATEM Mini Extreme ISO model is on site — original or G2 — and its
+    ISO file naming.** The ingest design assumes FTP is the only way in; check whether the
+    model in use exposes its recording media as a network drive as well (reported for the
+    G2), which would change the cheapest ingest path. Confirm against the unit, not the
+    product page alone. Also confirm the ISO files carry **`CAM <n>`** in their names:
+    live input selection (`ATEM_ISO_INPUTS`) depends on it, and a file that doesn't match
+    is treated as a program recording and pulled — so a naming mismatch silently pulls
+    every input. Override with `ATEM_ISO_INPUT_PATTERN` (`pull-iso.py`) or edit
+    `build_filters` (`rclone-mount-rsync/mount-and-sync.sh`) if it differs.
 
-22. **`pull-iso.py` doesn't recurse into subfolders.** It lists `ATEM_FTP_REMOTE_DIR`
-    only, non-recursively (flagged as a known gap in
-    [`config/atem-iso-ingest/pull-iso.py`](../config/atem-iso-ingest/pull-iso.py)
-    itself), while ATEM ISO recordings are written into per-recording project folders.
-    Needs a recursive walk once the real FTP layout is confirmed on a unit (#4).
+22. **Resolved — `pull-iso.py` now recurses.** It used to list `ATEM_FTP_REMOTE_DIR`
+    only, non-recursively, while ATEM ISO recordings are written into per-recording
+    project folders. [`pull-iso.py`](../config/atem-iso-ingest/pull-iso.py) now walks the
+    tree (MLSD, falling back to NLST + a `CWD` probe; up to three levels deep) and keeps
+    the folder structure in the mirror. **Untested against a real ATEM** — check the walk
+    and depth limit when the FTP layout is confirmed on a unit (#4).
 
 23. **Reconcile the smart-bin path filter with the NAS layout.** The Resolve smart-bin
     recipes in [`docs/live-editing.md`](live-editing.md) filter clips by record-drive
-    path, but the ingest dual-write lands them under `TheatreN/ISO/` on the NAS — the
+    path, but the ingest dual-write lands them under `TheatreN/ISO/<recording folder>/` on the NAS — the
     filter has to match the path the ingest actually writes, not the ATEM's own drive
     name.
 

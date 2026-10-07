@@ -205,7 +205,14 @@ def load_inventory():
         elif heading.startswith("Edit suite"):
             inv["edit"] = [(clean(r[0]), r[1], clean(r[2])) for r in rows]
     assert len(inv["theatres"]) == 12 and len(inv["nodes"]) == 2 and len(inv["uplinks"]) == 4
+    gw = next(n for n, _ in inv["theatres"][0]["devices"] if n.startswith("GL-iNet"))
+    inv["router"] = re.sub(r"\s*\(.*\)$", "", gw)  # "GL-iNet Slate AX (LAN gateway)" -> model
     return inv
+
+
+def router_model():
+    """Short router name for the hand-laid diagrams, e.g. "Slate AX"."""
+    return load_inventory()["router"].replace("GL-iNet ", "")
 
 
 def short(ip):
@@ -330,7 +337,7 @@ def topology():
         h = 46 + 12 + 19 * (2 + 1 + len(switched)) + 6
         b = s.card(x, y, cw, h, "theatre", f"Theatre {t['n']}", t["subnet"])
         yy = b + 22
-        s.text(x + 12, yy, "GL-iNet A-1300", 12, INK, weight="bold")
+        s.text(x + 12, yy, inv["router"], 12, INK, weight="bold")
         ts_badge(x + 112, yy)
         s.text(x + cw - 12, yy, router, 12, INK, "end", "bold")
         yy += 19
@@ -353,7 +360,7 @@ def topology():
         yy = b + 22
         for n, ip in nd["devices"]:
             router = "router" in n.lower()
-            name = "GL-iNet A-1300" if router else n.replace("BirdDog P400 Camera", "BirdDog P400 cam")
+            name = inv["router"] if router else n.replace("BirdDog P400 Camera", "BirdDog P400 cam")
             s.text(x + 12, yy, name, 12, INK, weight="bold" if router else None)
             if router:
                 ts_badge(x + 112, yy)
@@ -395,19 +402,22 @@ def topology():
     routers = len(inv["theatres"]) + len(inv["nodes"])
     total = (len(inv["mothership"]) + len(inv["edit"]) + sum(len(t["devices"]) for t in inv["theatres"])
              + sum(len(n["devices"]) for n in inv["nodes"]))
+    model = inv["router"].replace("GL-iNet ", "")
     nx = margin + 2 * (colw + gap)
     ny = min(col_bottom[2], col_bottom[3]) + 6
     nw = 2 * colw + gap
     notes = [
         ("Isolation", "VLAN grouping is cabling only. Cross-theatre isolation is enforced by the Tailscale ACL"),
-        ("", "(config/tailscale-acl.json); each A-1300 also NATs its own theatre /24."),
-        ("Overlay", "Every A-1300 advertises its /24 as a Tailscale subnet router; the mothership's"),
+        ("", f"(config/tailscale-acl.json); each {model} also NATs its own theatre /24."),
+        ("Overlay", f"Every {model} advertises its /24 as a Tailscale subnet router; the mothership's"),
         ("", "subnet router (container on the Unraid box) advertises 192.168.1.0/24."),
         ("Relay", "If a direct WireGuard path fails, traffic falls back to the self-hosted DERP"),
         ("", "server (.1.16) behind the gateway's WAN forward, so it never leaves the event."),
-        ("VMix nodes", "Each node's own A-1300 WAN joins its neighbour theatre's VLAN group; it is a"),
+        ("VMix nodes", f"Each node's own {model} WAN joins its neighbour theatre's VLAN group; it is a"),
         ("", "separate tailnet node, not part of that theatre's LAN."),
-        ("Counts", f"{routers} GL-iNet A-1300s · {len(inv['theatres'])} theatres × "
+        ("ATEM inputs", "Same map in every theatre: 1 camera, 2–3 laptops, 4–8 spare. Live pull ="),
+        ("", "program + input 1 (+ 2/3 if headroom); the rest comes off the ATEM's SSD."),
+        ("Counts", f"{routers}× {inv['router']} · {len(inv['theatres'])} theatres × "
                    f"{len(inv['theatres'][0]['devices'])} devices · {total} devices in total"),
         ("", "(see docs/ip-address-map.md for the per-device table)."),
     ]
@@ -440,7 +450,7 @@ def streaming():
         b = s.card(40, y, 300, 120, "vmix", node, ips)
         s.text(190, b + 24, "program out as SRT (primary)", 12, INK, "middle")
         s.text(190, b + 44, "and native NDI (backup)", 12, INK, "middle")
-        s.text(190, b + 64, "over the node's own A-1300", 11, MUTED, "middle", italic=True)
+        s.text(190, b + 64, f"over the node's own {router_model()}", 11, MUTED, "middle", italic=True)
 
     # Mothership services (middle)
     s.rect(470, 92, 380, 520, ROLES["core"][1], RULE, rx=10, dash="6 4")
@@ -504,7 +514,7 @@ def streaming():
                        (red, "8 5", "Backup path — NDI (fallback only)"),
                        (amber, "2 4", "Discovery — TCP 5959 to the server")], "Legend")
     s.text(700, 640, "Everything crossing into or out of the dashed box rides the Tailscale mesh "
-           "(theatre and node A-1300s ↔ mothership subnet router).", 12, MUTED, "middle")
+           f"(theatre and node {router_model()}s ↔ mothership subnet router).", 12, MUTED, "middle")
     s.text(700, 662, "Set the SRT payload size to 1128 bytes on VMix and Restreamer: the default 1316 "
            "does not fit Tailscale's 1280-byte MTU.", 12, MUTED, "middle")
     s.save("streaming-flow.svg")
@@ -531,7 +541,7 @@ def file_sync():
     # tailnet hop
     s.rect(540, 140, 300, 70, ROLES["theatre"][1], blue, rx=35, dash="6 4")
     s.text(690, 170, "Tailscale mesh", 13, blue, "middle", "bold")
-    s.text(690, 189, "theatre A-1300 → mothership subnet router", 11, MUTED, "middle")
+    s.text(690, 189, f"theatre {router_model()} → mothership subnet router", 11, MUTED, "middle")
 
     b = s.card(960, 170, 400, 170, "core", "Nextcloud", "container · 192.168.1.13")
     for i, t in enumerate(["/$TheatreName/ per theatre", "(one rclone target folder each)",
@@ -568,8 +578,9 @@ def live_dataflow():
     s.text(1175, 102, "Edit suite LAN — 192.168.22.0/24, 10GbE", 12, MUTED, "middle", "bold")
 
     b = s.card(40, 120, 290, 120, "theatre", "ATEM Mini Extreme ISO ×12", "192.168.X.2 · FTP (G2: network share)")
-    s.text(185, b + 26, "ISO recordings on its USB SSD", 12, INK, "middle")
-    s.text(185, b + 45, "(the master copy)", 12, MUTED, "middle")
+    s.text(185, b + 24, "pulled live: program + input 1", 12, INK, "middle")
+    s.text(185, b + 42, "(camera; + 2/3 laptops if headroom)", 11.5, MUTED, "middle")
+    s.text(185, b + 60, "every input stays on its SSD", 11.5, MUTED, "middle")
     b = s.card(40, 280, 290, 120, "vmix", "VMix PCs ×4", "192.168.20/21.21–.22 · SMB share")
     s.text(185, b + 26, "recordings on local disk", 12, INK, "middle")
     s.text(185, b + 45, "(the master copy)", 12, MUTED, "middle")
@@ -609,16 +620,16 @@ def live_dataflow():
 
     # DIT physical path
     b = s.card(1000, 500, 350, 80, "grey", "Physical media (DIT offload)", None)
-    s.text(1175, b + 24, "master SSDs / camera cards walked to the", 12, INK, "middle")
-    s.text(1175, b + 42, "edit suite · checksummed copy to the NAS", 12, INK, "middle")
+    s.text(1175, b + 24, "ATEM SSDs (all ISOs not pulled live) walked to", 12, INK, "middle")
+    s.text(1175, b + 42, "the edit suite · checksummed copy to the NAS", 12, INK, "middle")
     s.line([(1350, 540), (1368, 540), (1368, 200), (1350, 200)], grey, 1.8, "6 4")
 
     s.text(480, 480, "Why two writes, not Nextcloud → NAS:", 12.5, INK, "middle", "bold")
     for i, t in enumerate(["the edit suite never waits on Nextcloud's own files:scan,",
                            "and editors never read from the pool ingest is writing to.",
-                           "Not yet implemented in the ingest scripts, and the",
-                           "ISO bitrate (vendor: up to 70 Mb/s per stream) decides",
-                           "how much of this can run live: see open-questions.md."]):
+                           "ISOs run ~35–70 Mb/s each and can't be turned down,",
+                           "so only program + camera go live; the second write",
+                           "is not yet implemented in the ingest scripts."]):
         s.text(480, 502 + i * 19, t, 12, MUTED, "middle")
     s.save("live-editing-dataflow.svg")
 

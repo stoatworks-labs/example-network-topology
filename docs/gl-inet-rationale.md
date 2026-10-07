@@ -1,7 +1,8 @@
 # Why GL-iNet — segmentation, Tailscale overlay, multi-WAN, and beyond this event
 
-This design already uses GL-iNet A-1300s throughout (see
-[`docs/topology.md`](topology.md), [`docs/open-questions.md`](open-questions.md)). This
+This design already uses GL-iNet Slate AX (GL-AXT1800) routers throughout (previously
+A-1300s, replaced 2026-10-06 — see the [comparison](#gl-inet-travel-router-comparison)
+below; also [`docs/topology.md`](topology.md), [`docs/open-questions.md`](open-questions.md)). This
 document is the fuller "why" — the architectural reasoning behind putting a small router
 in every theatre instead of a flatter network, why Tailscale is the routing layer between
 them rather than site-to-site VLANs alone, the WAN-flexibility features this build doesn't
@@ -94,10 +95,10 @@ This build's current default is a single hardwired WAN per theatre (see
 multiple uplink sources (wired Ethernet, WiFi acting as a WAN client, a USB cellular
 modem) with automatic failover between them, no manual cable-swap or on-site
 intervention required. This is a firmware 4.x feature (**NETWORK → Multi-WAN**: Failover
-or Load Balance across Ethernet, Repeater, Tethering and Cellular) that the A-1300's own
-user guide documents too, not just the bigger models — what differs per model is which
-WAN *media* it has to fail over to (the A-1300 has no built-in modem, so cellular means a
-USB dongle or a tethered phone)
+or Load Balance across Ethernet, Repeater, Tethering and Cellular) that even the small
+A-1300's own user guide documents, not just the bigger models — what differs per model is
+which WAN *media* it has to fail over to (neither the A-1300 nor the Slate AX has a
+built-in modem, so cellular means a USB dongle or a tethered phone)
 ([GL.iNet Multi-WAN guide](https://docs.gl-inet.com/router/en/4/interface_guide/multi-wan/),
 [A-1300 user guide](https://docs.gl-inet.com/router/en/4/user_guide/gl-a1300/)). For a deployment where most theatres run unattended for
 long stretches, that matters — a lost wired connection mid-session isn't something
@@ -168,7 +169,7 @@ figures with the actual venue before budgeting against them.
 
 Already built into this design — see [`docs/glkvm-cloud.md`](glkvm-cloud.md) for the
 full detail. In short: a self-hosted instance of GL.iNet's own GLKVM-Cloud platform gives
-centralized, browser-based SSH terminal and web-admin proxy access to all 14 A-1300s at
+centralized, browser-based SSH terminal and web-admin proxy access to all 14 Slate AX routers at
 once, using GLKVM-Cloud's documented support for embedded OpenWrt devices — not its
 flagship KVM-hardware feature set, since there's no physical KVM unit in this design.
 Worth restating here as part of the broader case for this hardware family specifically:
@@ -350,16 +351,21 @@ as indicative and re-check before procurement. GBP pricing was only reliably obt
 for a couple of models (GL-iNet's regional store pages don't consistently expose static
 GBP pricing to an automated check) — USD is the more solid figure throughout. The
 WireGuard column is GL.iNet's own figure for its built-in (kernel) WireGuard client;
-this design runs **Tailscale**, which uses its own userspace engine and is likely slower
-on the same hardware — not benchmarked yet, see
+this design runs **Tailscale**, which uses its own userspace engine (`wireguard-go`) and
+is markedly slower on the same hardware — e.g. GL-MT1300 ~90 Mbps kernel WireGuard vs
+~20 Mbps Tailscale ([tailscale#10524](https://github.com/tailscale/tailscale/issues/10524)),
+Beryl AX 300 vs ~150 Mbps each way
+([GL.iNet forum](https://forum.gl-inet.com/t/max-speed-using-beryl-ax-gl-mt3000-with-tailscale/42826)).
+No Slate AX Tailscale figure has been measured yet, see
 [`docs/open-questions.md`](open-questions.md) #19.
 
 | Model | Price (USD) | WireGuard throughput | Ports | WiFi | Cellular | Multi-WAN failover | Notes |
 |---|---|---|---|---|---|---|---|
-| **Slate Plus** (GL-A1300) | $70–100 (promo vs. list — [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) uses ~$100) | ~170 Mbps | 2× GbE LAN, 1× GbE WAN, 1× USB 3.0 | WiFi 5 | USB dongle only | Yes (firmware 4.x Multi-WAN) | This build's current choice — see [`docs/topology.md`](topology.md). Smallest/cheapest of the group. |
+| **Slate AX** (GL-AXT1800) | [$119.99 list](https://www.gl-inet.com/en-us/products/gl-axt1800) | [~550 Mbps](https://www.gl-inet.com/products/gl-axt1800/specs/) (Tailscale ~150-250 Mbps combined — estimate, unbenchmarked) | 2× GbE LAN, 1× GbE WAN, 1× USB 3.0 | WiFi 6 | USB dongle only | Yes (firmware 4.x Multi-WAN) | **This build's choice since 2026-10-06** — see [`docs/topology.md`](topology.md). Qualcomm IPQ6000, 4× Cortex-A53 @ 1.2 GHz (64-bit); same 1 WAN + 2 LAN layout as the A-1300, so the wiring is unchanged. |
+| Slate Plus (GL-A1300) | $70–100 (promo vs. list — [`docs/bandwidth-analysis.md`](bandwidth-analysis.md) uses ~$100) | ~170 Mbps (Tailscale est. only ~30-70 Mbps combined) | 2× GbE LAN, 1× GbE WAN, 1× USB 3.0 | WiFi 5 | USB dongle only | Yes (firmware 4.x Multi-WAN) | **Previous choice, rejected 2026-10-06**: 32-bit IPQ4018 (4× Cortex-A7 ~717 MHz, 256 MB RAM), firmware stuck at 4.5.x with Tailscale 1.58; Go has no optimised ChaCha20-Poly1305 assembly there, so Tailscale can't carry even the default ingest scope. Smallest/cheapest of the group. Fallback only, running kernel WireGuard instead of Tailscale. |
 | **Beryl AX** (GL-MT3000) | $99 | ~300 Mbps | 1× GbE LAN, 1× 2.5G WAN, 1× USB 3.0 | WiFi 6 | USB dongle only (needs an add-on board for a real slot) | Yes (firmware 4.x Multi-WAN) | Only 1 LAN port — doesn't fit this build's "ATEM gets its own dedicated port" wiring without an added switch. |
-| **Flint 2** (GL-MT6000) | $170 | ~900 Mbps | 4× GbE + 2× 2.5G | WiFi 6 | None (USB dongle/tethering) | **Yes** — failover + load-balancing, plus two Ethernet WANs | Highest throughput of the non-cellular models; much larger/heavier, poor fit for 12-per-theatre portability. |
-| **Slate 7** (GL-BE3600) | $150–170 | ~540 Mbps | 1× 2.5G LAN, 1× 2.5G WAN, 1× USB 3.0 | WiFi 7 (dual-band only — no 6GHz/320MHz, so limited real-world WiFi 7 benefit) | USB dongle only | Yes, per its own user guide | Newest of the group; compact. |
+| **Flint 2** (GL-MT6000) | $170 | ~900 Mbps | 4× GbE + 2× 2.5G | WiFi 6 | None (USB dongle/tethering) | **Yes** — failover + load-balancing, plus two Ethernet WANs | Highest throughput of the non-cellular models (Tailscale ~300-450 Mbps est.); much larger/heavier, poor fit for 12-per-theatre portability — the headroom option if the Slate AX benchmark comes in low. |
+| **Slate 7** (GL-BE3600) | $150–170 | ~540 Mbps | 1× 2.5G LAN, 1× 2.5G WAN, 1× USB 3.0 | WiFi 7 (dual-band only — no 6GHz/320MHz, so limited real-world WiFi 7 benefit) | USB dongle only | Yes, per its own user guide | Newest of the group; compact. Only 1 LAN port — rejected for the same reason as the Beryl AX. (GL.iNet figures seen for its WireGuard rate range ~490-540 Mbps.) |
 | **Spitz AX** (GL-X3000) | $380 | ~300 Mbps | 1× GbE LAN, 1× 2.5G WAN, 1× USB 2.0 | WiFi 6 | **Built-in 5G/4G modem, dual Nano-SIM** | **Yes** — Ethernet/repeater/cellular/tethering | No internal battery — needs external 12V power. The dedicated cellular-failover choice if built-in modem matters more than portability. |
 | **Puli AX** (GL-XE3000) | $410 | ~300 Mbps | 1× GbE LAN, 1× 2.5G WAN, 1× USB 2.0 | WiFi 6 | **Built-in 5G modem, dual Nano-SIM** | **Yes** | Same cellular capability as Spitz AX, plus a **built-in 6400 mAh battery** — genuinely portable/untethered for short sessions, at a real price premium. |
 
@@ -369,28 +375,25 @@ distinction rather than assuming parity with consumer mesh systems (eero, Orbi, 
 See the [mesh/peer-to-peer section](#mesh-and-peer-to-peer-fewer-physical-drops) above
 for what that means in practice for running several theatres off one drop.
 
-**For this build specifically**, the Slate Plus stays the right call, but the margin
-behind that call has eroded a real amount as this design has grown — worth being
-precise rather than repeating the original reasoning unchanged. Under normal operation
-its 170 Mbps ceiling is still comfortable on paper (~55% combined, per
-[`docs/bandwidth-analysis.md`](bandwidth-analysis.md)'s latest figures, which now
-include the ATEM Overseer and Flock monitoring/preview streams added after this
-comparison was first written). The scenario that actually bites is a theatre's NDI
-fallback plus its ATEM ingest running at the same time — that now hits **128% of the
-router's own ceiling** (was 116% before either monitoring stream existed), still fully
-resolved by the existing config-only mitigation (pause that theatre's ATEM ingest during
-the fallback — see the bandwidth doc), but with less spare margin left in that
-mitigation each time a new upstream/downstream load gets added. **The 2 LAN ports for
-the dedicated-ATEM-port wiring is still the harder constraint than raw throughput** —
-it's why Beryl AX remains a trap regardless of its higher throughput ceiling. Spitz
-AX/Puli AX are the models worth reaching for specifically *because* of their built-in
-cellular — i.e. exactly the multi-WAN-failover and WiFi-as-primary-link scenarios
-earlier in this document, where a wired drop isn't guaranteed or a genuine backup path
-matters more than shaving cost/size. **Worth revisiting if a fifth stream is ever
-proposed**: at that point Flint 2's much larger throughput headroom (24% combined vs.
-the Slate Plus's 128%) may stop being a "nice margin, not worth the size/weight/cost"
-trade-off and start being the safer default — this doc's own recommendation was written
-assuming two theatre monitoring streams, not an open-ended number of them.
+**For this build specifically**, the Slate AX replaced the Slate Plus (A-1300) on
+2026-10-06, after research found the A-1300's ~170 Mbps was GL.iNet's *kernel* WireGuard
+figure — Tailscale's userspace engine on its 32-bit CPU is estimated at only ~30-70 Mbps
+combined, short of even the default camera + program ingest scope (~89 Mbps combined,
+typical, per [`docs/bandwidth-analysis.md`](bandwidth-analysis.md)). The Slate AX keeps
+the same **2 LAN ports for the dedicated-ATEM-port wiring — still the harder constraint
+than raw throughput**, and why Beryl AX and Slate 7 remain traps regardless of their
+higher ceilings — on a 64-bit CPU with an estimated ~150-250 Mbps under Tailscale. That
+estimate is extrapolated from the Beryl AX measurement, not measured: benchmark one unit
+before buying 14. The scenario that actually bites is still a theatre's NDI fallback plus
+its ATEM ingest at the same time (~213 Mbps combined, typical) — over the bottom of that
+range, so the config-only mitigation (pause that theatre's ATEM ingest during the
+fallback) stays part of the design. Spitz AX/Puli AX are the models worth reaching for
+specifically *because* of their built-in cellular — i.e. exactly the
+multi-WAN-failover and WiFi-as-primary-link scenarios earlier in this document, where a
+wired drop isn't guaranteed or a genuine backup path matters more than shaving
+cost/size. **Flint 2 is the headroom option** if the Slate AX benchmark disappoints or a
+further stream is ever proposed: desktop-sized, but comfortable even with ingest running
+through an NDI fallback.
 
 ## The Comet KVM range
 
@@ -422,7 +425,7 @@ argument made about BirdDog Play vs. a laptop running VLC.
 
 ## Summary
 
-For this build specifically, GL-iNet A-1300s plus Tailscale earn their place on three
+For this build specifically, GL-iNet Slate AX routers plus Tailscale earn their place on three
 independent grounds that all point the same direction: **segmentation** contains DHCP,
 multicast, and security faults to a single theatre instead of the whole event;
 **Tailscale** routes between those segmented subnets without depending on the venue's

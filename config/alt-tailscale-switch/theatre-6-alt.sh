@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Alternative to GL-iNet A-1300 for Theatre 6 — generic Linux box (mini-PC or
+# Alternative to GL-iNet Slate AX for Theatre 6 — generic Linux box (mini-PC or
 # the control laptop) + plain switch, using nftables/dnsmasq instead of a router
 # appliance's built-in NAT/DHCP. Tailscale invocation is unchanged from
 # ../tailscale-up-all-devices.sh — Tailscale doesn't care what hardware runs it.

@@ -1,6 +1,6 @@
 # GLKVM-Cloud (self-hosted)
 
-Centralized remote administration (web UI + SSH terminal) for the 14 GL-iNet A-1300
+Centralized remote administration (web UI + SSH terminal) for the 14 GL-iNet Slate AX
 routers, via a self-hosted instance of GL.iNet's open-source GLKVM-Cloud instead of their
 vendor-hosted `glkvm.com` — no physical KVM hardware involved. Full design rationale and
 the WAN port-forward mapping (needed to avoid colliding with the DERP server's own WAN
@@ -40,7 +40,7 @@ standalone template is for deploying/testing GLKVM-Cloud on its own instead.
   remote (off-venue) access to work — LAN access on `192.168.1.20` works regardless.
 - **Register each of the 14 routers** against this instance using the connection script
   from the GLKVM-Cloud web UI, once it's up — not this repo's problem to script, since
-  it's a one-time action taken from the UI itself, run over SSH on each A-1300.
+  it's a one-time action taken from the UI itself, run over SSH on each Slate AX.
 
 ## Running
 

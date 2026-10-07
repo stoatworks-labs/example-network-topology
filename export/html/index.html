@@ -52,14 +52,14 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </blockquote>
 <p>A complete, fully-worked network design for a 12-theatre live event: every theatre streams its program feed and syncs its files back to a central "mothership," all riding over a single Tailscale mesh, with no reliance on venue Wi-Fi or a conference-provided network.</p>
 <p><strong>This is an anonymized reference design</strong>, published as a worked example of the whole process — topology, bandwidth modelling, hardware selection with rationale, generated configs, deployment runbook. It's a real design for a real event, with the identifying details generalized: all domains are placeholders on the IANA-reserved <code>example.net</code> (substitute your own), and nothing here names the event, client, or venue. Product names, prices, and throughput figures are real and cited.</p>
-<p><strong>Status: design complete, nothing built yet, two load-bearing numbers unverified.</strong> Every device has a real IP and the Tailscale/GL-iNet/UniFi configs are generated. A review on 2026-10-06 found that the ATEM ISO bitrate and the A-1300's Tailscale throughput both rest on figures that vendor data doesn't support. Both need a measurement on real hardware before the live-ingest part of the design can be called final. See <a href="open-questions.html"><code>docs/open-questions.md</code></a> (#0 and #19 first) for what still needs real-world input before this goes from design to build, or <a href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a> for the full ordered build sequence.</p>
+<p><strong>Status: design complete, nothing built yet.</strong> Every device has a real IP and the Tailscale/GL-iNet/UniFi configs are generated. A review on 2026-10-06 found the ATEM ISO bitrate and the original router's Tailscale throughput were both far off, and the design changed to match: only the program recording and the camera ISO are pulled live (every theatre wired to one common ATEM input map), and the routers are now GL.iNet <strong>Slate AX</strong> units. Two things still want a measurement on real hardware: one Slate AX's Tailscale throughput, and one real laptop-input ISO file. See <a href="open-questions.html"><code>docs/open-questions.md</code></a> for what still needs real-world input before this goes from design to build, or <a href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a> for the full ordered build sequence.</p>
 <hr />
 <h2 id="the-shape-of-it">The shape of it</h2>
 <p>12 theatres, each its own isolated subnet, connect back to one mothership over Tailscale. Physical uplink cabling is grouped 3-theatres-per-VLAN purely for cable management — the VLANs don't provide isolation themselves, <strong>Tailscale ACLs do</strong>: every theatre can reach the mothership, but never another theatre, and never a VMix node. Two extra "VMix nodes" hang off Theatre 1 and Theatre 4 respectively, each with its own cameras, its own router, and its own place on the tailnet.</p>
-<figure role="img" aria-label="Full network topology, showing the mothership, all 12 theatres with every internal device and IP, and both VMix nodes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1485" width="1640" height="1485" font-family="Helvetica, Arial, sans-serif">
+<figure role="img" aria-label="Full network topology, showing the mothership, all 12 theatres with every internal device and IP, and both VMix nodes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1523" width="1640" height="1523" font-family="Helvetica, Arial, sans-serif">
 <title>Event Network — Full Device Inventory</title>
 <defs></defs>
-<rect width="1640" height="1485" fill="#ffffff"/>
+<rect width="1640" height="1523" fill="#ffffff"/>
 <text x="820.0" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1d2b">Event Network — Full Device Inventory</text>
 <text x="820.0" y="58" text-anchor="middle" font-size="13" fill="#5b6170">Every device and IP, generated from docs/ip-address-map.md · Tailscale runs only on the 14 GL-iNet routers and the mothership subnet router</text>
 <g><rect x="30" y="84" width="560" height="286" rx="8" fill="#eef0f5" stroke="#3d4a63" stroke-width="1.5"/><path d="M30,130 V92 a8,8 0 0 1 8,-8 H582 a8,8 0 0 1 8,8 V130 Z" fill="#3d4a63"/></g>
@@ -138,7 +138,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="64.0" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,528 V490 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="234.8" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 1</text>
 <text x="234.8" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.2.0/24</text>
-<text x="76.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.1</text>
@@ -160,7 +160,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="64.0" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,777 V739 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="234.8" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 2</text>
 <text x="234.8" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.3.0/24</text>
-<text x="76.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.1</text>
@@ -182,7 +182,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="64.0" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,1026 V988 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="234.8" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 3</text>
 <text x="234.8" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.4.0/24</text>
-<text x="76.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.1</text>
@@ -204,7 +204,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="64.0" y="1229" width="341.5" height="197" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M64.0,1275 V1237 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V1275 Z" fill="#b03a48"/></g>
 <text x="234.8" y="1250.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix Node 1</text>
 <text x="234.8" y="1267.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.20.0/24 · sits beside Theatre 1</text>
-<text x="76.0" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="1286.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="1297.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="1297.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.1</text>
@@ -236,7 +236,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="465.5" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,528 V490 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="636.2" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 4</text>
 <text x="636.2" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.5.0/24</text>
-<text x="477.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.1</text>
@@ -258,7 +258,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="465.5" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,777 V739 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="636.2" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 5</text>
 <text x="636.2" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.6.0/24</text>
-<text x="477.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.1</text>
@@ -280,7 +280,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="465.5" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,1026 V988 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="636.2" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 6</text>
 <text x="636.2" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.7.0/24</text>
-<text x="477.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.1</text>
@@ -302,7 +302,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="465.5" y="1229" width="341.5" height="197" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M465.5,1275 V1237 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V1275 Z" fill="#b03a48"/></g>
 <text x="636.2" y="1250.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix Node 2</text>
 <text x="636.2" y="1267.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.21.0/24 · sits beside Theatre 4</text>
-<text x="477.5" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="1286.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="1297.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="1297.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.1</text>
@@ -334,7 +334,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="867.0" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,528 V490 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="1037.8" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 7</text>
 <text x="1037.8" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.8.0/24</text>
-<text x="879.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="879.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="979.0" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1010.0" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1196.5" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.1</text>
@@ -356,7 +356,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="867.0" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,777 V739 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="1037.8" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 8</text>
 <text x="1037.8" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.9.0/24</text>
-<text x="879.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="879.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="979.0" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1010.0" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1196.5" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.1</text>
@@ -378,7 +378,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="867.0" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,1026 V988 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="1037.8" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 9</text>
 <text x="1037.8" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.10.0/24</text>
-<text x="879.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="879.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="979.0" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1010.0" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1196.5" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.1</text>
@@ -411,7 +411,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="1268.5" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,528 V490 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="1439.2" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 10</text>
 <text x="1439.2" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.11.0/24</text>
-<text x="1280.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="1280.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="1380.5" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1411.5" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1598.0" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.1</text>
@@ -433,7 +433,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="1268.5" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,777 V739 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="1439.2" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 11</text>
 <text x="1439.2" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.12.0/24</text>
-<text x="1280.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="1280.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="1380.5" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1411.5" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1598.0" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.1</text>
@@ -455,7 +455,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <g><rect x="1268.5" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,1026 V988 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="1439.2" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 12</text>
 <text x="1439.2" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.13.0/24</text>
-<text x="1280.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="1280.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="1380.5" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1411.5" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1598.0" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.1</text>
@@ -481,23 +481,26 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <text x="1252.5" y="749.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
 <path d="M1246.5,1003.0 L1268.5,1003.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
 <text x="1252.5" y="998.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
-<rect x="833.0" y="1235.0" width="777.0" height="230.0" rx="8" fill="#f3f4f6" stroke="#d5d9e2" stroke-width="1.5"/>
+<rect x="833.0" y="1235.0" width="777.0" height="268.0" rx="8" fill="#f3f4f6" stroke="#d5d9e2" stroke-width="1.5"/>
 <text x="849.0" y="1261.0" font-size="13" fill="#1a1d2b" font-weight="bold">How to read this</text>
 <text x="849.0" y="1283.0" font-size="12" fill="#1a1d2b" font-weight="bold">Isolation</text>
 <text x="937.0" y="1283.0" font-size="12" fill="#1a1d2b">VLAN grouping is cabling only. Cross-theatre isolation is enforced by the Tailscale ACL</text>
-<text x="937.0" y="1302.0" font-size="12" fill="#1a1d2b">(config/tailscale-acl.json); each A-1300 also NATs its own theatre /24.</text>
+<text x="937.0" y="1302.0" font-size="12" fill="#1a1d2b">(config/tailscale-acl.json); each Slate AX also NATs its own theatre /24.</text>
 <text x="849.0" y="1321.0" font-size="12" fill="#1a1d2b" font-weight="bold">Overlay</text>
-<text x="937.0" y="1321.0" font-size="12" fill="#1a1d2b">Every A-1300 advertises its /24 as a Tailscale subnet router; the mothership&#x27;s</text>
+<text x="937.0" y="1321.0" font-size="12" fill="#1a1d2b">Every Slate AX advertises its /24 as a Tailscale subnet router; the mothership&#x27;s</text>
 <text x="937.0" y="1340.0" font-size="12" fill="#1a1d2b">subnet router (container on the Unraid box) advertises 192.168.1.0/24.</text>
 <text x="849.0" y="1359.0" font-size="12" fill="#1a1d2b" font-weight="bold">Relay</text>
 <text x="937.0" y="1359.0" font-size="12" fill="#1a1d2b">If a direct WireGuard path fails, traffic falls back to the self-hosted DERP</text>
 <text x="937.0" y="1378.0" font-size="12" fill="#1a1d2b">server (.1.16) behind the gateway&#x27;s WAN forward, so it never leaves the event.</text>
 <text x="849.0" y="1397.0" font-size="12" fill="#1a1d2b" font-weight="bold">VMix nodes</text>
-<text x="937.0" y="1397.0" font-size="12" fill="#1a1d2b">Each node&#x27;s own A-1300 WAN joins its neighbour theatre&#x27;s VLAN group; it is a</text>
+<text x="937.0" y="1397.0" font-size="12" fill="#1a1d2b">Each node&#x27;s own Slate AX WAN joins its neighbour theatre&#x27;s VLAN group; it is a</text>
 <text x="937.0" y="1416.0" font-size="12" fill="#1a1d2b">separate tailnet node, not part of that theatre&#x27;s LAN.</text>
-<text x="849.0" y="1435.0" font-size="12" fill="#1a1d2b" font-weight="bold">Counts</text>
-<text x="937.0" y="1435.0" font-size="12" fill="#1a1d2b">14 GL-iNet A-1300s · 12 theatres × 8 devices · 133 devices in total</text>
-<text x="937.0" y="1454.0" font-size="12" fill="#1a1d2b">(see docs/ip-address-map.md for the per-device table).</text>
+<text x="849.0" y="1435.0" font-size="12" fill="#1a1d2b" font-weight="bold">ATEM inputs</text>
+<text x="937.0" y="1435.0" font-size="12" fill="#1a1d2b">Same map in every theatre: 1 camera, 2–3 laptops, 4–8 spare. Live pull =</text>
+<text x="937.0" y="1454.0" font-size="12" fill="#1a1d2b">program + input 1 (+ 2/3 if headroom); the rest comes off the ATEM&#x27;s SSD.</text>
+<text x="849.0" y="1473.0" font-size="12" fill="#1a1d2b" font-weight="bold">Counts</text>
+<text x="937.0" y="1473.0" font-size="12" fill="#1a1d2b">14× GL-iNet Slate AX · 12 theatres × 8 devices · 133 devices in total</text>
+<text x="937.0" y="1492.0" font-size="12" fill="#1a1d2b">(see docs/ip-address-map.md for the per-device table).</text>
 </svg>
 <figcaption>Full network topology, showing the mothership, all 12 theatres with every internal device and IP, and both VMix nodes</figcaption></figure>
 
@@ -515,13 +518,13 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <text x="190.0" y="158.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.20.21 · .20.22</text>
 <text x="190.0" y="190.0" font-size="12" fill="#1a1d2b" text-anchor="middle">program out as SRT (primary)</text>
 <text x="190.0" y="210.0" font-size="12" fill="#1a1d2b" text-anchor="middle">and native NDI (backup)</text>
-<text x="190.0" y="230.0" font-size="11" fill="#5b6170" text-anchor="middle" font-style="italic">over the node&#x27;s own A-1300</text>
+<text x="190.0" y="230.0" font-size="11" fill="#5b6170" text-anchor="middle" font-style="italic">over the node&#x27;s own Slate AX</text>
 <g><rect x="40" y="290" width="300" height="120" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M40,336 V298 a8,8 0 0 1 8,-8 H332 a8,8 0 0 1 8,8 V336 Z" fill="#b03a48"/></g>
 <text x="190.0" y="311.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix Node 2 PCs</text>
 <text x="190.0" y="328.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.21.21 · .21.22</text>
 <text x="190.0" y="360.0" font-size="12" fill="#1a1d2b" text-anchor="middle">program out as SRT (primary)</text>
 <text x="190.0" y="380.0" font-size="12" fill="#1a1d2b" text-anchor="middle">and native NDI (backup)</text>
-<text x="190.0" y="400.0" font-size="11" fill="#5b6170" text-anchor="middle" font-style="italic">over the node&#x27;s own A-1300</text>
+<text x="190.0" y="400.0" font-size="11" fill="#5b6170" text-anchor="middle" font-style="italic">over the node&#x27;s own Slate AX</text>
 <rect x="470.0" y="92.0" width="380.0" height="520.0" rx="10" fill="#eceef4" stroke="#d5d9e2" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="660.0" y="114.0" font-size="12.5" fill="#5b6170" text-anchor="middle" font-weight="bold">Mothership — Unraid server</text>
 <g><rect x="500" y="130" width="320" height="96" rx="8" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/><path d="M500,176 V138 a8,8 0 0 1 8,-8 H812 a8,8 0 0 1 8,8 V176 Z" fill="#1e2235"/></g>
@@ -586,7 +589,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <text x="96.0" y="606.0" font-size="12.5" fill="#1a1d2b">Backup path — NDI (fallback only)</text>
 <path d="M40.0,624.0 L84.0,624.0" fill="none" stroke="#946200" stroke-width="2.4" stroke-linejoin="round" stroke-dasharray="2 4" marker-end="url(#m946200)"/>
 <text x="96.0" y="628.0" font-size="12.5" fill="#1a1d2b">Discovery — TCP 5959 to the server</text>
-<text x="700.0" y="640.0" font-size="12" fill="#5b6170" text-anchor="middle">Everything crossing into or out of the dashed box rides the Tailscale mesh (theatre and node A-1300s ↔ mothership subnet router).</text>
+<text x="700.0" y="640.0" font-size="12" fill="#5b6170" text-anchor="middle">Everything crossing into or out of the dashed box rides the Tailscale mesh (theatre and node Slate AXs ↔ mothership subnet router).</text>
 <text x="700.0" y="662.0" font-size="12" fill="#5b6170" text-anchor="middle">Set the SRT payload size to 1128 bytes on VMix and Restreamer: the default 1316 does not fit Tailscale&#x27;s 1280-byte MTU.</text>
 </svg>
 <figcaption>SRT/NDI streaming flow — VMix PCs to Restreamer to BirdDog Play (primary, solid), BirdDog Central through the NDI Discovery Server to BirdDog Play (backup, dashed)</figcaption></figure>
@@ -617,7 +620,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <text x="230.0" y="391.0" font-size="12.5" fill="#1a1d2b" text-anchor="middle">they share the mothership LAN</text>
 <rect x="540.0" y="140.0" width="300.0" height="70.0" rx="35" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5" stroke-dasharray="6 4"/>
 <text x="690.0" y="170.0" font-size="13" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale mesh</text>
-<text x="690.0" y="189.0" font-size="11" fill="#5b6170" text-anchor="middle">theatre A-1300 → mothership subnet router</text>
+<text x="690.0" y="189.0" font-size="11" fill="#5b6170" text-anchor="middle">theatre Slate AX → mothership subnet router</text>
 <g><rect x="960" y="170" width="400" height="170" rx="8" fill="#eceef4" stroke="#1e2235" stroke-width="1.5"/><path d="M960,216 V178 a8,8 0 0 1 8,-8 H1352 a8,8 0 0 1 8,8 V216 Z" fill="#1e2235"/></g>
 <text x="1160.0" y="191.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Nextcloud</text>
 <text x="1160.0" y="208.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">container · 192.168.1.13</text>
@@ -640,9 +643,9 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 
 <p>Theatre laptops (PowerPoint and VT, main and backup — 48 across all 12 theatres) each run <code>rclone</code>, syncing their theatre's folder up to Nextcloud over the tailnet. The mothership's 4 ready-room PCs skip rclone entirely and mount Nextcloud directly over local WebDAV, since they already share its LAN.</p>
 <h2 id="atem-iso-ingest-near-real-time-no-manual-chunking">ATEM ISO ingest: near-real-time, no manual chunking</h2>
-<p>Each theatre's ATEM Mini Extreme ISO records up to 9 H.264 streams (8 camera ISOs + program) to a USB SSD — and, unlike most of this design, there's no laptop involved: the mothership pulls directly from the ATEM's <strong>built-in FTP server</strong> over Tailscale subnet routing, transferring only the bytes appended since the last check. That matters because the file is <em>constantly growing</em>: a naive whole-file re-sync on a schedule doesn't survive the math for a real session (a 3-hour, 6-stream recording is 50-80GB — re-uploading that <em>whole thing</em> every 10 minutes takes longer than 10 minutes, falling permanently behind). Two documented ways to get that incremental transfer: FTP's own <code>REST</code>/resume command directly (the default — plain rsync can't be used for this leg, since it needs SSH or an rsync daemon and the ATEM only speaks FTP), or <code>rclone mount</code> (presenting the ATEM's FTP share as a local path) paired with <code>rsync --append</code>, which transfers only the new tail without needing rsync's usual full-file checksum pass. Either way, the pull writes straight into the folder Nextcloud has mounted as External Storage, so there's no second upload step and no need to slice the video file itself — full design in <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>.</p>
+<p>Each theatre's ATEM Mini Extreme ISO records 9 H.264 streams (8 input ISOs + program) to a USB SSD — always all of them, and the ISO files at a fixed ~35-70 Mb/s each that can't be turned down. So the network only carries part of it: <strong>the program recording (set to ~8-10 Mbps) plus the camera ISO</strong>, pulled live; the presenter-laptop inputs are added per theatre where there's headroom, and everything else comes off the SSD by physical offload. Every theatre is wired to the same input map (1 camera, 2-3 laptops, 4-8 spare), so one setting (<code>ATEM_ISO_INPUTS</code>) picks the same files everywhere. There's no laptop involved in the pull: the mothership reads directly from the ATEM's <strong>built-in FTP server</strong> over Tailscale subnet routing, transferring only the bytes appended since the last check. That matters because the files are <em>constantly growing</em>: a naive whole-file re-sync on a schedule falls permanently behind on a multi-hour recording. Two documented ways to get that incremental transfer: FTP's own <code>REST</code>/resume command directly (the default — plain rsync can't be used for this leg, since it needs SSH or an rsync daemon and the ATEM only speaks FTP), or <code>rclone mount</code> (presenting the ATEM's FTP share as a local path) paired with <code>rsync --append</code>, which transfers only the new tail without needing rsync's usual full-file checksum pass. Either way, the pull writes straight into the folder Nextcloud has mounted as External Storage, so there's no second upload step and no need to slice the video file itself — full design in <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>.</p>
 <h2 id="vmix-record-ingest-same-mechanism-a-windows-smb-share-instead">VMix record ingest: same mechanism, a Windows SMB share instead</h2>
-<p>The 4 VMix PCs (2 per node) get the same treatment, just retargeted at a Windows SMB share instead of an FTP server — SMB is a genuine network filesystem protocol, so mounting it is the native way to access it here, if anything a better fit than the ATEM's FTP-only case rather than a stretch of the same pattern. <code>rclone mount</code> presents each PC's share as a local path, and <code>rsync --append</code> transfers only the new tail, same reasoning as the ATEM ingest's alternative approach. Each VMix node has its own dedicated A-1300 uplink — not shared with the theatre it physically sits near — so this traffic never competes with that theatre's ATEM ingest or SRT feed. Full design in <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>.</p>
+<p>The 4 VMix PCs (2 per node) get the same treatment, just retargeted at a Windows SMB share instead of an FTP server — SMB is a genuine network filesystem protocol, so mounting it is the native way to access it here, if anything a better fit than the ATEM's FTP-only case rather than a stretch of the same pattern. <code>rclone mount</code> presents each PC's share as a local path, and <code>rsync --append</code> transfers only the new tail, same reasoning as the ATEM ingest's alternative approach. Each VMix node has its own dedicated Slate AX uplink — not shared with the theatre it physically sits near — so this traffic never competes with that theatre's ATEM ingest or SRT feed. Full design in <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>.</p>
 <h2 id="self-hosted-admin-tooling-unifi-controller--glkvm-cloud">Self-hosted admin tooling: UniFi Controller + GLKVM-Cloud</h2>
 <p>Two self-hosted services on the consolidated server, both following the same rule the rest of this design does — no dependency on a vendor's own cloud for managing this design's own infrastructure:</p>
 <ul>
@@ -657,13 +660,13 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <li><strong>Flock</strong> does the same fleet-manager job as ATEM Fleet Admin, but for the 12 theatres' BirdDog Play units — LAN discovery, tag-based grouping, BirdUI-parity settings, batch edits. Each BirdDog Play also sends Flock its own 10 Mbps SRT preview stream, same treatment as Overseer's — also folded into the bandwidth model below.</li>
 </ul>
 <h2 id="bandwidth-real-numbers-right-sized-vlans">Bandwidth: real numbers, right-sized VLANs</h2>
-<p>The 4 uplink VLANs turned out to be <strong>venue-supplied, not our infrastructure</strong> — 1 Gbps each, with expensive ports, which flips the goal from "isolate cleanly" to "minimum VLAN count at adequate performance." The full model, grounded in real figures (SRT ~5.8-10.4 Mbps via long-GOP H.264 + SRT/WireGuard overhead, ATEM ISO ingest ~62-94 Mbps plus the ATEM Overseer and Flock monitoring/preview streams — ~10.4 Mbps apiece — together dominating per-theatre upstream, full NDI at 1080p50 a very different ~130 Mbps roughly regardless of content), is in <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>. Headlines:</p>
+<p>The 4 uplink VLANs turned out to be <strong>venue-supplied, not our infrastructure</strong> — 1 Gbps each, with expensive ports, which flips the goal from "isolate cleanly" to "minimum VLAN count at adequate performance." The full model, grounded in real figures (SRT ~5.8-10.4 Mbps via long-GOP H.264 + SRT/WireGuard overhead, ATEM ingest ~47-83 Mbps for program + camera, plus the ATEM Overseer and Flock monitoring/preview streams — ~10.4 Mbps apiece — together dominating per-theatre upstream, full NDI at 1080p50 a very different ~130 Mbps roughly regardless of content), is in <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>. Headlines:</p>
 <ul>
-<li><strong>Check first: the ATEM ISO bitrate.</strong> Everything below assumes ~10 Mbps per ISO stream. Blackmagic specifies the ISO files at "up to 70 Mb/s" each. If real files come anywhere near that, live ingest of every ISO stream fits neither an A-1300 nor a 3-theatre VLAN, and the design has to pull fewer streams live. Measure one real file before relying on the figures below; see the callout in the bandwidth doc.</li>
-<li>The current 4-VLAN plan runs at 27-39% utilization under normal operation — still comfortable, though real-time ATEM ingest plus both monitoring streams have eaten a genuine chunk of what used to be a much wider margin.</li>
-<li><strong>Consolidating to 2 VLANs</strong> is still workable but has real eroded margin (53-78%, down from 40-65% before either monitoring stream existed) for normal SRT-primary operation — worth actively re-weighing now, not just noting. Under 2 VLANs both VMix nodes land in the Theatre 1–6 group, which takes it to ~86–90% worst case. A <strong>mass NDI fallback</strong> (e.g. a Restreamer failure pushing all 12 theatres onto NDI at once) pushes 2 VLANs to 90% with no room left; 3-4 VLANs stay comfortable through that same event.</li>
-<li><strong>1 VLAN no longer works with real-time ATEM ingest, full stop</strong> — it now exceeds capacity under normal expected load (106%), not just an unlucky worst-case day. Deferring ATEM ingest to end-of-session pulls (rather than real-time) is required to make 1 VLAN viable at all, not just a nice-to-have lever anymore.</li>
-<li><strong>A separate, previously-missed finding</strong>: each theatre's own A-1300 has a tighter ceiling (~170 Mbps, and that is GL-iNet's kernel-WireGuard figure: Tailscale on this model is unbenchmarked and likely slower, so benchmark one before committing) than the shared VLAN — a theatre running ATEM ingest and an NDI fallback simultaneously can exceed <em>its own router's</em> capacity regardless of VLAN count. Mitigation: pause that theatre's ATEM ingest during an NDI fallback (cheap, config-only) — still works with both monitoring streams added, but with less spare margin than before. A higher-throughput GL-iNet model would also fix it, but not cleanly — see the doc for why.</li>
+<li><strong>ATEM ingest is scoped to what fits.</strong> ISO files can't be set below ~35-70 Mb/s each, so pulling every input live would need 175-405 Mbps per theatre. The default live scope is program + camera: ~83 Mbps typical upstream per theatre (73-109 range), with each presenter-laptop input adding ~25 Mbps (an estimate until a real file is measured).</li>
+<li><strong>4 VLANs</strong> run at ~25-33% upstream at the default scope, and stay comfortable even with both laptop inputs on in every theatre.</li>
+<li><strong>2 VLANs (6 theatres each)</strong> are viable at the default scope (~50-65%) or with one laptop input (~65-90%), provided a mass NDI fallback (e.g. a Restreamer failure pushing all 12 theatres onto NDI at once, 90% on 2 VLANs) is handled operationally. Not with both laptop inputs everywhere (~81% typical, over 100% high).</li>
+<li><strong>1 VLAN</strong> doesn't work with any live ingest (~100-131%).</li>
+<li><strong>The per-router ceiling decided the router.</strong> The original GL.iNet A-1300's 170 Mbps is a kernel-WireGuard figure; Tailscale does its encryption in software, and on that router's 32-bit chip comparable devices manage an eighth to a half of their WireGuard rate, putting it at an estimated ~30-70 Mbps. Its replacement, the <strong>Slate AX</strong> (64-bit, 550 Mbps WireGuard), is estimated at ~150-250 Mbps under Tailscale, enough for the default scope plus a single-theatre NDI fallback with that theatre's ingest paused. Both Tailscale figures are estimates: benchmark one Slate AX before buying 14.</li>
 </ul>
 <h2 id="why-tailscale-avoids-derp-relay-here">Why Tailscale avoids DERP relay here</h2>
 <p>Every device in this design — all 12 theatres, both VMix nodes, the mothership — sits behind the <em>same</em> shared venue internet connection. That's an unusually favorable setup for Tailscale: direct connections are likely either over the true private LAN path or via a NAT hairpin through that one shared public IP, with public DERP relay only as a last resort. As extra insurance, a self-hosted DERP server (reachable at <code>derp.example.net:443</code>) runs on the mothership itself, so even relayed traffic never actually leaves the venue. Full reasoning in <a href="tailscale.html"><code>docs/tailscale.md</code></a>.</p>
@@ -689,8 +692,8 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </tr>
 <tr class="odd">
 <td>Theatre + VMix node routers</td>
-<td>GL-iNet <strong>A-1300</strong> (Slate Plus) ×14</td>
-<td>12 theatre routers + both VMix node routers, same model throughout. ~170 Mbps WireGuard by GL-iNet's own (kernel WireGuard) figure, which would leave comfortable headroom for normal operation (~55% combined) — Tailscale's throughput on this model is not yet benchmarked; 2 LAN ports let the ATEM Mini Extreme ISO sit on its own dedicated port, away from the rest of the room's traffic — it carries the heaviest sustained load (near-real-time ISO ingest). Its own ceiling is the tighter constraint during an NDI fallback though (128% combined with ATEM ingest, resolved by pausing that theatre's ingest during the fallback) — margin worth watching if any further theatre-to-mothership stream ever gets added, see <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>. Full case for GL-iNet + Tailscale specifically — segmentation, multi-WAN, pay-per-device WiFi economics, other uses beyond this event, and the same ceiling reasoning — in <a href="gl-inet-rationale.html"><code>docs/gl-inet-rationale.md</code></a></td>
+<td>GL.iNet <strong>Slate AX</strong> (GL-AXT1800) ×14</td>
+<td>12 theatre routers + both VMix node routers, same model throughout. 64-bit quad-core, 550 Mbps WireGuard (vendor, kernel WireGuard), estimated ~150-250 Mbps under Tailscale — to be benchmarked on one unit before buying 14. Same 1 WAN + 2 LAN layout as the A-1300 it replaces, so the ATEM Mini Extreme ISO still sits on its own dedicated port, away from the rest of the room's traffic. The A-1300 was dropped on 2026-10-06: its 170 Mbps is a kernel-WireGuard figure, and Tailscale on its 32-bit chip is estimated at only ~30-70 Mbps. During an NDI fallback, pause that theatre's ATEM ingest; see <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>. Full case for GL-iNet + Tailscale specifically — segmentation, multi-WAN, pay-per-device WiFi economics, other uses beyond this event, and the router comparison — in <a href="gl-inet-rationale.html"><code>docs/gl-inet-rationale.md</code></a></td>
 </tr>
 <tr class="even">
 <td>Theatre playback</td>
@@ -799,15 +802,15 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <h2 id="before-build--open-items">Before build — open items</h2>
 <p>Design is finalized; these are the headline items still needing real-world input before the config in this repo gets applied (the complete list, including a few smaller ones, lives in <a href="open-questions.html"><code>docs/open-questions.md</code></a>; the ordered build sequence is <a href="deployment-runbook.html"><code>docs/deployment-runbook.md</code></a>).</p>
 <ul class="task-list">
-<li><label><input type="checkbox" /><strong>First:</strong> measure a real ATEM ISO file's bitrate at the event frame rate. Blackmagic's spec says up to 70 Mb/s per stream against the ~10 Mbps this design assumes, and the answer decides how much ISO ingest can run live — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #0.</label></li>
-<li><label><input type="checkbox" />Benchmark Tailscale throughput on one A-1300 (the ~170 Mbps figure is GL-iNet's kernel-WireGuard number) — #19.</label></li>
+<li><label><input type="checkbox" />Benchmark Tailscale on one Slate AX (iperf3, both directions at once, direct path not DERP) before buying 14 — target above ~160 Mbps combined — <a href="open-questions.html"><code>docs/open-questions.md</code></a> #19.</label></li>
+<li><label><input type="checkbox" />Patch every ATEM to the common input map, set the program recording to ~8-10 Mbps, and measure one real camera ISO and one laptop ISO file to pin the planning figures — <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>, #0.</label></li>
 <li><label><input type="checkbox" />Confirm the Cloud Gateway model (LAG support, routing capacity), and prove the mothership → tailnet routing path end to end — static routes, macvlan host access, ACL — #17, #18.</label></li>
 <li><label><input type="checkbox" />Set the SRT payload size to 1128 bytes on the VMix PCs and Restreamer to fit Tailscale's 1280-byte MTU — #20.</label></li>
-<li><label><input type="checkbox" />Smaller build items: which ATEM model (original or G2), <code>pull-iso.py</code> subfolder walk, smart-bin path rule vs the NAS layout, and an Unraid address on the edit LAN — #21–24.</label></li>
+<li><label><input type="checkbox" />Smaller build items: which ATEM model (original or G2) and its ISO file naming, testing <code>pull-iso.py</code>'s new folder walk against a real unit, smart-bin path rule vs the NAS layout, and an Unraid address on the edit LAN — #21–24.</label></li>
 <li><label><input type="checkbox" />Check the existing consolidated services server against the calculated target spec in <a href="server-specification.html"><code>docs/server-specification.md</code></a> (CPU/RAM headroom, storage pool layout — no GPU requirement any more).</label></li>
 <li><label><input type="checkbox" />Add the <code>derp.example.net</code> DNS record for the self-hosted DERP server.</label></li>
 <li><label><input type="checkbox" />Verify the DERP hairpin isn't caught by the uplink-VLAN firewall block before relying on it.</label></li>
-<li><label><input type="checkbox" />Confirm the real ATEM ISO bitrate/active-channel count and empirically verify partial-file playability.</label></li>
+<li><label><input type="checkbox" />Empirically verify that a file copied mid-recording plays.</label></li>
 <li><label><input type="checkbox" />Confirm what VMix is actually recording and set up real SMB shares/credentials on all 4 VMix PCs.</label></li>
 <li><label><input type="checkbox" />Confirm the final VLAN count with the venue, and decide whether a mass-NDI-fallback event needs to survive at full quality (drives 3-4 vs. 2 VLANs) — <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>.</label></li>
 <li><label><input type="checkbox" />Add the <code>kvm.example.net</code> DNS record and confirm <code>GLKVM_ACCESS_IP</code>'s exact format for the WAN-remapped GLKVM-Cloud ports — <a href="glkvm-cloud.html"><code>docs/glkvm-cloud.md</code></a>.</label></li>

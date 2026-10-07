@@ -3,7 +3,7 @@
 # Run the relevant block on each device. Routes must still be approved in the
 # Tailscale admin console (or via autoApprovers) before they take effect.
 
-# --- Theatre routers (×12, GL-iNet A-1300 / Slate Plus) -----------------
+# --- Theatre routers (×12, GL-iNet Slate AX / GL-AXT1800) -------------
 # X = subnet octet per the map in ../README.md, e.g. Theatre 1 -> 2, Theatre 12 -> 13
 tailscale up --advertise-routes=192.168.X.0/24 --accept-routes --advertise-tags=tag:theatre
 

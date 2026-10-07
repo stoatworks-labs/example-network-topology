@@ -48,10 +48,10 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 @page { size: A4; margin: 15mm 13mm; }
 </style></head><body><div class="doc-meta">Standalone export of <code>docs/topology.md</code> from <a href="https://github.com/stoatworks-labs/example-network-topology">example-network-topology</a></div><h1 id="topology">Topology</h1>
 <h2 id="theatre-nodes-12">Theatre nodes (×12)</h2>
-<p>Each theatre is its own subnet, NAT'd by its own GL-iNet <strong>A-1300 (Slate Plus)</strong> router. The router runs Tailscale as a subnet router (LAN + WAN side routing enabled), advertising the theatre's <code>/24</code>.</p>
-<p><strong>Physical wiring:</strong> the A-1300 has 1 WAN + 2 LAN gigabit ports. Both LAN ports are used:</p>
+<p>Each theatre is its own subnet, NAT'd by its own GL-iNet <strong>Slate AX (GL-AXT1800)</strong> router (previously the A-1300 / Slate Plus; replaced 2026-10-06 because Tailscale's userspace WireGuard on the A-1300's 32-bit CPU was estimated at only ~30-70 Mbps — see <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a>). The router runs Tailscale as a subnet router (LAN + WAN side routing enabled), advertising the theatre's <code>/24</code>.</p>
+<p><strong>Physical wiring:</strong> the Slate AX has 1 WAN + 2 LAN gigabit ports (the same layout the A-1300 had, so the wiring is unchanged). Both LAN ports are used:</p>
 <ul>
-<li><strong>LAN 1 → ATEM Mini Extreme ISO directly.</strong> Dedicated port, so the router's other LAN traffic (rclone syncs, control laptop, etc.) never shares a switch segment with it. The ATEM carries the heaviest sustained traffic of any theatre device — the near-real-time ISO ingest pull (see <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>) is a continuous 50-90 Mbps flow, well above BirdDog Play's — so it gets the dedicated port.</li>
+<li><strong>LAN 1 → ATEM Mini Extreme ISO directly.</strong> Dedicated port, so the router's other LAN traffic (rclone syncs, control laptop, etc.) never shares a switch segment with it. The ATEM carries the heaviest sustained traffic of any theatre device — the near-real-time ingest pull (see <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>) — camera ISO + program by default — is a continuous ~47-83 Mbps flow, well above BirdDog Play's — so it gets the dedicated port.</li>
 <li><strong>LAN 2 → 8-port unmanaged Netgear switch</strong>, which fans out to everything else: BirdDog Play, PowerPoint Main/Backup, VT Main/Backup, Control laptop (6 devices + 1 uplink port, 1 spare switch port).</li>
 </ul>
 <p>All devices stay on the same <code>192.168.X.0/24</code> — this is a physical port split for traffic separation, not a VLAN/subnet split.</p>
@@ -65,44 +65,44 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </thead>
 <tbody>
 <tr class="odd">
-<td>GL-iNet A-1300 router (LAN gateway)</td>
+<td>GL-iNet Slate AX router (LAN gateway)</td>
 <td><code>192.168.X.1</code></td>
 <td>—</td>
 </tr>
 <tr class="even">
 <td>ATEM Mini Extreme ISO</td>
 <td><code>192.168.X.2</code></td>
-<td>A-1300 LAN 1 (direct)</td>
+<td>Slate AX LAN 1 (direct)</td>
 </tr>
 <tr class="odd">
 <td>BirdDog Play</td>
 <td><code>192.168.X.20</code></td>
-<td>Netgear switch → A-1300 LAN 2</td>
+<td>Netgear switch → Slate AX LAN 2</td>
 </tr>
 <tr class="even">
 <td>PowerPoint Main</td>
 <td><code>192.168.X.5</code></td>
-<td>Netgear switch → A-1300 LAN 2</td>
+<td>Netgear switch → Slate AX LAN 2</td>
 </tr>
 <tr class="odd">
 <td>PowerPoint Backup</td>
 <td><code>192.168.X.6</code></td>
-<td>Netgear switch → A-1300 LAN 2</td>
+<td>Netgear switch → Slate AX LAN 2</td>
 </tr>
 <tr class="even">
 <td>VT Main</td>
 <td><code>192.168.X.7</code></td>
-<td>Netgear switch → A-1300 LAN 2</td>
+<td>Netgear switch → Slate AX LAN 2</td>
 </tr>
 <tr class="odd">
 <td>VT Backup</td>
 <td><code>192.168.X.8</code></td>
-<td>Netgear switch → A-1300 LAN 2</td>
+<td>Netgear switch → Slate AX LAN 2</td>
 </tr>
 <tr class="even">
 <td>Control laptop</td>
 <td><code>192.168.X.10</code></td>
-<td>Netgear switch → A-1300 LAN 2</td>
+<td>Netgear switch → Slate AX LAN 2</td>
 </tr>
 </tbody>
 </table>
@@ -110,8 +110,8 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 <p>The ATEM's built-in FTP server (its ISO recording drive) is pulled continuously by the mothership over Tailscale subnet routing — see <a href="atem-iso-ingest.html"><code>docs/atem-iso-ingest.md</code></a>.</p>
 <p><strong>Alternative to the GL-iNet router</strong>, documented but not recommended: plain switch + Tailscale on generic Linux — see <a href="topology-alternative-tailscale-switches.html"><code>docs/topology-alternative-tailscale-switches.md</code></a>.</p>
 <h2 id="uplink-vlan-grouping">Uplink VLAN grouping</h2>
-<p>Theatres are grouped 3-per-physical-VLAN purely to organize uplink cabling back to the mothership — <strong>this grouping does not itself provide cross-theatre isolation</strong>. Each GL-iNet A-1300 already NATs its own theatre LAN, and once every router joins the same tailnet, routes are reachable tailnet-wide unless Tailscale ACLs restrict them (see <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>).</p>
-<p><strong>These VLANs are venue-supplied, not our infrastructure</strong> — each capped at 1 Gbps, each port expensive. The 4-VLAN/3-theatres-each split below is safe but conservative; the bandwidth math allows consolidating to 2 VLANs (6 theatres each) for normal SRT-primary operation, but with eroded margin (53% realistic / 78% worst case, higher in the group carrying both VMix nodes) and only ~10% headroom in a mass NDI fallback — see <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a> for the full model and recommendation.</p>
+<p>Theatres are grouped 3-per-physical-VLAN purely to organize uplink cabling back to the mothership — <strong>this grouping does not itself provide cross-theatre isolation</strong>. Each GL-iNet Slate AX already NATs its own theatre LAN, and once every router joins the same tailnet, routes are reachable tailnet-wide unless Tailscale ACLs restrict them (see <a href="https://github.com/stoatworks-labs/example-network-topology/blob/main/config/tailscale-acl.json"><code>config/tailscale-acl.json</code></a>).</p>
+<p><strong>These VLANs are venue-supplied, not our infrastructure</strong> — each capped at 1 Gbps, each port expensive. The 4-VLAN/3-theatres-each split below is comfortable at every live-ingest scope; the bandwidth math allows consolidating to 2 VLANs (6 theatres each) for normal SRT-primary operation at the default camera + program scope (~50% typical / ~65% high upstream, higher in the group carrying both VMix nodes) or camera + 1 laptop at typical rates (~65%), but only ~10% headroom in a mass NDI fallback — see <a href="bandwidth-analysis.html"><code>docs/bandwidth-analysis.md</code></a> for the full model and recommendation.</p>
 <table>
 <thead>
 <tr class="header">
@@ -222,13 +222,13 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </tr>
 </tbody>
 </table>
-<p><strong>Bonded NICs.</strong> Decided: bond the 2 gigabit NICs (802.3ad/LACP) rather than split traffic across them — SRT bandwidth isn't constant, and LACP's hash-based distribution spreads the many <em>simultaneous</em> flows this box handles (12 theatres' SRT fan-out, each to a different destination, the 12 incoming Overseer monitoring streams and Flock SRT previews, plus rclone/Nextcloud/BirdDog Central/NDI Discovery Server/DERP traffic) across both links by destination-IP/port hash — giving real aggregate headroom for bursty traffic, not just failover. Note this does <strong>not</strong> speed up any single flow; the benefit comes from having many distinct flows to hash across. On the wire, though, everything bound for one theatre leaves the Tailscale container inside a single WireGuard UDP flow to that theatre's A-1300, so the bond actually hashes ~14 tunnel flows (one per router), not dozens of application flows — still enough to spread, but coarse: one link can end up carrying noticeably more than half.</p>
+<p><strong>Bonded NICs.</strong> Decided: bond the 2 gigabit NICs (802.3ad/LACP) rather than split traffic across them — SRT bandwidth isn't constant, and LACP's hash-based distribution spreads the many <em>simultaneous</em> flows this box handles (12 theatres' SRT fan-out, each to a different destination, the 12 incoming Overseer monitoring streams and Flock SRT previews, plus rclone/Nextcloud/BirdDog Central/NDI Discovery Server/DERP traffic) across both links by destination-IP/port hash — giving real aggregate headroom for bursty traffic, not just failover. Note this does <strong>not</strong> speed up any single flow; the benefit comes from having many distinct flows to hash across. On the wire, though, everything bound for one theatre leaves the Tailscale container inside a single WireGuard UDP flow to that theatre's Slate AX, so the bond actually hashes ~14 tunnel flows (one per router), not dozens of application flows — still enough to spread, but coarse: one link can end up carrying noticeably more than half.</p>
 <p><strong>Assuming the Cloud Gateway supports LAG</strong> on the ports the Unraid server lands on (only UDM Pro/SE/Pro Max, UXG Enterprise, and EFG support port aggregation — not base Cloud Gateway models). If it turns out this one doesn't: drop an intermediate LACP-capable switch in between and bond through that instead — the bond doesn't care which device terminates it, only that something in the path speaks LACP, so this is a cheap fallback rather than a blocker.</p>
 <p>One thing worth doing regardless of which device terminates the bond: <strong>set Unraid's bond to match Ubiquiti's LACP settings.</strong> Ubiquiti gear hardcodes LACP rate <code>fast</code> and hash policy <code>layer3+4</code>; Unraid's bonding defaults are <code>slow</code> rate and layer2 hash. The bond still forms with a mismatched hash policy (each end hashes its own transmit traffic independently), but layer2 hashing on the Unraid side puts everything bound for the one gateway MAC on a single link, which throws away the outbound headroom the bond exists for.</p>
 <p><strong>Why Unraid over TrueNAS SCALE:</strong> both support Docker and Windows VMs, and Unraid has the more polished one-click container experience (Community Applications) — useful since this may be maintained on-site by AV staff rather than a Linux admin. Trade-off: Unraid requires a paid license (2026 tiers: Starter $49 for 6 storage devices, Unleashed $109, Lifetime $249 — see <a href="open-questions.html"><code>docs/open-questions.md</code></a> for which tier this box's pools need); TrueNAS SCALE is free. (The original tiebreaker — Unraid's more mature GPU-passthrough workflow — no longer applies now that the VMix VM is gone: nothing on this box needs GPU passthrough. BirdDog Central is NDI routing/control, not video encode, and runs as a plain VM. The choice stands on the container/UX grounds alone.)</p>
 <p><strong>Tailscale note:</strong> Cloud Gateway (UniFi-OS-based) generally can't run Tailscale natively without an unofficial container hack, so the mothership subnet-router role runs as a container on the Unraid box instead of the Cloud Gateway itself. See <a href="open-questions.html"><code>docs/open-questions.md</code></a>.</p>
 <h2 id="vmix-nodes-2">VMix nodes (×2)</h2>
-<p>Each has its own <strong>GL-iNet A-1300</strong> router (same model as the theatre routers) and its own Tailscale connection — a separate node on the tailnet, not part of the theatre it physically sits next to, just uplinked near it:</p>
+<p>Each has its own <strong>GL-iNet Slate AX</strong> router (same model as the theatre routers) and its own Tailscale connection — a separate node on the tailnet, not part of the theatre it physically sits next to, just uplinked near it:</p>
 <table>
 <thead>
 <tr class="header">
@@ -253,7 +253,7 @@ ul.task-list { list-style: none; padding-left: 1.2em; }
 </tr>
 </tbody>
 </table>
-<p>That makes <strong>14 GL-iNet A-1300s total</strong> across the network — 12 theatre routers plus these 2. Both LAN ports are bridged together on the VMix node routers (unlike the theatre routers, there's no single traffic-sensitive device here that needs its own dedicated port the way the ATEM does).</p>
+<p>That makes <strong>14 GL-iNet Slate AX routers total</strong> across the network — 12 theatre routers plus these 2. Both LAN ports are bridged together on the VMix node routers (unlike the theatre routers, there's no single traffic-sensitive device here that needs its own dedicated port the way the ATEM does).</p>
 <p>Each VMix PC's own recording is pulled to the mothership the same way the ATEMs' recordings are — near-real-time, over this node's own dedicated uplink (not the adjacent theatre's) — see <a href="vmix-record-ingest.html"><code>docs/vmix-record-ingest.md</code></a>.</p>
 <h2 id="edit-suite--19216822x">Edit suite — <code>192.168.22.x</code></h2>
 <p>Post-production subsystem at the mothership: 2× MacBook Pro editing workstations, a Mac mini running the DaVinci Resolve Project Server and Remote Render, and a dedicated fast-storage NAS, on their own 10GbE LAN — <strong>not</strong> on the Tailscale mesh (same room as the mothership, no distance for Tailscale to bridge) and not sharing the theatre-facing network's bandwidth budget. Routed to the mothership LAN only so the ingest containers can dual-write footage to the edit-suite NAS in the same pull that feeds Nextcloud — there is no separate recording-pool-to-NAS sync step. Full design, including the storage and project-server decisions and the DIT physical-media ingest workflow, in <a href="live-editing.html"><code>docs/live-editing.md</code></a>.</p>

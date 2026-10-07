@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1485" width="1640" height="1485" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 1523" width="1640" height="1523" font-family="Helvetica, Arial, sans-serif">
 <title>Event Network — Full Device Inventory</title>
 <defs></defs>
-<rect width="1640" height="1485" fill="#ffffff"/>
+<rect width="1640" height="1523" fill="#ffffff"/>
 <text x="820.0" y="36" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a1d2b">Event Network — Full Device Inventory</text>
 <text x="820.0" y="58" text-anchor="middle" font-size="13" fill="#5b6170">Every device and IP, generated from docs/ip-address-map.md · Tailscale runs only on the 14 GL-iNet routers and the mothership subnet router</text>
 <g><rect x="30" y="84" width="560" height="286" rx="8" fill="#eef0f5" stroke="#3d4a63" stroke-width="1.5"/><path d="M30,130 V92 a8,8 0 0 1 8,-8 H582 a8,8 0 0 1 8,8 V130 Z" fill="#3d4a63"/></g>
@@ -80,7 +80,7 @@
 <g><rect x="64.0" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,528 V490 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="234.8" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 1</text>
 <text x="234.8" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.2.0/24</text>
-<text x="76.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.2.1</text>
@@ -102,7 +102,7 @@
 <g><rect x="64.0" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,777 V739 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="234.8" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 2</text>
 <text x="234.8" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.3.0/24</text>
-<text x="76.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.3.1</text>
@@ -124,7 +124,7 @@
 <g><rect x="64.0" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M64.0,1026 V988 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="234.8" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 3</text>
 <text x="234.8" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.4.0/24</text>
-<text x="76.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.4.1</text>
@@ -146,7 +146,7 @@
 <g><rect x="64.0" y="1229" width="341.5" height="197" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M64.0,1275 V1237 a8,8 0 0 1 8,-8 H397.5 a8,8 0 0 1 8,8 V1275 Z" fill="#b03a48"/></g>
 <text x="234.8" y="1250.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix Node 1</text>
 <text x="234.8" y="1267.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.20.0/24 · sits beside Theatre 1</text>
-<text x="76.0" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="76.0" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="176.0" y="1286.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="207.0" y="1297.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="393.5" y="1297.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.20.1</text>
@@ -178,7 +178,7 @@
 <g><rect x="465.5" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,528 V490 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="636.2" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 4</text>
 <text x="636.2" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.5.0/24</text>
-<text x="477.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.5.1</text>
@@ -200,7 +200,7 @@
 <g><rect x="465.5" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,777 V739 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="636.2" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 5</text>
 <text x="636.2" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.6.0/24</text>
-<text x="477.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.6.1</text>
@@ -222,7 +222,7 @@
 <g><rect x="465.5" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M465.5,1026 V988 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="636.2" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 6</text>
 <text x="636.2" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.7.0/24</text>
-<text x="477.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.7.1</text>
@@ -244,7 +244,7 @@
 <g><rect x="465.5" y="1229" width="341.5" height="197" rx="8" fill="#fbedef" stroke="#b03a48" stroke-width="1.5"/><path d="M465.5,1275 V1237 a8,8 0 0 1 8,-8 H799.0 a8,8 0 0 1 8,8 V1275 Z" fill="#b03a48"/></g>
 <text x="636.2" y="1250.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">VMix Node 2</text>
 <text x="636.2" y="1267.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.21.0/24 · sits beside Theatre 4</text>
-<text x="477.5" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="477.5" y="1297.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="577.5" y="1286.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="608.5" y="1297.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="795.0" y="1297.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.21.1</text>
@@ -276,7 +276,7 @@
 <g><rect x="867.0" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,528 V490 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="1037.8" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 7</text>
 <text x="1037.8" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.8.0/24</text>
-<text x="879.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="879.0" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="979.0" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1010.0" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1196.5" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.8.1</text>
@@ -298,7 +298,7 @@
 <g><rect x="867.0" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,777 V739 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="1037.8" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 8</text>
 <text x="1037.8" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.9.0/24</text>
-<text x="879.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="879.0" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="979.0" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1010.0" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1196.5" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.9.1</text>
@@ -320,7 +320,7 @@
 <g><rect x="867.0" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M867.0,1026 V988 a8,8 0 0 1 8,-8 H1200.5 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="1037.8" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 9</text>
 <text x="1037.8" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.10.0/24</text>
-<text x="879.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="879.0" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="979.0" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1010.0" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1196.5" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.10.1</text>
@@ -353,7 +353,7 @@
 <g><rect x="1268.5" y="482" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,528 V490 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V528 Z" fill="#24668f"/></g>
 <text x="1439.2" y="503.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 10</text>
 <text x="1439.2" y="520.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.11.0/24</text>
-<text x="1280.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="1280.5" y="550.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="1380.5" y="539.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1411.5" y="550.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1598.0" y="550.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.11.1</text>
@@ -375,7 +375,7 @@
 <g><rect x="1268.5" y="731" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,777 V739 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V777 Z" fill="#24668f"/></g>
 <text x="1439.2" y="752.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 11</text>
 <text x="1439.2" y="769.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.12.0/24</text>
-<text x="1280.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="1280.5" y="799.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="1380.5" y="788.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1411.5" y="799.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1598.0" y="799.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.12.1</text>
@@ -397,7 +397,7 @@
 <g><rect x="1268.5" y="980" width="341.5" height="235" rx="8" fill="#eaf2f8" stroke="#24668f" stroke-width="1.5"/><path d="M1268.5,1026 V988 a8,8 0 0 1 8,-8 H1602.0 a8,8 0 0 1 8,8 V1026 Z" fill="#24668f"/></g>
 <text x="1439.2" y="1001.0" font-size="15" fill="#ffffff" text-anchor="middle" font-weight="bold">Theatre 12</text>
 <text x="1439.2" y="1018.0" font-size="11.5" fill="#e6e9f0" text-anchor="middle">192.168.13.0/24</text>
-<text x="1280.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet A-1300</text>
+<text x="1280.5" y="1048.0" font-size="12" fill="#1a1d2b" font-weight="bold">GL-iNet Slate AX</text>
 <rect x="1380.5" y="1037.0" width="62.0" height="15.0" rx="7" fill="#ffffff" stroke="#24668f" stroke-width="1"/>
 <text x="1411.5" y="1048.0" font-size="9.5" fill="#24668f" text-anchor="middle" font-weight="bold">Tailscale</text>
 <text x="1598.0" y="1048.0" font-size="12" fill="#1a1d2b" text-anchor="end" font-weight="bold">192.168.13.1</text>
@@ -423,21 +423,24 @@
 <text x="1252.5" y="749.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
 <path d="M1246.5,1003.0 L1268.5,1003.0" fill="none" stroke="#1e2235" stroke-width="2" stroke-linejoin="round"/>
 <text x="1252.5" y="998.0" font-size="8.5" fill="#5b6170" font-weight="bold">WAN</text>
-<rect x="833.0" y="1235.0" width="777.0" height="230.0" rx="8" fill="#f3f4f6" stroke="#d5d9e2" stroke-width="1.5"/>
+<rect x="833.0" y="1235.0" width="777.0" height="268.0" rx="8" fill="#f3f4f6" stroke="#d5d9e2" stroke-width="1.5"/>
 <text x="849.0" y="1261.0" font-size="13" fill="#1a1d2b" font-weight="bold">How to read this</text>
 <text x="849.0" y="1283.0" font-size="12" fill="#1a1d2b" font-weight="bold">Isolation</text>
 <text x="937.0" y="1283.0" font-size="12" fill="#1a1d2b">VLAN grouping is cabling only. Cross-theatre isolation is enforced by the Tailscale ACL</text>
-<text x="937.0" y="1302.0" font-size="12" fill="#1a1d2b">(config/tailscale-acl.json); each A-1300 also NATs its own theatre /24.</text>
+<text x="937.0" y="1302.0" font-size="12" fill="#1a1d2b">(config/tailscale-acl.json); each Slate AX also NATs its own theatre /24.</text>
 <text x="849.0" y="1321.0" font-size="12" fill="#1a1d2b" font-weight="bold">Overlay</text>
-<text x="937.0" y="1321.0" font-size="12" fill="#1a1d2b">Every A-1300 advertises its /24 as a Tailscale subnet router; the mothership&#x27;s</text>
+<text x="937.0" y="1321.0" font-size="12" fill="#1a1d2b">Every Slate AX advertises its /24 as a Tailscale subnet router; the mothership&#x27;s</text>
 <text x="937.0" y="1340.0" font-size="12" fill="#1a1d2b">subnet router (container on the Unraid box) advertises 192.168.1.0/24.</text>
 <text x="849.0" y="1359.0" font-size="12" fill="#1a1d2b" font-weight="bold">Relay</text>
 <text x="937.0" y="1359.0" font-size="12" fill="#1a1d2b">If a direct WireGuard path fails, traffic falls back to the self-hosted DERP</text>
 <text x="937.0" y="1378.0" font-size="12" fill="#1a1d2b">server (.1.16) behind the gateway&#x27;s WAN forward, so it never leaves the event.</text>
 <text x="849.0" y="1397.0" font-size="12" fill="#1a1d2b" font-weight="bold">VMix nodes</text>
-<text x="937.0" y="1397.0" font-size="12" fill="#1a1d2b">Each node&#x27;s own A-1300 WAN joins its neighbour theatre&#x27;s VLAN group; it is a</text>
+<text x="937.0" y="1397.0" font-size="12" fill="#1a1d2b">Each node&#x27;s own Slate AX WAN joins its neighbour theatre&#x27;s VLAN group; it is a</text>
 <text x="937.0" y="1416.0" font-size="12" fill="#1a1d2b">separate tailnet node, not part of that theatre&#x27;s LAN.</text>
-<text x="849.0" y="1435.0" font-size="12" fill="#1a1d2b" font-weight="bold">Counts</text>
-<text x="937.0" y="1435.0" font-size="12" fill="#1a1d2b">14 GL-iNet A-1300s · 12 theatres × 8 devices · 133 devices in total</text>
-<text x="937.0" y="1454.0" font-size="12" fill="#1a1d2b">(see docs/ip-address-map.md for the per-device table).</text>
+<text x="849.0" y="1435.0" font-size="12" fill="#1a1d2b" font-weight="bold">ATEM inputs</text>
+<text x="937.0" y="1435.0" font-size="12" fill="#1a1d2b">Same map in every theatre: 1 camera, 2–3 laptops, 4–8 spare. Live pull =</text>
+<text x="937.0" y="1454.0" font-size="12" fill="#1a1d2b">program + input 1 (+ 2/3 if headroom); the rest comes off the ATEM&#x27;s SSD.</text>
+<text x="849.0" y="1473.0" font-size="12" fill="#1a1d2b" font-weight="bold">Counts</text>
+<text x="937.0" y="1473.0" font-size="12" fill="#1a1d2b">14× GL-iNet Slate AX · 12 theatres × 8 devices · 133 devices in total</text>
+<text x="937.0" y="1492.0" font-size="12" fill="#1a1d2b">(see docs/ip-address-map.md for the per-device table).</text>
 </svg>

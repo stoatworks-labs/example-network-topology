@@ -183,6 +183,22 @@ services:
       ATEM_FTP_USER: ${ATEM_FTP_USER}
       ATEM_FTP_PASS: ${ATEM_FTP_PASS}
       ATEM_FTP_REMOTE_DIR: ${ATEM_FTP_REMOTE_DIR:-/}
+      # Which ISO inputs to pull live (program always pulled) — common input map, see
+      # docs/atem-iso-ingest.md. "1" = camera only; "1,2" adds the main laptop.
+      ATEM_ISO_INPUTS: ${ATEM_ISO_INPUTS:-1}
+      # Per-theatre overrides (empty = use the default above; "0" = program only).
+      ATEM_ISO_INPUTS_T1: ${ATEM_ISO_INPUTS_T1:-}
+      ATEM_ISO_INPUTS_T2: ${ATEM_ISO_INPUTS_T2:-}
+      ATEM_ISO_INPUTS_T3: ${ATEM_ISO_INPUTS_T3:-}
+      ATEM_ISO_INPUTS_T4: ${ATEM_ISO_INPUTS_T4:-}
+      ATEM_ISO_INPUTS_T5: ${ATEM_ISO_INPUTS_T5:-}
+      ATEM_ISO_INPUTS_T6: ${ATEM_ISO_INPUTS_T6:-}
+      ATEM_ISO_INPUTS_T7: ${ATEM_ISO_INPUTS_T7:-}
+      ATEM_ISO_INPUTS_T8: ${ATEM_ISO_INPUTS_T8:-}
+      ATEM_ISO_INPUTS_T9: ${ATEM_ISO_INPUTS_T9:-}
+      ATEM_ISO_INPUTS_T10: ${ATEM_ISO_INPUTS_T10:-}
+      ATEM_ISO_INPUTS_T11: ${ATEM_ISO_INPUTS_T11:-}
+      ATEM_ISO_INPUTS_T12: ${ATEM_ISO_INPUTS_T12:-}
       ATEM_ISO_LOCAL_BASE: /mnt/user/nextcloud-external
       ATEM_ISO_STATE_FILE: /mnt/user/appdata/atem-iso-ingest/state.json
     volumes:

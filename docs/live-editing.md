@@ -18,7 +18,11 @@ sustained throughput in the hundreds of Mbps *per editor* (multiple Gbps only fo
 intermediate codecs), not the tens of Mbps this design budgets per theatre. For scale:
 the ATEM Mini Extreme ISO is an HD switcher whose ISO files are H.264 at up to 70 Mb/s
 each ([Blackmagic tech specs](https://www.blackmagicdesign.com/products/atemmini/techspecs)),
-so a full 9-angle multicam is ~630 Mbps ≈ 79 MB/s per editor. 4K would only enter
+so a full 9-angle multicam is ~630 Mbps ≈ 79 MB/s per editor at the spec ceiling. (Each
+theatre actually patches only a camera and up to two laptops — the
+[common input map](atem-iso-ingest.md#common-theatre-input-map) — so a real session's
+multicam is nearer camera + 2 laptops + program, ~105 Mbps ≈ 13 MB/s typical, on planning
+estimates.) 4K would only enter
 through the VMix recordings (BirdDog P400s are 4K-capable; VMix's record settings are
 still unconfirmed — see [`docs/vmix-record-ingest.md`](vmix-record-ingest.md)). Putting that load on the mothership's existing 2× bonded
 1GbE ([`docs/server-specification.md`](server-specification.md)) would mean either
@@ -76,9 +80,11 @@ order it with Apple's 10GbE build-to-order option rather than adding an adapter.
 **Throughput sanity check.** A single 10GbE link delivers roughly 900+ MB/s over SMB in
 practice ([ProVideo Coalition's Cloud Store Mini review](https://www.provideocoalition.com/review-a-look-at-the-blackmagic-cloud-store-mini/)
 measured >900 MB/s read/write from a Mac). Against that: 2 editors × ~79 MB/s (9-angle
-HD multicam), plus the ingest dual-write (~151 MB/s at the current worst-case model in
-`docs/server-specification.md`, and physically capped at ~255 MB/s by the twelve ~170 Mbps
-theatre uplinks), plus Remote Render reads, is well under half of one 10GbE port. 10GbE
+HD multicam), plus the ingest dual-write (at the default live scope of camera + program per theatre,
+~98 MB/s typical / ~135 MB/s high including the ~120 Mbps VMix placeholder; ~172 / ~255
+MB/s if both laptop inputs are pulled live too — see `docs/server-specification.md` — and
+physically capped at roughly ~225–375 MB/s by the twelve Slate AX uplinks' *estimated*
+~150–250 Mbps), plus Remote Render reads, is well under half of one 10GbE port. 10GbE
 is comfortable headroom here rather than a hard requirement; it becomes necessary only if
 the VMix recordings turn out to be 4K or an intermediate codec (ProRes and similar).
 
@@ -315,7 +321,14 @@ SD/CFexpress cards, if this event uses cameras beyond the NDI-fed BirdDog P400s)
 the authoritative master, same "master vs. mirror" framing as the network ingest doc.
 Physically walking a drive/card to the edit suite for a proper checksummed offload — not
 just relying on the network pull — is standard DIT (Digital Imaging Technician) practice
-for anything that matters enough to edit.
+for anything that matters enough to edit. **It is also now the only route for most of the
+ISO footage:** the network ingest pulls just the program file and the ISO inputs in
+`ATEM_ISO_INPUTS` (default: input 1, the camera — see
+[`docs/atem-iso-ingest.md`](atem-iso-ingest.md#common-theatre-input-map)). The laptop ISOs
+(inputs 2–3, unless enabled live), the backup inputs (4–8), and the audio `.wav`s and
+`.drp` project are recorded on the ATEM's SSD and reach the edit suite only through this
+offload — at a session break or end of day. Plan the offload cadence around when editors
+need the laptop angles, not just around end-of-day archiving.
 
 ### Tool comparison
 
@@ -368,16 +381,18 @@ network's addressing.
 
 - **How much of the event's footage actually needs editing access** — the full 8TB
   recording pool, or a curated/selected subset? Drives NAS capacity sizing in Decision 1.
-  Note this sizing currently rests on the repo-wide ~10 Mbps-per-ISO-stream figure;
-  Blackmagic specifies ATEM Mini Extreme ISO ISO files at **up to 70 Mb/s** each (see
-  [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) § Bandwidth). If the real figure is
-  nearer that, every theatre produces ~100-280 GB/hour and both the recording pool and
-  any NAS here fill several times faster than planned.
+  Sizing now rests on the 2026-10-06 planning figures (camera ISO 35 / 45 / 70 Mbps,
+  laptop ISO 15 / 25 / 40 Mbps *estimated*, program ~10 Mbps — see
+  [`docs/atem-iso-ingest.md`](atem-iso-ingest.md) § Bandwidth): the live dual-write is
+  ~20 / 25 / 36 GB per theatre-hour at the default camera + program scope, and the
+  physical offload adds the rest of each ATEM's recording on top (at least the two laptop
+  ISOs, ~14–36 GB per theatre-hour between them, plus whatever the backup inputs carry).
+  Neither is measured yet ([`docs/open-questions.md`](open-questions.md) #0).
 - **Whether the smart-bin recipe's filters match what actually lands on the NAS.** The
   recipe filters on "file path contains that theatre's record-drive name" and "date
-  created is the session date". But the ingest destination layout is
-  `TheatreN/ISO/<file>` (`pull-iso.py` flattens to one folder and does not carry the
-  ATEM's drive or recording-folder name), and a file's creation date on the NAS is when
+  created is the session date". The ingest destination layout is now
+  `TheatreN/ISO/<recording folder>/…` (`pull-iso.py` keeps the ATEM's recording-folder
+  structure, but not the drive name), and a file's creation date on the NAS is when
   ingest first wrote it, not when the ATEM recorded it (normally the same day, but not
   for a late final pull after midnight). Either the NAS path layout should preserve a
   per-theatre/drive identifier the recipe can match, or the recipe should match the

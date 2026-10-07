@@ -26,6 +26,13 @@ appended bytes cross the theatre's uplink each cycle), via different mechanisms:
   mount (a full re-download over the theatre's uplink). It deliberately does **not** use
   `--append-verify`, which skips any file already the same size on both sides and so
   never checks a fully-synced file.
+- **Same live scope as `pull-iso.py`.** `ATEM_ISO_INPUTS` (default `1`; empty = program
+  only) drives rsync include/exclude filters: the program recording plus the listed
+  inputs' ISO files, `.mp4`/`.mov` only (audio `.wav` and the `.drp` project come with
+  the physical offload). ISO files are matched by glob on `CAM <n>` / `CAM<n>` in the
+  file name — `pull-iso.py`'s `ATEM_ISO_INPUT_PATTERN` regex is not used here, so if a
+  real unit names its files differently, edit `build_filters` in `mount-and-sync.sh`.
+  The `VERIFY=1` pass uses the same filters.
 - **Directory cache.** FTP has no change notification in rclone, so the mount only
   sees a growing file's new size when its directory cache expires (default 5 minutes);
   the script sets `--dir-cache-time 30s` so the 90s sync interval is real.
@@ -40,7 +47,8 @@ appended bytes cross the theatre's uplink each cycle), via different mechanisms:
    obscured password, then run [`generate-rclone-conf.sh`](generate-rclone-conf.sh) to
    produce `rclone.conf` with all 12 theatre remotes.
 3. Run [`mount-and-sync.sh`](mount-and-sync.sh) — mounts all 12 ATEMs, then loops
-   `rsync --append` every `ATEM_ISO_SYNC_INTERVAL` seconds (default 90s) into the same
+   `rsync --append` every `ATEM_ISO_SYNC_INTERVAL` seconds (default 90s), restricted to
+   the program file + `ATEM_ISO_INPUTS` (default `1`), into the same
    Nextcloud External Storage folders `pull-iso.py` would use — run
    [`../setup-nextcloud-external-storage.sh`](../setup-nextcloud-external-storage.sh)
    first, same as with the other approach. (Same dual-write caveat as the parent

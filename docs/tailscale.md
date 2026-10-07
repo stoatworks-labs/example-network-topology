@@ -2,7 +2,7 @@
 
 ## Who's actually on the tailnet
 
-Only **15 nodes** run the Tailscale client: the 14 GL-iNet A-1300 routers (12 theatres +
+Only **15 nodes** run the Tailscale client: the 14 GL-iNet Slate AX routers (12 theatres +
 2 VMix nodes) and the mothership's Tailscale container. Each advertises its own subnet
 (`--advertise-routes`) and accepts the others' (`--accept-routes`) — see
 [`config/tailscale-up-all-devices.sh`](../config/tailscale-up-all-devices.sh).
