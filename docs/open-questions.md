@@ -297,9 +297,15 @@
     `docs/server-specification.md`), BirdDog Central is now the design's only VM, and
     the device count is 133. (Number kept so cross-references to #11-#15 stay stable.)
 
-11. **Confirm ATEM Overseer's, ATEM Fleet Admin's, and Flock's actual published container
-    images** (or that they need to be built from source instead) before deploying
-    `config/docker-compose.yml` — all three use placeholder `ghcr.io/...` references.
+11. **Sort out a container for ATEM Fleet Admin, and check Overseer's and Flock's images
+    against this compose file**, before deploying `config/docker-compose.yml`, where all
+    three use placeholder `ghcr.io/...` references. Overseer and Flock now publish
+    `ghcr.io/stoatworks-labs/atem-overseer:latest` and `ghcr.io/stoatworks-labs/flock:latest`
+    from their own CI, the same names the placeholders use, though both projects' own
+    compose files run them with host networking (for mDNS discovery) rather than macvlan.
+    Fleet Admin doesn't publish a container image at all: it ships as a desktop app, a
+    local web server in a tray app, or a hosted build that can't apply live, so it either
+    needs a container built for it or runs on a machine of its own.
     Also confirm the actual mechanism behind both monitoring streams
     `docs/bandwidth-analysis.md` takes as given inputs, not verified against real
     hardware: Overseer's 10 Mbps ATEM stream (does the ATEM Mini Extreme ISO genuinely

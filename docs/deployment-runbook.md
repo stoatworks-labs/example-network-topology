@@ -18,7 +18,8 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
       [`docs/atem-iso-ingest.md`](atem-iso-ingest.md)
 - [ ] Decide a real hostname/DDNS for GLKVM-Cloud and confirm `GLKVM_ACCESS_IP`'s exact
       format for the WAN-remapped ports — [`docs/glkvm-cloud.md`](glkvm-cloud.md)
-- [ ] Confirm ATEM Overseer's, ATEM Fleet Admin's, and Flock's real container images, and
+- [ ] Sort out a container for ATEM Fleet Admin, which doesn't publish one (Overseer's and
+      Flock's images are on GHCR under the names the compose file already uses), and confirm
       whether the ATEM and BirdDog Play can actually originate their monitoring/preview
       streams alongside their primary feeds — [`docs/open-questions.md`](open-questions.md) #11
 - [ ] Settle the live-editing open questions — footage-volume sizing, the Mac mini's
@@ -47,10 +48,11 @@ Each step links to the doc with the actual detail — this is a map, not a dupli
    subnet router. See [`config/README.md`](../config/README.md) for the `.env` setup and
    prerequisites first — DERP and GLKVM-Cloud specifically need their hostnames/
    port-forwards from Phase 0/1 in place before they're actually useful, and ATEM
-   Overseer/Fleet Admin/Flock need their real container images confirmed first (see
+   Fleet Admin needs a container image first, since it doesn't publish one (see
    [`docs/open-questions.md`](open-questions.md) #11) — DERP and GLKVM-Cloud will start
-   but be non-functional without their hostnames/forwards, and the three
-   placeholder-image services won't start at all until real images are filled in.
+   but be non-functional without their hostnames/forwards, and Fleet Admin won't start
+   at all until its placeholder image is replaced. Overseer's and Flock's placeholders
+   already match the images their projects publish.
 4. Optionally adopt the Cloud Gateway into the UniFi Controller for local management —
    [`config/unifi/README.md`](../config/unifi/README.md). Purely a local console; the
    network config in Phase 1 doesn't depend on it.

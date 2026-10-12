@@ -18,8 +18,9 @@ here — it's a VM, not Docker, see `docs/topology.md`.
 source in this repo — `github.com/stoatworks-labs/atem-overseer`,
 `github.com/stoatworks-labs/atem-fleet-admin`, and `github.com/stoatworks-labs/flock`), so
 their `docker-compose.yml` entries use placeholder image references (`ghcr.io/...:latest`,
-clearly marked) rather than a confirmed published tag — check their own repos for the
-real image/registry before deploying.
+clearly marked). Overseer and Flock have since started publishing images under those
+names from their own CI; Fleet Admin doesn't publish a container image at all. Check
+their own repos for the real image/registry before deploying.
 
 Each service also has its own doc with the full design rationale
 ([`docs/atem-iso-ingest.md`](../docs/atem-iso-ingest.md),
